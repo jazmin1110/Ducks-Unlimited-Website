@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ducks Unlimited — Affordable Luxury Clothing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: #F5F0E8;
+      color: #1A1A1A;
+      line-height: 1.6;
+    }
+
+    /* ── Header/Nav ── */
+    header {
+      background-color: #fff;
+      border-bottom: 1px solid #e8e3d8;
+      padding: 1rem 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    nav {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #1B4D2E;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      list-style: none;
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: #1A1A1A;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: #1B4D2E; }
+
+    .nav-links .admin-link {
+      background-color: #1B4D2E;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+    }
+
+    .nav-links .admin-link:hover { background-color: #163d24; }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, #F5F0E8 0%, #f9f6f1 100%);
+      padding: 4rem 1.5rem;
+      text-align: center;
+    }
+
+    .hero-content {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .hero h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.5rem;
+      font-weight: 600;
+      color: #1B4D2E;
+      margin-bottom: 1rem;
+      letter-spacing: 0.02em;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: #555;
+      margin-bottom: 2rem;
+      line-height: 1.8;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 0.75rem 1.75rem;
+      border: none;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background-color: #1B4D2E;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background-color: #163d24;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(27, 77, 46, 0.2);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      color: #1B4D2E;
+      border: 2px solid #1B4D2E;
+    }
+
+    .btn-secondary:hover {
+      background-color: #1B4D2E;
+      color: #fff;
+    }
+
+    /* ── Main content ── */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+      text-align: center;
+    }
+
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem;
+      font-weight: 600;
+      color: #1B4D2E;
+      margin-bottom: 2rem;
+    }
+
+    /* ── Feature cards ── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .feature-card {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .feature-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .feature-card h3 {
+      font-size: 1.1rem;
+      color: #1A1A1A;
+      margin-bottom: 0.5rem;
+    }
+
+    .feature-card p {
+      font-size: 0.9rem;
+      color: #777;
+    }
+
+    /* ── Coming soon message ── */
+    .coming-soon {
+      background-color: #f0ebe1;
+      border: 1px solid #e0d8cc;
+      border-radius: 8px;
+      padding: 2rem;
+      margin: 2rem 0;
+      color: #666;
+    }
+
+    .coming-soon h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      color: #1B4D2E;
+      margin-bottom: 0.5rem;
+    }
+
+    /* ── Footer ── */
+    footer {
+      background-color: #1B4D2E;
+      color: rgba(255, 255, 255, 0.8);
+      text-align: center;
+      padding: 2rem 1.5rem;
+      margin-top: 3rem;
+      font-size: 0.85rem;
+    }
+
+    footer a { color: #C9A84C; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 1.75rem; }
+      .nav-links { gap: 1rem; }
+      .cta-buttons { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header>
+    <nav>
+      <a class="logo" href="/">Ducks Unlimited</a>
+      <ul class="nav-links">
+        <li><a href="#about">About</a></li>
+        <li><a href="#shop">Shop</a></li>
+        <li><a href="#contact">Contact</a></li>
+        <li><a href="/admin/index.html" class="admin-link">Admin</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Affordable Luxury for Everyone</h1>
+      <p>Est. 1995 • Based in Greenhills, San Juan • Premium clothing at fair prices</p>
+      <div class="cta-buttons">
+        <button class="btn btn-primary" onclick="document.querySelector('#shop').scrollIntoView({behavior:'smooth'})">
+          Browse Collections
+        </button>
+        <a href="/admin/index.html" class="btn btn-secondary">Admin Portal</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Main content ── -->
+  <main>
+    <section id="about" style="margin-bottom: 3rem;">
+      <h2 class="section-title">About Ducks Unlimited</h2>
+      <p style="font-size: 1rem; color: #666; max-width: 600px; margin: 0 auto;">
+        Since 1995, Ducks Unlimited has been crafting quality clothing that's accessible to everyone.
+        We believe in affordable luxury — great design, premium materials, fair prices.
+      </p>
+    </section>
+
+    <section id="shop" style="margin-bottom: 3rem;">
+      <h2 class="section-title">Our Collections</h2>
+      <div class="features">
+        <div class="feature-card">
+          <div class="feature-icon">👔</div>
+          <h3>Polos</h3>
+          <p>Classic and modern styles. Perfect for work or casual wear.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👕</div>
+          <h3>T-Shirts</h3>
+          <p>Comfortable, versatile everyday essentials.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🩳</div>
+          <h3>Shorts</h3>
+          <p>Lightweight and breathable. Perfect for the Philippine climate.</p>
+        </div>
+      </div>
+
+      <div class="coming-soon">
+        <h2>Store Coming Soon</h2>
+        <p>We're launching our online shop. Check back soon to browse our full catalog and place your order.</p>
+        <p style="margin-top: 1rem; font-size: 0.9rem; color: #999;">
+          In the meantime, visit our store in Greenhills, San Juan.
+        </p>
+      </div>
+    </section>
+
+    <section id="contact">
+      <h2 class="section-title">Get in Touch</h2>
+      <p style="font-size: 1rem; color: #666; max-width: 600px; margin: 0 auto;">
+        Questions? Visit us at our Greenhills store or contact us for more information.
+      </p>
+    </section>
+  </main>
+
+  <!-- ── Footer ── -->
+  <footer>
+    <p>&copy; 2025 Ducks Unlimited. All rights reserved.</p>
+    <p style="margin-top: 0.5rem;">
+      <a href="/admin/index.html">Admin Portal</a>
+    </p>
+  </footer>
+
+</body>
+</html>
