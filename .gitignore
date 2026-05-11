@@ -1,0 +1,12 @@
+# Secret keys — never upload these to GitHub
+.env
+
+# macOS system files
+.DS_Store
+
+# Editor folders
+.vscode/
+.idea/
+
+# Vercel build output
+.vercel/

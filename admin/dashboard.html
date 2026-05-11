@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Ducks Unlimited Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: #F5F0E8;
+      color: #1A1A1A;
+      min-height: 100vh;
+    }
+
+    /* ── Top nav ── */
+    nav {
+      background-color: #1B4D2E;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .nav-brand {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.4rem 0.75rem;
+      border-radius: 4px;
+      transition: background-color 0.15s, color 0.15s;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      background-color: rgba(255,255,255,0.12);
+      color: #fff;
+    }
+
+    /* Logout styled differently — muted, sits at the end */
+    .btn-logout {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.35);
+      color: rgba(255,255,255,0.8);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 0.35rem 0.9rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 0.5rem;
+      transition: background-color 0.15s, color 0.15s;
+    }
+
+    .btn-logout:hover {
+      background-color: rgba(255,255,255,0.12);
+      color: #fff;
+    }
+
+    /* ── Page body ── */
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    .welcome {
+      margin-bottom: 2rem;
+    }
+
+    .welcome h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #1B4D2E;
+    }
+
+    /* Email shown below the heading, filled in by JS */
+    .welcome-email {
+      font-size: 0.875rem;
+      color: #777;
+      margin-top: 0.25rem;
+    }
+
+    /* ── Stat cards ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .stat-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+      border-left: 4px solid #1B4D2E;
+    }
+
+    /* Low-stock card gets a gold accent to draw attention */
+    .stat-card.warning { border-left-color: #C9A84C; }
+
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.25rem;
+      font-weight: 600;
+      color: #1A1A1A;
+      line-height: 1;
+    }
+
+    .stat-value.loading {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1.25rem;
+      color: #bbb;
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="nav-brand" href="/admin/dashboard.html">Ducks Unlimited</a>
+    <ul class="nav-links">
+      <li><a href="/admin/dashboard.html" class="active">Dashboard</a></li>
+      <li><a href="/admin/products.html">Products</a></li>
+      <li><a href="/admin/inventory.html">Inventory</a></li>
+      <li><a href="/admin/orders.html">Orders</a></li>
+      <li><button class="btn-logout" id="logoutBtn">Log Out</button></li>
+    </ul>
+  </nav>
+
+  <main>
+
+    <div class="welcome">
+      <h1>Welcome back</h1>
+      <!-- Filled in by JS once we know who's logged in -->
+      <p class="welcome-email" id="welcomeEmail"></p>
+    </div>
+
+    <div class="stats">
+
+      <div class="stat-card">
+        <div class="stat-label">Total Products</div>
+        <div class="stat-value loading" id="statProducts">—</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Orders Today</div>
+        <div class="stat-value loading" id="statOrders">—</div>
+      </div>
+
+      <div class="stat-card warning">
+        <div class="stat-label">Low Stock Items</div>
+        <div class="stat-value loading" id="statLowStock">—</div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+
+    // ── Auth guard: redirect to login if no session ──
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      window.location.href = '/admin/index.html';
+    }
+
+    // Show logged-in email
+    document.getElementById('welcomeEmail').textContent = session.user.email;
+
+    // ── Log out ──
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.href = '/admin/index.html';
+    });
+
+    // ── Load stat cards ──
+
+    // Total active products
+    const { count: productCount } = await supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true);
+
+    document.getElementById('statProducts').textContent = productCount ?? '—';
+    document.getElementById('statProducts').classList.remove('loading');
+
+    // Orders placed today (midnight → now, Philippine time)
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const { count: orderCount } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', todayStart.toISOString());
+
+    document.getElementById('statOrders').textContent = orderCount ?? '—';
+    document.getElementById('statOrders').classList.remove('loading');
+
+    // Low-stock items: inventory rows where quantity <= low_stock_threshold
+    const { count: lowStockCount } = await supabase
+      .from('inventory')
+      .select('*', { count: 'exact', head: true })
+      .filter('quantity', 'lte', 'low_stock_threshold');
+
+    // Note: Supabase can't compare two columns directly in the JS client,
+    // so we fetch all rows and count manually instead.
+    const { data: inventoryRows } = await supabase
+      .from('inventory')
+      .select('quantity, low_stock_threshold');
+
+    const lowCount = inventoryRows
+      ? inventoryRows.filter(r => r.quantity <= r.low_stock_threshold).length
+      : 0;
+
+    document.getElementById('statLowStock').textContent = lowCount;
+    document.getElementById('statLowStock').classList.remove('loading');
+  </script>
+
+</body>
+</html>

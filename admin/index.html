@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login — Ducks Unlimited</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: #F5F0E8; /* warm ivory */
+      color: #1A1A1A;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    /* ── Login card ── */
+    .card {
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    /* ── Brand header ── */
+    .brand {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .brand-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #1B4D2E; /* forest green */
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .brand-sub {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 0.25rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Form fields ── */
+    .field {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 0.4rem;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 0.65rem 0.9rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      color: #1A1A1A;
+      background: #fff;
+      transition: border-color 0.15s;
+      /* Prevent iOS zoom on focus */
+      font-size: 16px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #1B4D2E;
+    }
+
+    /* ── Login button ── */
+    .btn-login {
+      width: 100%;
+      padding: 0.75rem;
+      background-color: #1B4D2E;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: background-color 0.15s, opacity 0.15s;
+    }
+
+    .btn-login:hover { background-color: #163d24; }
+    .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ── Error message (shown inline, not as an alert popup) ── */
+    .error-msg {
+      display: none; /* hidden by default; JS sets display: block */
+      background-color: #fdf0f0;
+      border: 1px solid #e8c0c0;
+      color: #b33a3a;
+      border-radius: 5px;
+      padding: 0.65rem 0.9rem;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+    }
+
+    .error-msg.visible { display: block; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+
+    <div class="brand">
+      <div class="brand-name">Ducks Unlimited</div>
+      <div class="brand-sub">Admin Panel</div>
+    </div>
+
+    <!-- Error message shown here when login fails -->
+    <div class="error-msg" id="errorMsg" role="alert"></div>
+
+    <form id="loginForm" novalidate>
+
+      <div class="field">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          placeholder="admin@ducksunlimited.ph"
+          autocomplete="email"
+          required
+        />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          placeholder="••••••••"
+          autocomplete="current-password"
+          required
+        />
+      </div>
+
+      <button type="submit" class="btn-login" id="loginBtn">Log In</button>
+
+    </form>
+
+  </div>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+
+    const form     = document.getElementById('loginForm');
+    const emailEl  = document.getElementById('email');
+    const passEl   = document.getElementById('password');
+    const btn      = document.getElementById('loginBtn');
+    const errorMsg = document.getElementById('errorMsg');
+
+    // If admin is already logged in, skip the login page
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) window.location.href = '/admin/dashboard.html';
+
+    function showError(message) {
+      errorMsg.textContent = message;
+      errorMsg.classList.add('visible');
+    }
+
+    function clearError() {
+      errorMsg.textContent = '';
+      errorMsg.classList.remove('visible');
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearError();
+
+      const email    = emailEl.value.trim();
+      const password = passEl.value;
+
+      if (!email || !password) {
+        showError('Please enter your email and password.');
+        return;
+      }
+
+      // Disable button while request is in flight
+      btn.disabled = true;
+      btn.textContent = 'Logging in…';
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        // Show a friendly message — don't expose raw Supabase error strings
+        showError('Incorrect email or password. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Log In';
+        return;
+      }
+
+      // Login succeeded — go to dashboard
+      window.location.href = '/admin/dashboard.html';
+    });
+  </script>
+
+</body>
+</html>

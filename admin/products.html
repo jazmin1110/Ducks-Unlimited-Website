@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Products — Ducks Unlimited Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: #F5F0E8;
+      color: #1A1A1A;
+      min-height: 100vh;
+    }
+
+    /* ── Nav (same as dashboard) ── */
+    nav {
+      background-color: #1B4D2E;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-brand {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.4rem 0.75rem;
+      border-radius: 4px;
+      transition: background-color 0.15s, color 0.15s;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      background-color: rgba(255,255,255,0.12);
+      color: #fff;
+    }
+
+    .btn-logout {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.35);
+      color: rgba(255,255,255,0.8);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 0.35rem 0.9rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 0.5rem;
+      transition: background-color 0.15s, color 0.15s;
+    }
+
+    .btn-logout:hover { background-color: rgba(255,255,255,0.12); color: #fff; }
+
+    /* ── Page content ── */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .page-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #1B4D2E;
+    }
+
+    /* ── Gold "Add Product" button ── */
+    .btn-add {
+      background-color: #C9A84C;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.6rem 1.25rem;
+      cursor: pointer;
+      transition: background-color 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-add:hover { background-color: #b8943e; }
+
+    /* ── Products table ── */
+    .table-wrap {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background-color: #1B4D2E;
+      color: #fff;
+    }
+
+    th {
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.85rem 1rem;
+    }
+
+    /* Price and status columns are narrower */
+    th.col-price,
+    th.col-status,
+    th.col-variants { width: 110px; }
+
+    th.col-actions { width: 80px; text-align: center; }
+
+    tbody tr {
+      border-bottom: 1px solid #f0ebe1;
+      transition: background-color 0.1s;
+      cursor: pointer;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background-color: #faf7f2; }
+
+    td {
+      padding: 0.9rem 1rem;
+      font-size: 0.9rem;
+      vertical-align: middle;
+    }
+
+    .product-name {
+      font-weight: 500;
+      color: #1B4D2E;
+    }
+
+    .product-desc {
+      font-size: 0.8rem;
+      color: #999;
+      margin-top: 0.15rem;
+      /* Truncate long descriptions */
+      max-width: 280px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.55rem;
+      border-radius: 20px;
+    }
+
+    .badge-active   { background: #e6f2ec; color: #1B4D2E; }
+    .badge-inactive { background: #f0ece4; color: #999; }
+
+    .edit-btn {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      color: #555;
+      padding: 0.3rem 0.65rem;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .edit-btn:hover { border-color: #1B4D2E; color: #1B4D2E; }
+
+    /* Empty and loading states */
+    .table-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #aaa;
+      font-size: 0.9rem;
+    }
+
+    /* ── Slide-in panel ── */
+
+    /* Dark overlay — click it to close the panel */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+
+    .overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* The panel itself */
+    .panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100vh;
+      width: 100%;
+      max-width: 440px;
+      background: #fff;
+      z-index: 201;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);  /* hidden off-screen to the right */
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+    }
+
+    .panel.open {
+      transform: translateX(0);     /* slides in */
+    }
+
+    /* Panel header bar */
+    .panel-header {
+      background-color: #1B4D2E;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.25rem;
+      height: 56px;
+      flex-shrink: 0;
+    }
+
+    .panel-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .panel-close {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.7);
+      font-size: 1.4rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0.25rem;
+      transition: color 0.15s;
+    }
+
+    .panel-close:hover { color: #fff; }
+
+    /* Scrollable form area */
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 1.25rem;
+    }
+
+    /* Panel footer with Save button */
+    .panel-footer {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    /* ── Form styles inside the panel ── */
+    .field {
+      margin-bottom: 1.25rem;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 0.4rem;
+    }
+
+    .field input[type="text"],
+    .field input[type="number"],
+    .field select,
+    .field textarea {
+      width: 100%;
+      padding: 0.65rem 0.9rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px; /* prevents iOS zoom */
+      color: #1A1A1A;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      outline: none;
+      border-color: #1B4D2E;
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    /* Price field with "₱" prefix */
+    .price-wrap {
+      position: relative;
+    }
+
+    .price-wrap .currency {
+      position: absolute;
+      left: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #888;
+      font-size: 0.9rem;
+      pointer-events: none;
+    }
+
+    .price-wrap input {
+      padding-left: 1.75rem !important;
+    }
+
+    /* ── Active toggle ── */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0.9rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .toggle-label {
+      font-size: 0.9rem;
+    }
+
+    .toggle-sublabel {
+      font-size: 0.78rem;
+      color: #999;
+      margin-top: 0.1rem;
+    }
+
+    /* The actual toggle switch */
+    .switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+    .switch-track {
+      position: absolute;
+      inset: 0;
+      background: #ccc;
+      border-radius: 22px;
+      transition: background-color 0.2s;
+      cursor: pointer;
+    }
+
+    .switch-track::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .switch input:checked + .switch-track { background: #1B4D2E; }
+    .switch input:checked + .switch-track::after { transform: translateX(18px); }
+
+    /* ── Panel buttons ── */
+    .btn-save {
+      flex: 1;
+      padding: 0.7rem;
+      background-color: #1B4D2E;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.15s, opacity 0.15s;
+    }
+
+    .btn-save:hover { background-color: #163d24; }
+    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-cancel {
+      padding: 0.7rem 1.25rem;
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      color: #555;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .btn-cancel:hover { border-color: #999; }
+
+    /* ── Inline error in panel ── */
+    .panel-error {
+      display: none;
+      background: #fdf0f0;
+      border: 1px solid #e8c0c0;
+      color: #b33a3a;
+      border-radius: 5px;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+    }
+
+    .panel-error.visible { display: block; }
+
+    /* ── Toast notification (bottom-right) ── */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: #1B4D2E;
+      color: #fff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      z-index: 300;
+      transform: translateY(8px);
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Navigation ── -->
+  <nav>
+    <a class="nav-brand" href="/admin/dashboard.html">Ducks Unlimited</a>
+    <ul class="nav-links">
+      <li><a href="/admin/dashboard.html">Dashboard</a></li>
+      <li><a href="/admin/products.html" class="active">Products</a></li>
+      <li><a href="/admin/inventory.html">Inventory</a></li>
+      <li><a href="/admin/orders.html">Orders</a></li>
+      <li><button class="btn-logout" id="logoutBtn">Log Out</button></li>
+    </ul>
+  </nav>
+
+  <!-- ── Main content ── -->
+  <main>
+
+    <div class="page-header">
+      <h1 class="page-title">Products</h1>
+      <button class="btn-add" id="addProductBtn">+ Add Product</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Category</th>
+            <th class="col-price">Base Price</th>
+            <th class="col-variants">Variants</th>
+            <th class="col-status">Status</th>
+            <th class="col-actions">Edit</th>
+          </tr>
+        </thead>
+        <tbody id="productsTableBody">
+          <tr>
+            <td colspan="6" class="table-state">Loading products…</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!-- ── Dark overlay (click to close panel) ── -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- ── Slide-in panel ── -->
+  <div class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle">
+
+    <div class="panel-header">
+      <span class="panel-title" id="panelTitle">Add Product</span>
+      <button class="panel-close" id="panelCloseBtn" aria-label="Close panel">×</button>
+    </div>
+
+    <div class="panel-body">
+
+      <!-- Error shown inline if save fails -->
+      <div class="panel-error" id="panelError"></div>
+
+      <form id="productForm" novalidate>
+
+        <!-- Hidden field: product ID (only set when editing an existing product) -->
+        <input type="hidden" id="productId" />
+
+        <div class="field">
+          <label for="productName">Product Name <span style="color:#c00">*</span></label>
+          <input type="text" id="productName" placeholder="e.g. Classic Polo Shirt" required />
+        </div>
+
+        <div class="field">
+          <label for="productCategory">Category <span style="color:#c00">*</span></label>
+          <select id="productCategory" required>
+            <option value="" disabled selected>Select a category…</option>
+            <option value="polo">Polo</option>
+            <option value="t-shirt">T-Shirt</option>
+            <option value="shorts">Shorts</option>
+            <option value="pants">Pants</option>
+            <option value="others">Others</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="productDescription">Description</label>
+          <textarea id="productDescription" placeholder="Describe the product — fabric, fit, care instructions…"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="productPrice">Base Price (PHP) <span style="color:#c00">*</span></label>
+          <div class="price-wrap">
+            <span class="currency">₱</span>
+            <input type="number" id="productPrice" placeholder="0.00" min="0" step="0.01" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Visibility</label>
+          <label class="toggle-row" for="productActive">
+            <div>
+              <div class="toggle-label">Show on website</div>
+              <div class="toggle-sublabel">Turn off to hide from customers (draft mode)</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="productActive" checked />
+              <span class="switch-track"></span>
+            </label>
+          </label>
+        </div>
+
+      </form>
+
+    </div>
+
+    <div class="panel-footer">
+      <button class="btn-cancel" id="panelCancelBtn">Cancel</button>
+      <button class="btn-save" id="saveBtn">Save Product</button>
+    </div>
+
+  </div>
+
+  <!-- ── Toast notification ── -->
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+
+    // ── Auth guard ──
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) window.location.href = '/admin/index.html';
+
+    // ── Log out ──
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.href = '/admin/index.html';
+    });
+
+    // ── Element references ──
+    const tableBody      = document.getElementById('productsTableBody');
+    const overlay        = document.getElementById('overlay');
+    const panel          = document.getElementById('panel');
+    const panelTitle     = document.getElementById('panelTitle');
+    const panelError     = document.getElementById('panelError');
+    const productIdInput = document.getElementById('productId');
+    const nameInput      = document.getElementById('productName');
+    const categoryInput  = document.getElementById('productCategory');
+    const descInput      = document.getElementById('productDescription');
+    const priceInput     = document.getElementById('productPrice');
+    const activeInput    = document.getElementById('productActive');
+    const saveBtn        = document.getElementById('saveBtn');
+    const toast          = document.getElementById('toast');
+
+    // ── Toast helper ──
+    let toastTimer;
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add('show');
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // ── Load and render products table ──
+    async function loadProducts() {
+      tableBody.innerHTML = '<tr><td colspan="6" class="table-state">Loading…</td></tr>';
+
+      // Fetch products with a count of their variants using Supabase's relation embedding
+      const { data: products, error } = await supabase
+        .from('products')
+        .select('*, variants(count)')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        tableBody.innerHTML = `<tr><td colspan="6" class="table-state">Failed to load products. Please refresh.</td></tr>`;
+        return;
+      }
+
+      if (!products || products.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="6" class="table-state">No products yet. Click "Add Product" to create your first one.</td></tr>`;
+        return;
+      }
+
+      tableBody.innerHTML = '';
+
+      for (const p of products) {
+        // Supabase returns the count as [{ count: N }]
+        const variantCount = p.variants?.[0]?.count ?? 0;
+
+        const categoryLabel = {
+          polo: 'Polo',
+          't-shirt': 'T-Shirt',
+          shorts: 'Shorts',
+          pants: 'Pants',
+          others: 'Others',
+        }[p.category] ?? p.category;
+
+        const row = document.createElement('tr');
+        row.dataset.id = p.id; // store product ID on the row for click handler
+
+        row.innerHTML = `
+          <td>
+            <div class="product-name">${escapeHtml(p.name)}</div>
+            ${p.description
+              ? `<div class="product-desc">${escapeHtml(p.description)}</div>`
+              : ''}
+          </td>
+          <td>${categoryLabel}</td>
+          <td>₱${Number(p.base_price).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
+          <td>${variantCount}</td>
+          <td>
+            <span class="badge ${p.is_active ? 'badge-active' : 'badge-inactive'}">
+              ${p.is_active ? 'Active' : 'Inactive'}
+            </span>
+          </td>
+          <td>
+            <button class="edit-btn" data-id="${p.id}">Edit</button>
+          </td>
+        `;
+
+        tableBody.appendChild(row);
+      }
+
+      // Clicking anywhere on a row (or its Edit button) opens the edit panel
+      tableBody.querySelectorAll('tr').forEach(row => {
+        row.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          if (id) openEditPanel(id);
+        });
+      });
+    }
+
+    // ── Panel open / close ──
+    function openPanel() {
+      panel.classList.add('open');
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden'; // prevent background scroll
+    }
+
+    function closePanel() {
+      panel.classList.remove('open');
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+      clearPanelError();
+    }
+
+    function clearPanelError() {
+      panelError.textContent = '';
+      panelError.classList.remove('visible');
+    }
+
+    function showPanelError(msg) {
+      panelError.textContent = msg;
+      panelError.classList.add('visible');
+    }
+
+    // Reset the form to blank (Add mode)
+    function resetForm() {
+      productIdInput.value = '';
+      nameInput.value = '';
+      categoryInput.value = '';
+      descInput.value = '';
+      priceInput.value = '';
+      activeInput.checked = true;
+      panelTitle.textContent = 'Add Product';
+      saveBtn.textContent = 'Save Product';
+      clearPanelError();
+    }
+
+    // Open panel pre-filled with a product's data (Edit mode)
+    async function openEditPanel(productId) {
+      resetForm();
+      panelTitle.textContent = 'Edit Product';
+      saveBtn.textContent = 'Save Changes';
+      openPanel();
+
+      // Fetch the product data
+      const { data: p, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .single();
+
+      if (error || !p) {
+        showPanelError('Could not load product details. Please try again.');
+        return;
+      }
+
+      productIdInput.value = p.id;
+      nameInput.value      = p.name;
+      categoryInput.value  = p.category;
+      descInput.value      = p.description ?? '';
+      priceInput.value     = p.base_price;
+      activeInput.checked  = p.is_active;
+    }
+
+    // ── Add Product button ──
+    document.getElementById('addProductBtn').addEventListener('click', () => {
+      resetForm();
+      openPanel();
+    });
+
+    // ── Close panel ──
+    overlay.addEventListener('click', closePanel);
+    document.getElementById('panelCloseBtn').addEventListener('click', closePanel);
+    document.getElementById('panelCancelBtn').addEventListener('click', closePanel);
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && panel.classList.contains('open')) closePanel();
+    });
+
+    // ── Save product (insert or update) ──
+    document.getElementById('productForm').addEventListener('submit', handleSave);
+    saveBtn.addEventListener('click', handleSave);
+
+    async function handleSave() {
+      clearPanelError();
+
+      const name     = nameInput.value.trim();
+      const category = categoryInput.value;
+      const desc     = descInput.value.trim();
+      const price    = parseFloat(priceInput.value);
+      const isActive = activeInput.checked;
+      const id       = productIdInput.value;
+
+      // Basic client-side validation
+      if (!name) { showPanelError('Product name is required.'); nameInput.focus(); return; }
+      if (!category) { showPanelError('Please select a category.'); categoryInput.focus(); return; }
+      if (isNaN(price) || price < 0) { showPanelError('Please enter a valid price.'); priceInput.focus(); return; }
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving…';
+
+      const payload = {
+        name,
+        category,
+        description: desc || null,
+        base_price: price,
+        is_active: isActive,
+      };
+
+      let error;
+
+      if (id) {
+        // Editing an existing product — UPDATE
+        ({ error } = await supabase.from('products').update(payload).eq('id', id));
+      } else {
+        // New product — INSERT
+        ({ error } = await supabase.from('products').insert(payload));
+      }
+
+      saveBtn.disabled = false;
+      saveBtn.textContent = id ? 'Save Changes' : 'Save Product';
+
+      if (error) {
+        showPanelError('Something went wrong. Please try again.');
+        console.error(error);
+        return;
+      }
+
+      closePanel();
+      showToast(id ? 'Product updated.' : 'Product added.');
+      await loadProducts(); // refresh the table
+    }
+
+    // ── Utility: escape HTML to prevent XSS when inserting strings into innerHTML ──
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ── Initial load ──
+    await loadProducts();
+  </script>
+
+</body>
+</html>
