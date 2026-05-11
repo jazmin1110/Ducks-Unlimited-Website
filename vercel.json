@@ -1,7 +1,5 @@
 {
-  "buildCommand": "",
-  "installCommand": "",
   "outputDirectory": "public",
-  "framework": "html",
-  "regions": ["sin1"]
+  "buildCommand": "",
+  "installCommand": ""
 }
