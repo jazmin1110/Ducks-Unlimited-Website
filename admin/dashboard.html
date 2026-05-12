@@ -17,7 +17,7 @@
       min-height: 100vh;
     }
 
-    /* ── Top nav ── */
+    /* ── Nav (same as other admin pages) ── */
     nav {
       background-color: #1B4D2E;
       color: #fff;
@@ -28,7 +28,7 @@
       height: 56px;
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 100;
     }
 
     .nav-brand {
@@ -64,7 +64,6 @@
       color: #fff;
     }
 
-    /* Logout styled differently — muted, sits at the end */
     .btn-logout {
       background: none;
       border: 1px solid rgba(255,255,255,0.35);
@@ -79,20 +78,18 @@
       transition: background-color 0.15s, color 0.15s;
     }
 
-    .btn-logout:hover {
-      background-color: rgba(255,255,255,0.12);
-      color: #fff;
-    }
+    .btn-logout:hover { background-color: rgba(255,255,255,0.12); color: #fff; }
 
-    /* ── Page body ── */
+    /* ── Page layout ── */
     main {
-      max-width: 960px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 2rem 1.5rem;
     }
 
+    /* ── Welcome header ── */
     .welcome {
-      margin-bottom: 2rem;
+      margin-bottom: 1.75rem;
     }
 
     .welcome h1 {
@@ -102,7 +99,6 @@
       color: #1B4D2E;
     }
 
-    /* Email shown below the heading, filled in by JS */
     .welcome-email {
       font-size: 0.875rem;
       color: #777;
@@ -110,25 +106,26 @@
     }
 
     /* ── Stat cards ── */
-    .stats {
+    .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
       gap: 1rem;
+      margin-bottom: 2rem;
     }
 
     .stat-card {
       background: #fff;
       border-radius: 8px;
-      padding: 1.5rem;
+      padding: 1.25rem;
       box-shadow: 0 1px 6px rgba(0,0,0,0.06);
       border-left: 4px solid #1B4D2E;
     }
 
-    /* Low-stock card gets a gold accent to draw attention */
     .stat-card.warning { border-left-color: #C9A84C; }
+    .stat-card.danger  { border-left-color: #b33a3a; }
 
     .stat-label {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 500;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -138,21 +135,225 @@
 
     .stat-value {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 2.25rem;
+      font-size: 2rem;
       font-weight: 600;
       color: #1A1A1A;
       line-height: 1;
     }
 
+    /* "Loading…" state while the value is being fetched */
     .stat-value.loading {
       font-family: 'DM Sans', sans-serif;
-      font-size: 1.25rem;
+      font-size: 1rem;
       color: #bbb;
+    }
+
+    /* Smaller font for currency values so they fit nicely */
+    .stat-value.currency {
+      font-size: 1.65rem;
+    }
+
+    /* ── Two-column area below stats ── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 880px) {
+      .two-col { grid-template-columns: 1fr; }
+    }
+
+    /* ── Panel cards (Recent Orders & Low Stock) ── */
+    .panel-card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #f0ebe1;
+    }
+
+    .panel-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1B4D2E;
+      letter-spacing: 0.02em;
+    }
+
+    .view-all {
+      font-size: 0.78rem;
+      color: #888;
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      transition: color 0.15s;
+    }
+
+    .view-all:hover { color: #1B4D2E; }
+
+    .panel-body { padding: 0; }
+
+    /* ── Recent orders table inside the panel card ── */
+    table.recent-orders {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    table.recent-orders th {
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #888;
+      padding: 0.55rem 1.25rem;
+      background: #faf7f2;
+      border-bottom: 1px solid #f0ebe1;
+    }
+
+    table.recent-orders th.col-total { text-align: right; }
+
+    table.recent-orders tbody tr {
+      border-bottom: 1px solid #f5f0e8;
+      cursor: pointer;
+      transition: background-color 0.1s;
+    }
+
+    table.recent-orders tbody tr:last-child { border-bottom: none; }
+    table.recent-orders tbody tr:hover      { background-color: #faf7f2; }
+
+    table.recent-orders td {
+      padding: 0.7rem 1.25rem;
+      vertical-align: middle;
+    }
+
+    table.recent-orders td.col-total {
+      text-align: right;
+      font-weight: 500;
+    }
+
+    .cell-order-num {
+      font-family: 'SF Mono', Monaco, Menlo, monospace;
+      font-size: 0.82rem;
+      color: #1B4D2E;
+    }
+
+    .cell-customer { color: #1A1A1A; }
+
+    /* ── Low-stock list ── */
+    ul.lowstock-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    ul.lowstock-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid #f5f0e8;
+      cursor: pointer;
+      transition: background-color 0.1s;
+    }
+
+    ul.lowstock-list li:last-child { border-bottom: none; }
+    ul.lowstock-list li:hover      { background-color: #faf7f2; }
+
+    .ls-product {
+      font-size: 0.9rem;
+      color: #1B4D2E;
+      font-weight: 500;
+      margin-bottom: 0.15rem;
+    }
+
+    .ls-variant {
+      font-size: 0.78rem;
+      color: #888;
+    }
+
+    .ls-stock {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .ls-stock-num.out { color: #b33a3a; }
+    .ls-stock-num.low { color: #997f33; }
+
+    .ls-threshold {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem;
+      color: #aaa;
+      font-weight: 400;
+      margin-top: 0.1rem;
+    }
+
+    /* ── Status badges (shared with orders page) ── */
+    .status-badge {
+      display: inline-block;
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.15rem 0.55rem;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .pay-pending   { background: #fff4d6; color: #997f33; }
+    .pay-paid      { background: #e6f2ec; color: #1B4D2E; }
+    .pay-failed    { background: #fdf0f0; color: #b33a3a; }
+
+    .ful-pending   { background: #f0ebe1; color: #777; }
+    .ful-packed    { background: #e0ebf5; color: #2d5a87; }
+    .ful-shipped   { background: #fff4d6; color: #997f33; }
+    .ful-delivered { background: #e6f2ec; color: #1B4D2E; }
+
+    .badge-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      align-items: flex-start;
+    }
+
+    /* ── Empty / loading states ── */
+    .empty-state {
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      color: #aaa;
+      font-size: 0.875rem;
+    }
+
+    /* Subtle green checkmark style for "all good" states */
+    .empty-state.success {
+      color: #1B4D2E;
+      background: #faf7f2;
+    }
+
+    .empty-state.success::before {
+      content: '✓ ';
+      margin-right: 0.25rem;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
 
+  <!-- ── Nav ── -->
   <nav>
     <a class="nav-brand" href="/admin/dashboard.html">Ducks Unlimited</a>
     <ul class="nav-links">
@@ -166,22 +367,28 @@
 
   <main>
 
+    <!-- ── Welcome header ── -->
     <div class="welcome">
       <h1>Welcome back</h1>
-      <!-- Filled in by JS once we know who's logged in -->
       <p class="welcome-email" id="welcomeEmail"></p>
     </div>
 
-    <div class="stats">
+    <!-- ── Stat cards (4 across) ── -->
+    <div class="stats-grid">
 
       <div class="stat-card">
-        <div class="stat-label">Total Products</div>
+        <div class="stat-label">Active Products</div>
         <div class="stat-value loading" id="statProducts">—</div>
       </div>
 
       <div class="stat-card">
         <div class="stat-label">Orders Today</div>
         <div class="stat-value loading" id="statOrders">—</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Revenue Today</div>
+        <div class="stat-value currency loading" id="statRevenue">—</div>
       </div>
 
       <div class="stat-card warning">
@@ -191,18 +398,59 @@
 
     </div>
 
+    <!-- ── Two-column area: recent orders + low stock alerts ── -->
+    <div class="two-col">
+
+      <!-- ── Recent orders ── -->
+      <section class="panel-card">
+        <header class="panel-header">
+          <span class="panel-title">Recent Orders</span>
+          <a class="view-all" href="/admin/orders.html">View all →</a>
+        </header>
+
+        <div class="panel-body">
+          <table class="recent-orders">
+            <thead>
+              <tr>
+                <th>Order #</th>
+                <th>Customer</th>
+                <th class="col-total">Total</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="recentOrdersBody">
+              <tr><td colspan="4" class="empty-state">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── Low-stock alerts ── -->
+      <section class="panel-card">
+        <header class="panel-header">
+          <span class="panel-title">Low Stock Alerts</span>
+          <a class="view-all" href="/admin/inventory.html">View all →</a>
+        </header>
+
+        <div class="panel-body">
+          <ul class="lowstock-list" id="lowStockList">
+            <li class="empty-state" style="cursor:default; display:block; text-align:center;">Loading…</li>
+          </ul>
+        </div>
+      </section>
+
+    </div>
+
   </main>
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
 
-    // ── Auth guard: redirect to login if no session ──
+    // ── Auth guard ──
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      window.location.href = '/admin/index.html';
-    }
+    if (!session) window.location.href = '/admin/index.html';
 
-    // Show logged-in email
+    // Show the logged-in email
     document.getElementById('welcomeEmail').textContent = session.user.email;
 
     // ── Log out ──
@@ -211,47 +459,265 @@
       window.location.href = '/admin/index.html';
     });
 
-    // ── Load stat cards ──
+    // ─────────────────────────────────────────────────────────────────────
+    // HELPERS
+    // ─────────────────────────────────────────────────────────────────────
 
-    // Total active products
-    const { count: productCount } = await supabase
-      .from('products')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_active', true);
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
 
-    document.getElementById('statProducts').textContent = productCount ?? '—';
-    document.getElementById('statProducts').classList.remove('loading');
+    function formatPrice(amount) {
+      return '₱' + Number(amount).toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
 
-    // Orders placed today (midnight → now, Philippine time)
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    // Midnight today, in the admin's local timezone (PH for our users).
+    // Used for "today" queries.
+    function todayStartIso() {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      return d.toISOString();
+    }
 
-    const { count: orderCount } = await supabase
-      .from('orders')
-      .select('*', { count: 'exact', head: true })
-      .gte('created_at', todayStart.toISOString());
+    // Used for sorting sizes alphabetically would put 'L' before 'M' — this
+    // map gives correct apparel ordering.
+    const SIZE_ORDER = { XS: 1, S: 2, M: 3, L: 4, XL: 5, XXL: 6, XXXL: 7 };
 
-    document.getElementById('statOrders').textContent = orderCount ?? '—';
-    document.getElementById('statOrders').classList.remove('loading');
+    const PAYMENT_LABELS = {
+      pending: 'Pending', paid: 'Paid', failed: 'Failed',
+    };
 
-    // Low-stock items: inventory rows where quantity <= low_stock_threshold
-    const { count: lowStockCount } = await supabase
-      .from('inventory')
-      .select('*', { count: 'exact', head: true })
-      .filter('quantity', 'lte', 'low_stock_threshold');
+    const FULFILLMENT_LABELS = {
+      pending: 'Pending', packed: 'Packed',
+      shipped: 'Shipped', delivered: 'Delivered',
+    };
 
-    // Note: Supabase can't compare two columns directly in the JS client,
-    // so we fetch all rows and count manually instead.
-    const { data: inventoryRows } = await supabase
-      .from('inventory')
-      .select('quantity, low_stock_threshold');
+    // ─────────────────────────────────────────────────────────────────────
+    // DATA FETCHERS
+    // Each returns a promise — we fire them all in parallel below.
+    // ─────────────────────────────────────────────────────────────────────
 
-    const lowCount = inventoryRows
-      ? inventoryRows.filter(r => r.quantity <= r.low_stock_threshold).length
-      : 0;
+    // Active products count (head:true skips returning the rows themselves)
+    async function fetchActiveProductCount() {
+      const { count } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true);
+      return count ?? 0;
+    }
 
-    document.getElementById('statLowStock').textContent = lowCount;
-    document.getElementById('statLowStock').classList.remove('loading');
+    // Count of orders placed today (any payment status)
+    async function fetchOrdersTodayCount() {
+      const { count } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', todayStartIso());
+      return count ?? 0;
+    }
+
+    // Revenue today = sum of total_amount for paid orders placed today.
+    // Supabase JS doesn't have a SUM aggregator, so we fetch totals and sum in JS.
+    // The count is small (today's paid orders), so this is fine.
+    async function fetchRevenueToday() {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('total_amount')
+        .eq('payment_status', 'paid')
+        .gte('created_at', todayStartIso());
+      if (error || !data) return 0;
+      return data.reduce((sum, o) => sum + Number(o.total_amount), 0);
+    }
+
+    // Most recent 10 orders, including item count (via embedded relation count)
+    async function fetchRecentOrders() {
+      const { data } = await supabase
+        .from('orders')
+        .select(`
+          id, order_number, customer_name, total_amount,
+          payment_status, fulfillment_status, created_at
+        `)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      return data ?? [];
+    }
+
+    // Variants joined with inventory + product info. We compute total stock
+    // and "low" status in JS afterwards, so we get one consistent definition
+    // of "low stock" across the whole admin panel.
+    async function fetchVariantsWithStock() {
+      const { data } = await supabase
+        .from('variants')
+        .select(`
+          id, color, size, sku,
+          products!inner ( name ),
+          inventory ( quantity, low_stock_threshold )
+        `);
+      return data ?? [];
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // RENDERERS
+    // ─────────────────────────────────────────────────────────────────────
+
+    function setStatValue(el, value, options = {}) {
+      el.textContent = value;
+      el.classList.remove('loading');
+      if (options.currency) el.classList.add('currency');
+    }
+
+    function renderRecentOrders(orders) {
+      const tbody = document.getElementById('recentOrdersBody');
+
+      if (orders.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="empty-state">
+          No orders yet. They'll appear here when customers place orders.
+        </td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = '';
+
+      for (const o of orders) {
+        const tr = document.createElement('tr');
+        tr.dataset.orderId = o.id;
+
+        tr.innerHTML = `
+          <td><span class="cell-order-num">${escapeHtml(o.order_number)}</span></td>
+          <td><span class="cell-customer">${escapeHtml(o.customer_name)}</span></td>
+          <td class="col-total">${formatPrice(o.total_amount)}</td>
+          <td>
+            <div class="badge-stack">
+              <span class="status-badge pay-${o.payment_status}">${PAYMENT_LABELS[o.payment_status]}</span>
+              <span class="status-badge ful-${o.fulfillment_status}">${FULFILLMENT_LABELS[o.fulfillment_status]}</span>
+            </div>
+          </td>
+        `;
+
+        // Click a row → open that order in the orders page
+        tr.addEventListener('click', () => {
+          window.location.href = `/admin/orders.html?order=${o.id}`;
+        });
+
+        tbody.appendChild(tr);
+      }
+    }
+
+    // Compute total stock per variant, filter to those at or below threshold,
+    // and sort by urgency (out-of-stock first, then lowest stock first).
+    function computeLowStock(variants) {
+      const lowStock = [];
+
+      for (const v of variants) {
+        const inv = v.inventory || [];
+        if (inv.length === 0) continue; // skip variants with no inventory yet
+
+        const total     = inv.reduce((sum, i) => sum + (i.quantity ?? 0), 0);
+        // Channels usually share a threshold (set together via the inventory
+        // page UI). If they differ, use the strictest (largest) one.
+        const threshold = Math.max(...inv.map(i => i.low_stock_threshold ?? 5));
+
+        if (total <= threshold) {
+          lowStock.push({
+            variantId:   v.id,
+            productName: v.products?.name ?? 'Unknown',
+            color:       v.color,
+            size:        v.size,
+            total,
+            threshold,
+            // Out of stock is more urgent than just low stock
+            severity:    total === 0 ? 'out' : 'low',
+          });
+        }
+      }
+
+      // Sort: out-of-stock first, then by lowest total stock
+      lowStock.sort((a, b) => {
+        if (a.severity !== b.severity) return a.severity === 'out' ? -1 : 1;
+        if (a.total !== b.total) return a.total - b.total;
+        if (a.productName !== b.productName) return a.productName.localeCompare(b.productName);
+        return (SIZE_ORDER[a.size] ?? 99) - (SIZE_ORDER[b.size] ?? 99);
+      });
+
+      return lowStock;
+    }
+
+    function renderLowStock(items) {
+      const list = document.getElementById('lowStockList');
+
+      if (items.length === 0) {
+        list.innerHTML = `<li class="empty-state success" style="cursor:default; display:block; text-align:center;">
+          All good — no inventory needs attention.
+        </li>`;
+        return;
+      }
+
+      // Cap at 10 — full list is on the inventory page
+      const visible = items.slice(0, 10);
+
+      list.innerHTML = '';
+
+      for (const item of visible) {
+        const li = document.createElement('li');
+        li.dataset.variantId = item.variantId;
+
+        li.innerHTML = `
+          <div>
+            <div class="ls-product">${escapeHtml(item.productName)}</div>
+            <div class="ls-variant">${escapeHtml(item.color)} · ${escapeHtml(item.size)}</div>
+          </div>
+          <div class="ls-stock">
+            <span class="ls-stock-num ${item.severity}">${item.total}</span>
+            <div class="ls-threshold">of ${item.threshold} threshold</div>
+          </div>
+        `;
+
+        // Click → open that variant in the inventory page
+        li.addEventListener('click', () => {
+          window.location.href = `/admin/inventory.html?variant=${item.variantId}`;
+        });
+
+        list.appendChild(li);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // LOAD EVERYTHING IN PARALLEL
+    // Fire all the queries at once so the dashboard fills in quickly
+    // instead of waterfalling one request after another.
+    // ─────────────────────────────────────────────────────────────────────
+
+    const [
+      productCount,
+      ordersTodayCount,
+      revenueToday,
+      recentOrders,
+      variantsWithStock,
+    ] = await Promise.all([
+      fetchActiveProductCount(),
+      fetchOrdersTodayCount(),
+      fetchRevenueToday(),
+      fetchRecentOrders(),
+      fetchVariantsWithStock(),
+    ]);
+
+    // ── Fill stat cards ──
+    setStatValue(document.getElementById('statProducts'), productCount);
+    setStatValue(document.getElementById('statOrders'),   ordersTodayCount);
+    setStatValue(document.getElementById('statRevenue'),  formatPrice(revenueToday), { currency: true });
+
+    const lowStockItems = computeLowStock(variantsWithStock);
+    setStatValue(document.getElementById('statLowStock'), lowStockItems.length);
+
+    // ── Fill panel cards ──
+    renderRecentOrders(recentOrders);
+    renderLowStock(lowStockItems);
   </script>
 
 </body>

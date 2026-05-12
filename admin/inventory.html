@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventory — Ducks Unlimited Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: #F5F0E8;
+      color: #1A1A1A;
+      min-height: 100vh;
+    }
+
+    /* ── Nav (same as other admin pages) ── */
+    nav {
+      background-color: #1B4D2E;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-brand {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.4rem 0.75rem;
+      border-radius: 4px;
+      transition: background-color 0.15s, color 0.15s;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      background-color: rgba(255,255,255,0.12);
+      color: #fff;
+    }
+
+    .btn-logout {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.35);
+      color: rgba(255,255,255,0.8);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 0.35rem 0.9rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 0.5rem;
+      transition: background-color 0.15s, color 0.15s;
+    }
+
+    .btn-logout:hover { background-color: rgba(255,255,255,0.12); color: #fff; }
+
+    /* ── Page layout ── */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    .page-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .page-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #1B4D2E;
+    }
+
+    .page-subtitle {
+      font-size: 0.9rem;
+      color: #777;
+      margin-top: 0.25rem;
+    }
+
+    /* ── Summary bar (three stat cards inline) ── */
+    .summary-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .summary-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+      border-left: 4px solid #1B4D2E;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .summary-card.warning { border-left-color: #C9A84C; }
+    .summary-card.danger  { border-left-color: #b33a3a; }
+
+    .summary-label {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #888;
+    }
+
+    .summary-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.85rem;
+      font-weight: 600;
+      color: #1A1A1A;
+      line-height: 1;
+    }
+
+    /* ── Filters bar ── */
+    .filters-bar {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+      padding: 1rem;
+      margin-bottom: 1rem;
+      display: grid;
+      grid-template-columns: 1fr 180px 180px;
+      gap: 0.75rem;
+      align-items: end;
+    }
+
+    @media (max-width: 720px) {
+      .filters-bar {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .filter-field label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #777;
+      margin-bottom: 0.35rem;
+    }
+
+    .filter-field input,
+    .filter-field select {
+      width: 100%;
+      padding: 0.55rem 0.85rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px; /* iOS no-zoom */
+      color: #1A1A1A;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+
+    .filter-field input:focus,
+    .filter-field select:focus {
+      outline: none;
+      border-color: #1B4D2E;
+    }
+
+    /* ── Inventory table ── */
+    .table-wrap {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px; /* keep columns readable on small screens */
+    }
+
+    thead {
+      background-color: #1B4D2E;
+      color: #fff;
+    }
+
+    th {
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.85rem 1rem;
+      white-space: nowrap;
+    }
+
+    /* Right-align numeric columns */
+    th.col-num, td.col-num { text-align: right; padding-right: 1.1rem; }
+    th.col-status { text-align: center; }
+
+    tbody tr {
+      border-bottom: 1px solid #f0ebe1;
+      transition: background-color 0.1s;
+      cursor: pointer;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background-color: #faf7f2 !important; }
+
+    /* Row tinting based on stock status */
+    tbody tr.row-low { background-color: #fffbeb; }
+    tbody tr.row-out { background-color: #fcf0f0; }
+
+    td {
+      padding: 0.85rem 1rem;
+      font-size: 0.9rem;
+      vertical-align: middle;
+    }
+
+    .cell-product {
+      font-weight: 500;
+      color: #1B4D2E;
+    }
+
+    .cell-variant {
+      font-size: 0.85rem;
+      color: #555;
+    }
+
+    .cell-category {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #888;
+      background: #f5f0e8;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      margin-top: 0.2rem;
+    }
+
+    .cell-sku {
+      font-family: 'SF Mono', Monaco, Menlo, monospace;
+      font-size: 0.8rem;
+      color: #555;
+    }
+
+    .cell-num {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .cell-num.total {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #1A1A1A;
+    }
+
+    /* ── Status badges ── */
+    .status-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.65rem;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .status-in    { background: #e6f2ec; color: #1B4D2E; }
+    .status-low   { background: #fff4d6; color: #997f33; }
+    .status-out   { background: #fdf0f0; color: #b33a3a; }
+
+    /* ── Empty / loading / error states ── */
+    .table-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #aaa;
+      font-size: 0.9rem;
+    }
+
+    .table-state button {
+      margin-top: 0.75rem;
+      background: none;
+      border: 1px solid #ddd;
+      color: #555;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      padding: 0.45rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .table-state button:hover { border-color: #1B4D2E; color: #1B4D2E; }
+
+    /* ── Slide-in panel (same pattern as products.html) ── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+
+    .overlay.open { opacity: 1; pointer-events: all; }
+
+    .panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100vh;
+      width: 100%;
+      max-width: 440px;
+      background: #fff;
+      z-index: 201;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+    }
+
+    .panel.open { transform: translateX(0); }
+
+    .panel-header {
+      background-color: #1B4D2E;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.25rem;
+      height: 56px;
+      flex-shrink: 0;
+    }
+
+    .panel-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .panel-close {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.7);
+      font-size: 1.4rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0.25rem;
+      transition: color 0.15s;
+    }
+
+    .panel-close:hover { color: #fff; }
+
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 1.25rem;
+    }
+
+    .panel-footer {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    /* ── Variant summary at top of panel (read-only display) ── */
+    .variant-summary {
+      background: #faf7f2;
+      border-radius: 6px;
+      padding: 1rem 1.1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .vs-product {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #1B4D2E;
+      margin-bottom: 0.25rem;
+    }
+
+    .vs-variant {
+      font-size: 0.85rem;
+      color: #555;
+    }
+
+    .vs-sku {
+      font-family: 'SF Mono', Monaco, Menlo, monospace;
+      font-size: 0.78rem;
+      color: #888;
+      margin-top: 0.4rem;
+    }
+
+    /* ── Form fields in panel ── */
+    .field {
+      margin-bottom: 1.25rem;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 0.4rem;
+    }
+
+    .field-hint {
+      font-size: 0.75rem;
+      color: #999;
+      margin-top: 0.3rem;
+    }
+
+    .field input[type="number"] {
+      width: 100%;
+      padding: 0.65rem 0.9rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      color: #1A1A1A;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: #1B4D2E;
+    }
+
+    /* Two stock fields side-by-side */
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    /* Last-updated info block */
+    .last-updated {
+      background: #faf7f2;
+      border-radius: 5px;
+      padding: 0.65rem 0.9rem;
+      font-size: 0.8rem;
+      color: #777;
+    }
+
+    .last-updated strong {
+      color: #1A1A1A;
+      font-weight: 500;
+    }
+
+    /* ── Buttons ── */
+    .btn-save {
+      flex: 1;
+      padding: 0.7rem;
+      background-color: #1B4D2E;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.15s, opacity 0.15s;
+    }
+
+    .btn-save:hover { background-color: #163d24; }
+    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-cancel {
+      padding: 0.7rem 1.25rem;
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      color: #555;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .btn-cancel:hover { border-color: #999; }
+
+    /* ── Inline error message in panel ── */
+    .panel-error {
+      display: none;
+      background: #fdf0f0;
+      border: 1px solid #e8c0c0;
+      color: #b33a3a;
+      border-radius: 5px;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+    }
+
+    .panel-error.visible { display: block; }
+
+    /* ── Toast notification ── */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: #1B4D2E;
+      color: #fff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      z-index: 300;
+      transform: translateY(8px);
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- ── Nav ── -->
+  <nav>
+    <a class="nav-brand" href="/admin/dashboard.html">Ducks Unlimited</a>
+    <ul class="nav-links">
+      <li><a href="/admin/dashboard.html">Dashboard</a></li>
+      <li><a href="/admin/products.html">Products</a></li>
+      <li><a href="/admin/inventory.html" class="active">Inventory</a></li>
+      <li><a href="/admin/orders.html">Orders</a></li>
+      <li><button class="btn-logout" id="logoutBtn">Log Out</button></li>
+    </ul>
+  </nav>
+
+  <main>
+
+    <div class="page-header">
+      <h1 class="page-title">Inventory</h1>
+      <p class="page-subtitle">Track stock per variant across the online shop and the Greenhills store.</p>
+    </div>
+
+    <!-- ── Summary bar (filled by JS) ── -->
+    <div class="summary-bar">
+      <div class="summary-card">
+        <div class="summary-label">Total SKUs</div>
+        <div class="summary-value" id="statTotal">—</div>
+      </div>
+      <div class="summary-card warning">
+        <div class="summary-label">Low Stock</div>
+        <div class="summary-value" id="statLow">—</div>
+      </div>
+      <div class="summary-card danger">
+        <div class="summary-label">Out of Stock</div>
+        <div class="summary-value" id="statOut">—</div>
+      </div>
+    </div>
+
+    <!-- ── Filters bar ── -->
+    <div class="filters-bar">
+
+      <div class="filter-field">
+        <label for="filterSearch">Search</label>
+        <input
+          type="search"
+          id="filterSearch"
+          placeholder="Product name or SKU…"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="filter-field">
+        <label for="filterCategory">Category</label>
+        <select id="filterCategory">
+          <option value="">All Categories</option>
+          <option value="polo">Polo</option>
+          <option value="t-shirt">T-Shirt</option>
+          <option value="shorts">Shorts</option>
+          <option value="pants">Pants</option>
+          <option value="others">Others</option>
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label for="filterStatus">Status</label>
+        <select id="filterStatus">
+          <option value="">All</option>
+          <option value="low">Low Stock</option>
+          <option value="out">Out of Stock</option>
+        </select>
+      </div>
+
+    </div>
+
+    <!-- ── Inventory table ── -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Product / Variant</th>
+            <th>SKU</th>
+            <th class="col-num">Online</th>
+            <th class="col-num">Store</th>
+            <th class="col-num">Total</th>
+            <th class="col-status">Status</th>
+          </tr>
+        </thead>
+        <tbody id="inventoryTableBody">
+          <tr><td colspan="6" class="table-state">Loading inventory…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!-- ── Slide-in edit panel ── -->
+  <div class="overlay" id="overlay"></div>
+
+  <div class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle">
+
+    <div class="panel-header">
+      <span class="panel-title" id="panelTitle">Update Stock</span>
+      <button class="panel-close" id="panelCloseBtn" aria-label="Close panel">×</button>
+    </div>
+
+    <div class="panel-body">
+
+      <!-- Read-only summary of which variant is being edited -->
+      <div class="variant-summary" id="variantSummary">
+        <div class="vs-product" id="vsProduct">—</div>
+        <div class="vs-variant" id="vsVariant">—</div>
+        <div class="vs-sku" id="vsSku">—</div>
+      </div>
+
+      <div class="panel-error" id="panelError"></div>
+
+      <form id="stockForm" novalidate>
+
+        <!-- Hidden — the variant ID being edited -->
+        <input type="hidden" id="editVariantId" />
+
+        <div class="field-row">
+          <div class="field">
+            <label for="onlineStock">Online Stock</label>
+            <input type="number" id="onlineStock" min="0" step="1" value="0" />
+          </div>
+          <div class="field">
+            <label for="storeStock">Store Stock</label>
+            <input type="number" id="storeStock" min="0" step="1" value="0" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="lowStockThreshold">Low Stock Threshold</label>
+          <input type="number" id="lowStockThreshold" min="0" step="1" value="5" />
+          <p class="field-hint">When total stock drops to this number or below, this row will be flagged as Low Stock.</p>
+        </div>
+
+        <div class="field">
+          <label>Last Updated</label>
+          <div class="last-updated">
+            <span id="lastUpdatedDisplay">Never</span>
+          </div>
+        </div>
+
+      </form>
+
+    </div>
+
+    <div class="panel-footer">
+      <button type="button" class="btn-cancel" id="panelCancelBtn">Cancel</button>
+      <button type="button" class="btn-save" id="saveBtn">Save Changes</button>
+    </div>
+
+  </div>
+
+  <!-- ── Toast notification ── -->
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+
+    // ── Auth guard ──
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) window.location.href = '/admin/index.html';
+
+    // ── Log out ──
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.href = '/admin/index.html';
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // CONSTANTS & ELEMENT REFERENCES
+    // ─────────────────────────────────────────────────────────────────────
+
+    const DEFAULT_THRESHOLD = 5;
+
+    // Used for sorting sizes — alphabetical sort would put 'L' before 'M'
+    const SIZE_ORDER = { XS: 1, S: 2, M: 3, L: 4, XL: 5, XXL: 6, XXXL: 7 };
+
+    // Filter + summary
+    const searchInput     = document.getElementById('filterSearch');
+    const categorySelect  = document.getElementById('filterCategory');
+    const statusSelect    = document.getElementById('filterStatus');
+    const statTotalEl     = document.getElementById('statTotal');
+    const statLowEl       = document.getElementById('statLow');
+    const statOutEl       = document.getElementById('statOut');
+
+    // Table
+    const tableBody = document.getElementById('inventoryTableBody');
+
+    // Panel
+    const overlay         = document.getElementById('overlay');
+    const panel           = document.getElementById('panel');
+    const panelError      = document.getElementById('panelError');
+    const vsProduct       = document.getElementById('vsProduct');
+    const vsVariant       = document.getElementById('vsVariant');
+    const vsSku           = document.getElementById('vsSku');
+    const editVariantId   = document.getElementById('editVariantId');
+    const onlineStockIn   = document.getElementById('onlineStock');
+    const storeStockIn    = document.getElementById('storeStock');
+    const thresholdIn     = document.getElementById('lowStockThreshold');
+    const lastUpdatedEl   = document.getElementById('lastUpdatedDisplay');
+    const saveBtn         = document.getElementById('saveBtn');
+    const toast           = document.getElementById('toast');
+
+    // ─────────────────────────────────────────────────────────────────────
+    // STATE
+    // ─────────────────────────────────────────────────────────────────────
+
+    // All variants with their flattened inventory data — the full dataset.
+    // Summary counters are computed from this, not from filteredView.
+    let allVariants = [];
+
+    // After filters are applied. This is what we render in the table.
+    let filteredView = [];
+
+    // ─────────────────────────────────────────────────────────────────────
+    // HELPERS
+    // ─────────────────────────────────────────────────────────────────────
+
+    // Escape strings before inserting into innerHTML (XSS protection)
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Show a short toast notification at the bottom-right
+    let toastTimer;
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add('show');
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // Format a timestamp like "May 11, 2026, 2:30 PM" in Philippine locale
+    function formatTimestamp(iso) {
+      if (!iso) return 'Never';
+      const d = new Date(iso);
+      return d.toLocaleString('en-PH', {
+        year:  'numeric',
+        month: 'short',
+        day:   'numeric',
+        hour:  'numeric',
+        minute:'2-digit',
+      });
+    }
+
+    // Compute stock status from a variant's totals.
+    //   - 'out' when total stock is exactly 0
+    //   - 'low' when total stock > 0 and at or below the threshold
+    //   - 'in'  otherwise
+    function computeStatus(total, threshold) {
+      if (total === 0) return 'out';
+      if (total <= threshold) return 'low';
+      return 'in';
+    }
+
+    // Pretty category label for the table
+    const CATEGORY_LABELS = {
+      polo:       'Polo',
+      't-shirt':  'T-Shirt',
+      shorts:     'Shorts',
+      pants:      'Pants',
+      others:     'Others',
+    };
+
+    // ─────────────────────────────────────────────────────────────────────
+    // DATA LOADING
+    // ─────────────────────────────────────────────────────────────────────
+
+    // Fetch all variants with their product + inventory rows, then flatten
+    // the per-channel inventory into a single object per variant so the
+    // table can show "online stock | store stock | total" side by side.
+    async function loadInventory() {
+      tableBody.innerHTML = '<tr><td colspan="6" class="table-state">Loading inventory…</td></tr>';
+
+      const { data, error } = await supabase
+        .from('variants')
+        .select(`
+          id, color, size, sku,
+          products!inner ( id, name, category, is_active ),
+          inventory ( channel, quantity, low_stock_threshold, updated_at )
+        `);
+
+      if (error) {
+        console.error(error);
+        tableBody.innerHTML = '<tr><td colspan="6" class="table-state">Failed to load inventory. Please refresh.</td></tr>';
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        allVariants = [];
+        filteredView = [];
+        updateSummary();
+        tableBody.innerHTML = '<tr><td colspan="6" class="table-state">No variants yet. Add products and variants first on the Products page.</td></tr>';
+        return;
+      }
+
+      // Flatten: each variant becomes one row with channel quantities side-by-side
+      allVariants = data.map(v => {
+        const inv = v.inventory || [];
+
+        const onlineRow = inv.find(i => i.channel === 'online');
+        const storeRow  = inv.find(i => i.channel === 'greenhills_store');
+
+        const onlineQty = onlineRow?.quantity ?? 0;
+        const storeQty  = storeRow?.quantity  ?? 0;
+        const total     = onlineQty + storeQty;
+
+        // The two channels MIGHT have different thresholds in theory.
+        // For UI simplicity we display the online one (or store as fallback,
+        // or the schema default of 5). When saving we set both to the same value.
+        const threshold = onlineRow?.low_stock_threshold
+                       ?? storeRow?.low_stock_threshold
+                       ?? DEFAULT_THRESHOLD;
+
+        // Use the most recent of the two updated_at timestamps
+        const updatedAt = [onlineRow?.updated_at, storeRow?.updated_at]
+          .filter(Boolean)
+          .sort()
+          .pop() ?? null;
+
+        return {
+          variantId:    v.id,
+          productId:    v.products.id,
+          productName:  v.products.name,
+          category:     v.products.category,
+          isActive:     v.products.is_active,
+          color:        v.color,
+          size:         v.size,
+          sku:          v.sku,
+          online:       onlineQty,
+          store:        storeQty,
+          total,
+          threshold,
+          status:       computeStatus(total, threshold),
+          updatedAt,
+        };
+      });
+
+      // Sort by product name, then color, then size (apparel order, not alphabetical)
+      allVariants.sort((a, b) => {
+        if (a.productName !== b.productName) return a.productName.localeCompare(b.productName);
+        if (a.color       !== b.color)       return a.color.localeCompare(b.color);
+        return (SIZE_ORDER[a.size] ?? 99) - (SIZE_ORDER[b.size] ?? 99);
+      });
+
+      applyFiltersAndRender();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // FILTERING + RENDERING
+    // ─────────────────────────────────────────────────────────────────────
+
+    function applyFiltersAndRender() {
+      const q        = searchInput.value.trim().toLowerCase();
+      const cat      = categorySelect.value;
+      const status   = statusSelect.value;
+
+      filteredView = allVariants.filter(v => {
+        // Search matches product name OR SKU (case-insensitive)
+        if (q) {
+          const haystack = (v.productName + ' ' + v.sku).toLowerCase();
+          if (!haystack.includes(q)) return false;
+        }
+        if (cat    && v.category !== cat)    return false;
+        if (status && v.status   !== status) return false;
+        return true;
+      });
+
+      updateSummary();
+      renderTable();
+    }
+
+    // Summary counters reflect ALL variants, not the filtered view —
+    // they should always show the true picture of the inventory.
+    function updateSummary() {
+      const total = allVariants.length;
+      const low   = allVariants.filter(v => v.status === 'low').length;
+      const out   = allVariants.filter(v => v.status === 'out').length;
+
+      statTotalEl.textContent = total;
+      statLowEl.textContent   = low;
+      statOutEl.textContent   = out;
+    }
+
+    function renderTable() {
+      if (filteredView.length === 0) {
+        const hasFilters = searchInput.value || categorySelect.value || statusSelect.value;
+        tableBody.innerHTML = hasFilters
+          ? `<tr><td colspan="6" class="table-state">
+               No items match your filters.
+               <br><button type="button" id="clearFiltersBtn">Clear filters</button>
+             </td></tr>`
+          : '<tr><td colspan="6" class="table-state">No inventory items yet.</td></tr>';
+
+        const clearBtn = document.getElementById('clearFiltersBtn');
+        if (clearBtn) clearBtn.addEventListener('click', clearFilters);
+        return;
+      }
+
+      tableBody.innerHTML = '';
+
+      for (const v of filteredView) {
+        const tr = document.createElement('tr');
+        tr.dataset.variantId = v.variantId;
+
+        // Add a tinted row background for low/out of stock
+        if (v.status === 'low') tr.classList.add('row-low');
+        if (v.status === 'out') tr.classList.add('row-out');
+
+        const statusLabel = {
+          in:  'In Stock',
+          low: 'Low Stock',
+          out: 'Out of Stock',
+        }[v.status];
+
+        tr.innerHTML = `
+          <td>
+            <div class="cell-product">${escapeHtml(v.productName)}</div>
+            <div class="cell-variant">${escapeHtml(v.color)} · ${escapeHtml(v.size)}</div>
+            <span class="cell-category">${escapeHtml(CATEGORY_LABELS[v.category] ?? v.category)}</span>
+          </td>
+          <td class="cell-sku">${escapeHtml(v.sku)}</td>
+          <td class="col-num cell-num">${v.online}</td>
+          <td class="col-num cell-num">${v.store}</td>
+          <td class="col-num cell-num total">${v.total}</td>
+          <td class="col-status">
+            <span class="status-badge status-${v.status}">${statusLabel}</span>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      }
+    }
+
+    function clearFilters() {
+      searchInput.value = '';
+      categorySelect.value = '';
+      statusSelect.value = '';
+      applyFiltersAndRender();
+    }
+
+    // ── Filter input wiring ──
+    // Live filtering as the user types / changes selections
+    searchInput.addEventListener('input',   applyFiltersAndRender);
+    categorySelect.addEventListener('change', applyFiltersAndRender);
+    statusSelect.addEventListener('change',   applyFiltersAndRender);
+
+    // ─────────────────────────────────────────────────────────────────────
+    // EDIT PANEL
+    // ─────────────────────────────────────────────────────────────────────
+
+    function openPanel() {
+      panel.classList.add('open');
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePanel() {
+      panel.classList.remove('open');
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+      clearPanelError();
+    }
+
+    function clearPanelError() {
+      panelError.textContent = '';
+      panelError.classList.remove('visible');
+    }
+
+    function showPanelError(msg) {
+      panelError.textContent = msg;
+      panelError.classList.add('visible');
+    }
+
+    // Open the panel pre-filled with this variant's current stock data
+    function openEditPanel(variantId) {
+      const v = allVariants.find(x => x.variantId === variantId);
+      if (!v) return;
+
+      editVariantId.value     = v.variantId;
+      vsProduct.textContent   = v.productName;
+      vsVariant.textContent   = `${v.color} · ${v.size}`;
+      vsSku.textContent       = v.sku;
+      onlineStockIn.value     = v.online;
+      storeStockIn.value      = v.store;
+      thresholdIn.value       = v.threshold;
+      lastUpdatedEl.innerHTML = `<strong>${escapeHtml(formatTimestamp(v.updatedAt))}</strong>`;
+
+      clearPanelError();
+      openPanel();
+    }
+
+    // Whole row click → open the edit panel for that variant
+    tableBody.addEventListener('click', (e) => {
+      const tr = e.target.closest('tr');
+      if (!tr || !tr.dataset.variantId) return;
+      openEditPanel(tr.dataset.variantId);
+    });
+
+    // Panel close handlers
+    overlay.addEventListener('click', closePanel);
+    document.getElementById('panelCloseBtn').addEventListener('click', closePanel);
+    document.getElementById('panelCancelBtn').addEventListener('click', closePanel);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && panel.classList.contains('open')) closePanel();
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // SAVE
+    // ─────────────────────────────────────────────────────────────────────
+
+    saveBtn.addEventListener('click', handleSave);
+
+    async function handleSave() {
+      clearPanelError();
+
+      const variantId   = editVariantId.value;
+      const onlineQty   = parseInt(onlineStockIn.value, 10);
+      const storeQty    = parseInt(storeStockIn.value,  10);
+      const threshold   = parseInt(thresholdIn.value,   10);
+
+      // Client-side validation — same constraints as the DB check constraints
+      if (!Number.isInteger(onlineQty) || onlineQty < 0) {
+        showPanelError('Online stock must be 0 or a positive whole number.');
+        onlineStockIn.focus();
+        return;
+      }
+      if (!Number.isInteger(storeQty) || storeQty < 0) {
+        showPanelError('Store stock must be 0 or a positive whole number.');
+        storeStockIn.focus();
+        return;
+      }
+      if (!Number.isInteger(threshold) || threshold < 0) {
+        showPanelError('Threshold must be 0 or a positive whole number.');
+        thresholdIn.focus();
+        return;
+      }
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving…';
+
+      // Upsert both inventory rows in one call. The (variant_id, channel)
+      // unique constraint means existing rows are updated; missing rows
+      // (defensive — variants page always creates both) are inserted.
+      const { error } = await supabase
+        .from('inventory')
+        .upsert(
+          [
+            { variant_id: variantId, channel: 'online',           quantity: onlineQty, low_stock_threshold: threshold },
+            { variant_id: variantId, channel: 'greenhills_store', quantity: storeQty,  low_stock_threshold: threshold },
+          ],
+          { onConflict: 'variant_id,channel' }
+        );
+
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Changes';
+
+      if (error) {
+        console.error(error);
+        showPanelError('Could not save changes. Please try again.');
+        return;
+      }
+
+      closePanel();
+      showToast('Stock updated.');
+      await loadInventory(); // refresh from DB so timestamps + statuses are current
+    }
+
+
+    // ── Initial load ──
+    await loadInventory();
+
+    // Deep-link support: /admin/inventory.html?variant=<id>
+    // Auto-opens the edit panel for that variant. Used by the dashboard's
+    // Low Stock Alerts list so clicking lands directly on the right row.
+    const variantParam = new URLSearchParams(window.location.search).get('variant');
+    if (variantParam) openEditPanel(variantParam);
+  </script>
+
+</body>
+</html>

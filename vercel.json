@@ -1,5 +1,29 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+
   "outputDirectory": "public",
+
   "buildCommand": "",
-  "installCommand": ""
+  "installCommand": "",
+
+  "functions": {
+    "api/*.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
+
+  "_comment_env": [
+    "Runtime environment variables are NOT defined here — set them in the",
+    "Vercel dashboard at Settings → Environment Variables.",
+    "",
+    "Required variables (see README.md for where to get each):",
+    "  SUPABASE_URL",
+    "  SUPABASE_ANON_KEY",
+    "  SUPABASE_SERVICE_ROLE_KEY",
+    "  PAYMONGO_SECRET_KEY",
+    "  PAYMONGO_PUBLIC_KEY",
+    "  PAYMONGO_WEBHOOK_SECRET",
+    "  SITE_URL"
+  ]
 }

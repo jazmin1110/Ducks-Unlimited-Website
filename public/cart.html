@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cart — Ducks Unlimited</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    /* ============================================================
+       Cart page styles
+       ============================================================ */
+
+    .cart-page { padding-block: 1.5rem 3rem; }
+
+    /* ── Page header ───────────────────────────────────────────── */
+
+    .cart-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .cart-header h1 {
+      margin-bottom: 0.25rem;
+    }
+
+    .cart-header__sub {
+      color: var(--color-text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* ── Empty state ───────────────────────────────────────────── */
+
+    .empty-cart {
+      text-align: center;
+      padding: 3rem 1rem 4rem;
+      max-width: 460px;
+      margin: 0 auto;
+    }
+
+    .empty-cart__icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1.25rem;
+      color: var(--color-primary);
+      opacity: 0.5;
+    }
+
+    .empty-cart h2 {
+      font-size: 1.6rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-cart p {
+      color: var(--color-text-muted);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Two-column layout (mobile: stacked) ───────────────────── */
+
+    .cart-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    /* ── Cart items list ───────────────────────────────────────── */
+
+    .cart-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .cart-item {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--color-white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      transition: border-color 0.15s, background-color 0.15s;
+      border: 1.5px solid transparent;
+    }
+
+    /* Out of stock — red tint + border for visibility */
+    .cart-item.is-unavailable {
+      background: #fdf6f6;
+      border-color: rgba(179, 58, 58, 0.3);
+    }
+
+    /* ── Cart item image ─────────────────────────────────────── */
+
+    .cart-item__image {
+      flex-shrink: 0;
+      width: 80px;
+      height: 100px;
+      background: var(--color-bg-warm);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .cart-item__image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .cart-item__placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-heading);
+      font-size: 0.55rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-primary);
+      text-align: center;
+      padding: 0.5rem;
+      background: linear-gradient(135deg, #f5f0e8, #fff);
+    }
+
+    /* ── Cart item body ──────────────────────────────────────── */
+
+    .cart-item__body {
+      flex: 1;
+      min-width: 0; /* let long names truncate inside flex */
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .cart-item__name {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0;
+      padding-right: 1.75rem; /* keep clear of the X button */
+      line-height: 1.25;
+    }
+
+    .cart-item__variant {
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+    }
+
+    .cart-item__sku {
+      font-family: 'SF Mono', Monaco, Menlo, monospace;
+      font-size: 0.72rem;
+      color: var(--color-text-light);
+      margin-top: 0.15rem;
+    }
+
+    .cart-item__unit-price {
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+      margin-top: 0.4rem;
+    }
+
+    .cart-item__bottom {
+      margin-top: auto;
+      padding-top: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+    }
+
+    .cart-item__line-total {
+      font-family: var(--font-heading);
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
+    .cart-item.is-unavailable .cart-item__line-total {
+      color: var(--color-text-light);
+      text-decoration: line-through;
+    }
+
+    /* ── Unavailable message (replaces qty adjuster when OOS) ── */
+
+    .cart-item__unavailable {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--color-error);
+      font-weight: 500;
+    }
+
+    .cart-item__unavailable::before {
+      content: '⚠';
+      font-size: 1rem;
+    }
+
+    /* ── Quantity adjuster ────────────────────────────────────── */
+
+    .qty-control {
+      display: inline-flex;
+      align-items: center;
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--color-white);
+    }
+
+    .qty-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: var(--color-white);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--color-text);
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+
+    .qty-btn:hover:not(:disabled) {
+      background: var(--color-bg-warm);
+      color: var(--color-primary);
+    }
+
+    .qty-btn:disabled {
+      color: var(--color-text-light);
+      cursor: not-allowed;
+    }
+
+    .qty-display {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 32px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--color-text);
+      background: var(--color-white);
+    }
+
+    /* ── Remove (X) button ───────────────────────────────────── */
+
+    .cart-item__remove {
+      position: absolute;
+      top: 0.85rem;
+      right: 0.85rem;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--color-text-light);
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background-color 0.15s, color 0.15s;
+    }
+
+    .cart-item__remove:hover {
+      background: var(--color-bg-warm);
+      color: var(--color-error);
+    }
+
+    /* ── Order summary card ───────────────────────────────────── */
+
+    .summary-card {
+      background: var(--color-white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      padding: 1.5rem;
+    }
+
+    .summary-card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-block: 0.55rem;
+      font-size: 0.95rem;
+    }
+
+    .summary-row__label { color: var(--color-text-muted); }
+    .summary-row__value { color: var(--color-text); font-weight: 500; }
+
+    .summary-row--shipping .summary-row__value {
+      font-weight: 400;
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+      font-style: italic;
+    }
+
+    .summary-row--total {
+      padding-top: 1rem;
+      margin-top: 0.5rem;
+      border-top: 1px solid var(--color-border-light);
+      font-size: 1.05rem;
+    }
+
+    .summary-row--total .summary-row__label {
+      color: var(--color-text);
+      font-weight: 500;
+    }
+
+    .summary-row--total .summary-row__value {
+      font-family: var(--font-heading);
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
+    /* Notice shown above the checkout button when items are OOS */
+    .summary-notice {
+      background: var(--color-error-bg);
+      border: 1px solid rgba(179, 58, 58, 0.25);
+      color: var(--color-error);
+      border-radius: var(--radius);
+      padding: 0.6rem 0.85rem;
+      font-size: 0.82rem;
+      margin: 1rem 0;
+      line-height: 1.45;
+    }
+
+    .checkout-btn {
+      margin-top: 1.25rem;
+    }
+
+    .continue-link {
+      display: block;
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+    }
+
+    /* ── Skeleton state ───────────────────────────────────────── */
+
+    .cart-item--skeleton .cart-item__image,
+    .skeleton-line {
+      background: linear-gradient(90deg, #f0ebe1 0%, #faf7f2 50%, #f0ebe1 100%);
+      background-size: 200% 100%;
+      animation: skeleton-pulse 1.4s ease-in-out infinite;
+    }
+
+    .skeleton-line {
+      height: 0.85rem;
+      border-radius: 3px;
+      margin-bottom: 0.5rem;
+    }
+    .skeleton-line--name { width: 65%; height: 1rem; }
+    .skeleton-line--sub  { width: 40%; }
+    .skeleton-line--btm  { width: 100%; height: 2rem; margin-top: auto; }
+
+    @keyframes skeleton-pulse {
+      0%, 100% { background-position: 100% 0; }
+      50%      { background-position: 0% 0; }
+    }
+
+    /* ── Undo toast (slide-up notification with action button) ── */
+
+    .undo-toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translate(-50%, 1rem);
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      background: var(--color-text);
+      color: var(--color-white);
+      padding: 0.7rem 1rem 0.7rem 1.25rem;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      z-index: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      max-width: calc(100vw - 2rem);
+    }
+
+    .undo-toast.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, 0);
+    }
+
+    .undo-toast__text {
+      font-size: 0.88rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .undo-toast__btn {
+      background: none;
+      border: 1.5px solid var(--color-accent);
+      color: var(--color-accent);
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.85rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background-color 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .undo-toast__btn:hover { background: var(--color-accent); color: var(--color-text); }
+
+    /* Generic info toast (for "only X in stock" warnings) */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--color-primary);
+      color: var(--color-white);
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      box-shadow: var(--shadow-lg);
+      z-index: 499;
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── Desktop layout (≥ 900px) ─────────────────────────────── */
+
+    @media (min-width: 900px) {
+      .cart-layout {
+        grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+        gap: 2rem;
+        align-items: start;
+      }
+
+      /* Summary stays in view while scrolling the long items list */
+      .summary-card {
+        position: sticky;
+        top: 80px; /* below the sticky nav */
+      }
+
+      .cart-item__image { width: 100px; height: 120px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Nav (mounted by /js/components.js) ── -->
+  <div data-component="nav"></div>
+
+  <main class="container cart-page">
+
+    <header class="cart-header">
+      <h1>Your Cart</h1>
+      <p class="cart-header__sub" id="cartCountSub">Loading…</p>
+    </header>
+
+    <!-- Cart content is rendered here based on state (empty / loaded / etc) -->
+    <div id="cartRoot"></div>
+
+  </main>
+
+  <!-- ── Footer ── -->
+  <div data-component="footer"></div>
+
+  <!-- ── Undo notification (for removed items) ── -->
+  <div class="undo-toast" id="undoToast" role="status" aria-live="polite">
+    <span class="undo-toast__text" id="undoToastText">Item removed</span>
+    <button type="button" class="undo-toast__btn" id="undoToastBtn">Undo</button>
+  </div>
+
+  <!-- ── Generic toast (for stock warnings) ── -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+
+  <!-- Scripts -->
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+    import {
+      getCart, addToCart, removeFromCart, updateQuantity,
+    } from '/js/cart.js';
+
+    // ─────────────────────────────────────────────────────────────────
+    // STATE
+    // ─────────────────────────────────────────────────────────────────
+
+    const state = {
+      // Cart items from localStorage (live)
+      cart: [],
+
+      // Fresh data fetched from Supabase, keyed by variantId.
+      // Holds the authoritative stock + price for each variant in the cart.
+      stockMap: {},
+
+      // Last-removed item for the undo flow ({ item, timer } or null)
+      lastRemoval: null,
+    };
+
+    // ─────────────────────────────────────────────────────────────────
+    // HELPERS
+    // ─────────────────────────────────────────────────────────────────
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function formatPrice(amount) {
+      return '₱' + Number(amount).toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+
+    function pickPrimaryImage(images) {
+      if (!images || images.length === 0) return null;
+      const primary = images.find(i => i.is_primary);
+      if (primary) return primary.image_url;
+      const sorted = [...images].sort((a, b) => a.display_order - b.display_order);
+      return sorted[0].image_url;
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // FETCH FRESH DATA FROM SUPABASE
+    // For each variant in the cart, get current stock, price, name, image.
+    // ─────────────────────────────────────────────────────────────────
+
+    async function fetchStockMap(variantIds) {
+      if (variantIds.length === 0) return {};
+
+      const { data, error } = await supabase
+        .from('variants')
+        .select(`
+          id, color, size, sku, price_override,
+          products (
+            id, name, base_price, is_active,
+            product_images ( image_url, is_primary, display_order )
+          ),
+          inventory ( channel, quantity )
+        `)
+        .in('id', variantIds);
+
+      if (error) {
+        console.error('Cart: failed to fetch variant data', error);
+        return {};
+      }
+
+      const map = {};
+      for (const v of (data ?? [])) {
+        const onlineRow = (v.inventory ?? []).find(i => i.channel === 'online');
+        const product   = v.products;
+
+        map[v.id] = {
+          stock:         onlineRow?.quantity ?? 0,
+          productName:   product?.name ?? '',
+          productActive: product?.is_active ?? false,
+          color:         v.color,
+          size:          v.size,
+          sku:           v.sku,
+          price:         Number(v.price_override ?? product?.base_price ?? 0),
+          imageUrl:      pickPrimaryImage(product?.product_images),
+        };
+      }
+      return map;
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // ITEM STATUS — figure out availability per line
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Returns one of:
+     *   { available: true,  effectiveQty, max, info }   — fine to checkout
+     *   { available: 'capped', effectiveQty, max, info } — stock < cart qty
+     *   { available: false, reason: 'gone' | 'inactive' | 'oos', info }
+     */
+    function getItemStatus(item) {
+      const info = state.stockMap[item.variantId];
+
+      // Variant doesn't exist in DB anymore (admin deleted it)
+      if (!info) {
+        return { available: false, reason: 'gone', info: null };
+      }
+      // Product is no longer active
+      if (!info.productActive) {
+        return { available: false, reason: 'inactive', info };
+      }
+      // Zero stock online
+      if (info.stock <= 0) {
+        return { available: false, reason: 'oos', info };
+      }
+      // Stock is positive but less than requested qty
+      if (info.stock < item.quantity) {
+        return { available: 'capped', effectiveQty: info.stock, max: info.stock, info };
+      }
+      // All good
+      return { available: true, effectiveQty: item.quantity, max: info.stock, info };
+    }
+
+    // Sum of line totals using effective quantity + current price
+    function computeSubtotal() {
+      let total = 0;
+      for (const item of state.cart) {
+        const s = getItemStatus(item);
+        if (!s.available) continue; // unavailable lines don't count toward total
+        const price = s.info?.price ?? item.price;
+        total += price * s.effectiveQty;
+      }
+      return total;
+    }
+
+    function anyItemUnavailable() {
+      return state.cart.some(i => getItemStatus(i).available === false);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // RENDERING
+    // ─────────────────────────────────────────────────────────────────
+
+    const cartRoot     = document.getElementById('cartRoot');
+    const cartCountSub = document.getElementById('cartCountSub');
+
+    function totalItemCount() {
+      return state.cart.reduce((sum, i) => sum + i.quantity, 0);
+    }
+
+    function updateHeader() {
+      const n = totalItemCount();
+      cartCountSub.textContent = n === 0
+        ? 'Your cart is empty.'
+        : `${n} item${n === 1 ? '' : 's'}`;
+    }
+
+    // ── Empty state ──────────────────────────────────────────────
+
+    function renderEmpty() {
+      cartRoot.innerHTML = `
+        <div class="empty-cart">
+          <svg class="empty-cart__icon" viewBox="0 0 64 64" fill="none"
+               stroke="currentColor" stroke-width="1.5"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 16h6l8 28h22l6-20H22"/>
+            <circle cx="30" cy="52" r="3"/>
+            <circle cx="48" cy="52" r="3"/>
+          </svg>
+          <h2>Your cart is empty</h2>
+          <p>Looks like you haven't added anything yet. Browse our latest pieces — every one is hand-finished in our Greenhills workshop.</p>
+          <a href="/shop.html" class="btn btn-primary btn-lg">Continue Shopping</a>
+        </div>
+      `;
+    }
+
+    // ── Skeleton state ───────────────────────────────────────────
+
+    function renderSkeleton() {
+      const items = state.cart.map(() => `
+        <div class="cart-item cart-item--skeleton">
+          <div class="cart-item__image"></div>
+          <div class="cart-item__body">
+            <div class="skeleton-line skeleton-line--name"></div>
+            <div class="skeleton-line skeleton-line--sub"></div>
+            <div class="skeleton-line skeleton-line--btm"></div>
+          </div>
+        </div>
+      `).join('');
+
+      cartRoot.innerHTML = `
+        <div class="cart-layout">
+          <div class="cart-items">${items}</div>
+          <aside class="summary-card">
+            <h2>Order Summary</h2>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+          </aside>
+        </div>
+      `;
+    }
+
+    // ── A single cart item row ──────────────────────────────────
+
+    function renderCartItem(item) {
+      const status = getItemStatus(item);
+      const info   = status.info;
+
+      // Display values (use fresh data when available, fall back to cached)
+      const name         = info?.productName ?? item.productName ?? 'Product';
+      const variantLabel = info ? `${info.color} · ${info.size}` : item.variantLabel;
+      const sku          = info?.sku ?? item.sku;
+      const imageUrl     = info?.imageUrl ?? item.imageUrl;
+      const unitPrice    = info?.price ?? item.price;
+
+      // Compute display state
+      const isUnavailable = status.available === false;
+      const lineTotal     = isUnavailable ? 0 : unitPrice * status.effectiveQty;
+
+      // Pick the right "unavailable" message
+      let unavailableMsg = '';
+      if (status.available === false) {
+        unavailableMsg = (status.reason === 'oos')
+          ? 'This item is no longer available.'
+          : (status.reason === 'gone')
+            ? 'This product has been removed.'
+            : 'This item is no longer available.';
+      }
+
+      // Image markup
+      const imageMarkup = imageUrl
+        ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" loading="lazy" />`
+        : `<div class="cart-item__placeholder">Ducks Unlimited</div>`;
+
+      // Bottom row (qty adjuster + total, OR unavailable message + struck total)
+      const bottomMarkup = isUnavailable
+        ? `
+          <div class="cart-item__bottom">
+            <span class="cart-item__unavailable">${escapeHtml(unavailableMsg)}</span>
+            <span class="cart-item__line-total">${formatPrice(item.quantity * unitPrice)}</span>
+          </div>
+        `
+        : `
+          <div class="cart-item__bottom">
+            <div class="qty-control" role="group" aria-label="Quantity">
+              <button type="button" class="qty-btn" data-action="dec"
+                      ${status.effectiveQty <= 1 ? 'disabled' : ''}
+                      aria-label="Decrease quantity">−</button>
+              <span class="qty-display">${status.effectiveQty}</span>
+              <button type="button" class="qty-btn" data-action="inc"
+                      ${status.effectiveQty >= status.max ? 'disabled' : ''}
+                      aria-label="Increase quantity">+</button>
+            </div>
+            <span class="cart-item__line-total">${formatPrice(lineTotal)}</span>
+          </div>
+        `;
+
+      // Show "capped" hint when we trimmed quantity because stock dropped
+      const cappedHint = status.available === 'capped'
+        ? `<div class="cart-item__sku" style="color: var(--color-warning); font-weight: 500;">
+             Only ${status.max} left — quantity adjusted.
+           </div>`
+        : '';
+
+      return `
+        <article class="cart-item ${isUnavailable ? 'is-unavailable' : ''}"
+                 data-variant-id="${escapeHtml(item.variantId)}">
+
+          <div class="cart-item__image">${imageMarkup}</div>
+
+          <div class="cart-item__body">
+            <h3 class="cart-item__name">${escapeHtml(name)}</h3>
+            <div class="cart-item__variant">${escapeHtml(variantLabel ?? '')}</div>
+            ${sku ? `<div class="cart-item__sku">SKU: ${escapeHtml(sku)}</div>` : ''}
+            <div class="cart-item__unit-price">${formatPrice(unitPrice)} each</div>
+            ${cappedHint}
+            ${bottomMarkup}
+          </div>
+
+          <button type="button" class="cart-item__remove"
+                  data-action="remove" aria-label="Remove from cart">×</button>
+        </article>
+      `;
+    }
+
+    // ── Full layout when cart has items ─────────────────────────
+
+    function renderCart() {
+      const itemsHtml = state.cart.map(renderCartItem).join('');
+
+      const subtotal       = computeSubtotal();
+      const hasUnavailable = anyItemUnavailable();
+      const hasAvailable   = state.cart.some(i => getItemStatus(i).available !== false);
+
+      cartRoot.innerHTML = `
+        <div class="cart-layout">
+
+          <div class="cart-items">${itemsHtml}</div>
+
+          <aside class="summary-card">
+            <h2>Order Summary</h2>
+
+            <div class="summary-row">
+              <span class="summary-row__label">Subtotal</span>
+              <span class="summary-row__value">${formatPrice(subtotal)}</span>
+            </div>
+
+            <div class="summary-row summary-row--shipping">
+              <span class="summary-row__label">Shipping</span>
+              <span class="summary-row__value">Calculated at checkout</span>
+            </div>
+
+            <div class="summary-row summary-row--total">
+              <span class="summary-row__label">Total</span>
+              <span class="summary-row__value">${formatPrice(subtotal)}</span>
+            </div>
+
+            ${hasUnavailable ? `
+              <div class="summary-notice">
+                Some items are no longer available. Please remove them to continue to checkout.
+              </div>
+            ` : ''}
+
+            <a href="${hasUnavailable || !hasAvailable ? '#' : '/checkout.html'}"
+               class="btn btn-primary btn-lg btn-block checkout-btn"
+               ${hasUnavailable || !hasAvailable ? 'aria-disabled="true"' : ''}
+               id="checkoutBtn">
+              ${hasAvailable ? 'Proceed to Checkout' : 'Cart Empty'}
+            </a>
+
+            <a class="continue-link" href="/shop.html">Continue Shopping →</a>
+          </aside>
+
+        </div>
+      `;
+
+      wireItemEvents();
+    }
+
+    // Top-level render — chooses empty vs. items layout
+    function render() {
+      updateHeader();
+      if (state.cart.length === 0) {
+        renderEmpty();
+      } else {
+        renderCart();
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // EVENT WIRING
+    // ─────────────────────────────────────────────────────────────────
+
+    function wireItemEvents() {
+      // Single listener on the items list handles all qty + remove clicks
+      const itemsList = document.querySelector('.cart-items');
+      if (!itemsList) return;
+
+      itemsList.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+
+        const article    = btn.closest('[data-variant-id]');
+        const variantId  = article?.dataset.variantId;
+        if (!variantId) return;
+
+        switch (btn.dataset.action) {
+          case 'inc':    handleQtyChange(variantId, +1); break;
+          case 'dec':    handleQtyChange(variantId, -1); break;
+          case 'remove': handleRemove(variantId);        break;
+        }
+      });
+
+      // Prevent the "checkout" link from navigating when disabled
+      const checkoutBtn = document.getElementById('checkoutBtn');
+      if (checkoutBtn?.getAttribute('aria-disabled') === 'true') {
+        checkoutBtn.addEventListener('click', (e) => e.preventDefault());
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // QTY + REMOVAL HANDLERS
+    // ─────────────────────────────────────────────────────────────────
+
+    function handleQtyChange(variantId, delta) {
+      const item = state.cart.find(i => i.variantId === variantId);
+      if (!item) return;
+
+      const info = state.stockMap[variantId];
+      const max  = info?.stock ?? 1;
+
+      const newQty = item.quantity + delta;
+      if (newQty < 1) return;
+
+      // Block at stock ceiling
+      if (newQty > max) {
+        showToast(`Only ${max} in stock for this item.`);
+        return;
+      }
+
+      updateQuantity(variantId, newQty);
+      state.cart = getCart();
+      render();
+    }
+
+    function handleRemove(variantId) {
+      const item = state.cart.find(i => i.variantId === variantId);
+      if (!item) return;
+
+      // Remove immediately so the cart count badge updates right away.
+      // Keep the item data around so "Undo" can restore it.
+      removeFromCart(variantId);
+      state.cart = getCart();
+      showUndoToast(item);
+      render();
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // UNDO TOAST
+    // Pops up after a removal with a 5-second window to undo.
+    // ─────────────────────────────────────────────────────────────────
+
+    const undoToast   = document.getElementById('undoToast');
+    const undoText    = document.getElementById('undoToastText');
+    const undoBtn     = document.getElementById('undoToastBtn');
+
+    function showUndoToast(item) {
+      // If an earlier undo is still pending, commit it (it's been replaced)
+      if (state.lastRemoval) clearTimeout(state.lastRemoval.timer);
+
+      // Truncate long product names so the toast stays a sensible width
+      const displayName = (item.productName || 'Item').length > 32
+        ? item.productName.slice(0, 30) + '…'
+        : item.productName || 'Item';
+
+      undoText.textContent = `Removed "${displayName}"`;
+      undoToast.classList.add('show');
+
+      state.lastRemoval = {
+        item,
+        timer: setTimeout(() => {
+          undoToast.classList.remove('show');
+          state.lastRemoval = null;
+        }, 5000),
+      };
+    }
+
+    undoBtn.addEventListener('click', () => {
+      if (!state.lastRemoval) return;
+      const { item, timer } = state.lastRemoval;
+
+      clearTimeout(timer);
+
+      // Restore via addToCart — this also fires cart:change so the nav updates
+      addToCart(item.variantId, item.quantity, {
+        productName:  item.productName,
+        variantLabel: item.variantLabel,
+        sku:          item.sku,
+        price:        item.price,
+        imageUrl:     item.imageUrl,
+      });
+
+      state.cart = getCart();
+      state.lastRemoval = null;
+      undoToast.classList.remove('show');
+      render();
+    });
+
+    // ─────────────────────────────────────────────────────────────────
+    // GENERIC TOAST (for "only N in stock" warnings)
+    // ─────────────────────────────────────────────────────────────────
+
+    const toastEl = document.getElementById('toast');
+    let toastTimer;
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      toastEl.textContent = message;
+      toastEl.classList.add('show');
+      toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2500);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // CROSS-TAB SYNC
+    // If the cart changes in another tab (or via cart.js), re-render.
+    // ─────────────────────────────────────────────────────────────────
+
+    window.addEventListener('cart:change', () => {
+      // Only re-read if the cart actually changed externally (not from our own writes)
+      const fresh = getCart();
+      if (JSON.stringify(fresh) === JSON.stringify(state.cart)) return;
+      state.cart = fresh;
+      // Don't re-fetch stock here — too aggressive — just re-render with what we have
+      render();
+    });
+
+    // ─────────────────────────────────────────────────────────────────
+    // INIT
+    // ─────────────────────────────────────────────────────────────────
+
+    async function init() {
+      state.cart = getCart();
+      updateHeader();
+
+      if (state.cart.length === 0) {
+        renderEmpty();
+        return;
+      }
+
+      renderSkeleton();
+
+      // Pull fresh stock + price + product info for every variant in the cart
+      const ids = state.cart.map(i => i.variantId);
+      state.stockMap = await fetchStockMap(ids);
+
+      render();
+    }
+
+    init();
+  </script>
+
+</body>
+</html>

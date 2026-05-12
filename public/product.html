@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Product — Ducks Unlimited</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    /* ============================================================
+       Product detail page styles
+       Generic pieces (buttons, badges, inputs) live in style.css —
+       only the layout for this page is in here.
+       ============================================================ */
+
+    /* ── Breadcrumb ────────────────────────────────────────────── */
+
+    .breadcrumb {
+      padding: 1rem 0 0.5rem;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+    }
+
+    .breadcrumb a {
+      color: var(--color-text-muted);
+      text-decoration: none;
+    }
+    .breadcrumb a:hover { color: var(--color-primary); }
+    .breadcrumb__sep { margin: 0 0.4rem; color: var(--color-text-light); }
+    .breadcrumb__current { color: var(--color-text); }
+
+    /* ── Two-column product layout ─────────────────────────────── */
+
+    .product {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      padding-block: 1rem 2.5rem;
+    }
+
+    /* ── Image gallery (left column) ───────────────────────────── */
+
+    .gallery__main {
+      aspect-ratio: 1 / 1.2;
+      background: var(--color-bg-warm);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .gallery__main img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Branded placeholder when there are no images */
+    .gallery__placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8rem;
+      color: var(--color-primary);
+      background: linear-gradient(135deg, #f5f0e8, #fff);
+      text-align: center;
+    }
+
+    .gallery__placeholder-mark {
+      font-family: var(--font-heading);
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+    }
+
+    .gallery__placeholder-sub {
+      font-style: italic;
+      font-size: 0.7rem;
+      color: var(--color-accent);
+      letter-spacing: 0.16em;
+    }
+
+    /* Thumbnail strip */
+    .gallery__thumbs {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .gallery__thumbs::-webkit-scrollbar { display: none; }
+
+    .gallery__thumb {
+      flex-shrink: 0;
+      width: 64px;
+      height: 64px;
+      border-radius: var(--radius);
+      border: 2px solid transparent;
+      overflow: hidden;
+      cursor: pointer;
+      padding: 0;
+      background: var(--color-bg-warm);
+      transition: border-color 0.15s, transform 0.1s;
+    }
+
+    .gallery__thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .gallery__thumb:hover { transform: scale(1.04); }
+    .gallery__thumb.is-active { border-color: var(--color-primary); }
+
+    /* ── Product info (right column) ───────────────────────────── */
+
+    .info__name {
+      font-family: var(--font-heading);
+      font-size: 1.9rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      line-height: 1.15;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.02em;
+    }
+
+    .info__category {
+      display: inline-block;
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .info__price {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 1.25rem;
+    }
+
+    .info__short-desc {
+      color: var(--color-text);
+      line-height: 1.7;
+      margin-bottom: 1.5rem;
+      max-width: 56ch;
+    }
+
+    /* Generic section block inside the info column (color, size, qty) */
+    .info-block { margin-bottom: 1.5rem; }
+
+    .info-block__head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 0.65rem;
+    }
+
+    .info-block__label {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+    }
+
+    .info-block__label-value {
+      font-family: var(--font-body);
+      font-weight: 500;
+      color: var(--color-text);
+      text-transform: none;
+      letter-spacing: 0;
+      margin-left: 0.4rem;
+    }
+
+    .size-guide-link {
+      font-size: 0.78rem;
+      color: var(--color-primary);
+      text-decoration: none;
+      border-bottom: 1px solid var(--color-accent);
+      padding-bottom: 1px;
+    }
+
+    .size-guide-link:hover { color: var(--color-accent); text-decoration: none; }
+
+    /* ── Color swatches (labeled circles) ──────────────────────── */
+
+    .swatches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+    }
+
+    .swatch {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      text-align: center;
+      width: 56px;
+    }
+
+    .swatch__dot {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin: 0 auto;
+      border: 1px solid rgba(0,0,0,0.1);
+      box-shadow: inset 0 0 0 2px var(--color-white);
+      transition: transform 0.1s;
+    }
+
+    .swatch:hover .swatch__dot { transform: scale(1.05); }
+
+    /* Selected: gold ring around the swatch */
+    .swatch.is-selected .swatch__dot {
+      box-shadow: inset 0 0 0 2px var(--color-white),
+                  0 0 0 2px var(--color-accent);
+    }
+
+    .swatch__name {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--color-text-muted);
+      margin-top: 0.4rem;
+      line-height: 1.25;
+    }
+
+    .swatch.is-selected .swatch__name {
+      color: var(--color-text);
+      font-weight: 500;
+    }
+
+    /* ── Size buttons ──────────────────────────────────────────── */
+
+    .sizes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .size-btn {
+      min-width: 52px;
+      padding: 0.55rem 0.85rem;
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--color-text);
+      background: var(--color-white);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .size-btn:hover:not(:disabled) {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .size-btn.is-selected {
+      background: var(--color-primary);
+      color: var(--color-white);
+      border-color: var(--color-primary);
+    }
+
+    /* Sizes not carried in the selected color */
+    .size-btn:disabled {
+      color: var(--color-text-light);
+      background: var(--color-bg-warm);
+      border-color: var(--color-border-light);
+      cursor: not-allowed;
+      position: relative;
+    }
+
+    /* Diagonal strike-through line on disabled size buttons */
+    .size-btn:disabled::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 10%;
+      right: 10%;
+      height: 1px;
+      background: var(--color-text-light);
+      transform: rotate(-12deg);
+      opacity: 0.5;
+    }
+
+    /* ── Stock status indicator ────────────────────────────────── */
+
+    .stock-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.88rem;
+      font-weight: 500;
+      margin-bottom: 1.25rem;
+    }
+
+    .stock-status::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .stock-status--in  { color: var(--color-primary); }
+    .stock-status--low { color: var(--color-warning); }
+    .stock-status--out { color: var(--color-error); }
+    .stock-status--hint {
+      color: var(--color-text-light);
+      font-style: italic;
+      font-weight: 400;
+    }
+    .stock-status--hint::before { display: none; }
+
+    /* ── Quantity selector ─────────────────────────────────────── */
+
+    .qty-row {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .qty-control {
+      display: inline-flex;
+      align-items: center;
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--color-white);
+    }
+
+    .qty-btn {
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: var(--color-white);
+      font-family: var(--font-body);
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--color-text);
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+
+    .qty-btn:hover:not(:disabled) {
+      background: var(--color-bg-warm);
+      color: var(--color-primary);
+    }
+
+    .qty-btn:disabled {
+      color: var(--color-text-light);
+      cursor: not-allowed;
+    }
+
+    .qty-input {
+      width: 48px;
+      height: 40px;
+      border: none;
+      background: var(--color-white);
+      text-align: center;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--color-text);
+      /* Hide spinner arrows in number inputs */
+      -moz-appearance: textfield;
+    }
+
+    .qty-input::-webkit-outer-spin-button,
+    .qty-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .qty-input:focus { outline: none; }
+
+    .qty-max-hint {
+      font-size: 0.78rem;
+      color: var(--color-text-light);
+    }
+
+    /* ── Add to Cart button ────────────────────────────────────── */
+
+    .add-to-cart {
+      /* uses .btn .btn-primary .btn-lg .btn-block from style.css */
+      font-size: 1rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* ── Full description section ──────────────────────────────── */
+
+    .description-section {
+      padding-block: 2.5rem;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .description-section h2 {
+      margin-bottom: 1rem;
+    }
+
+    .description-section__body {
+      max-width: 70ch;
+      color: var(--color-text);
+      line-height: 1.7;
+      white-space: pre-line;
+    }
+
+    /* ── Related products ──────────────────────────────────────── */
+
+    .related-section {
+      padding-block: 2.5rem;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .related-section h2 {
+      margin-bottom: 1.25rem;
+      text-align: center;
+    }
+
+    .related-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.85rem;
+    }
+
+    .related-card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--color-white);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .related-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+      text-decoration: none;
+    }
+
+    .related-card__image {
+      aspect-ratio: 1 / 1.2;
+      background: var(--color-bg-warm);
+      overflow: hidden;
+    }
+
+    .related-card__image img,
+    .related-card__image .gallery__placeholder {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .related-card__body { padding: 0.75rem 0.9rem 1rem; }
+
+    .related-card__name {
+      font-family: var(--font-heading);
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0 0 0.2rem;
+      line-height: 1.25;
+    }
+
+    .related-card__price {
+      font-size: 0.85rem;
+      color: var(--color-primary);
+      font-weight: 500;
+    }
+
+    /* ── Skeleton state while data loads ───────────────────────── */
+
+    .skeleton-block {
+      background: linear-gradient(90deg, #f0ebe1 0%, #faf7f2 50%, #f0ebe1 100%);
+      background-size: 200% 100%;
+      animation: skeleton-pulse 1.4s ease-in-out infinite;
+      border-radius: 4px;
+    }
+
+    @keyframes skeleton-pulse {
+      0%, 100% { background-position: 100% 0; }
+      50%      { background-position: 0% 0; }
+    }
+
+    .info-skeleton .skeleton-line { margin-bottom: 0.65rem; }
+    .info-skeleton .sk-name  { height: 2rem;   width: 80%; }
+    .info-skeleton .sk-price { height: 1.4rem; width: 35%; }
+    .info-skeleton .sk-text  { height: 0.9rem; width: 100%; }
+    .info-skeleton .sk-text--short { width: 70%; }
+    .info-skeleton .sk-block { height: 3rem; width: 100%; margin-top: 1.25rem; }
+
+    /* ── Error state ───────────────────────────────────────────── */
+
+    .error-state {
+      text-align: center;
+      padding: 4rem 1.5rem;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .error-state h2 { margin-bottom: 0.75rem; }
+    .error-state p  { color: var(--color-text-muted); margin-bottom: 1.5rem; }
+
+    /* ── Toast notification ────────────────────────────────────── */
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translate(-50%, 1rem);
+      background: var(--color-primary);
+      color: var(--color-white);
+      padding: 0.85rem 1.5rem;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      z-index: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .toast::before {
+      content: '✓';
+      color: var(--color-accent);
+      font-weight: 700;
+    }
+
+    /* ── Desktop layout (≥ 768px) ──────────────────────────────── */
+
+    @media (min-width: 768px) {
+      .product {
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+        gap: 3rem;
+        padding-block: 1.5rem 4rem;
+      }
+
+      .info__name { font-size: 2.4rem; }
+      .info__price { font-size: 1.75rem; }
+
+      .gallery__thumbs { gap: 0.6rem; }
+      .gallery__thumb { width: 80px; height: 80px; }
+
+      .related-grid { grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+
+      .toast {
+        left: auto;
+        right: 1.5rem;
+        bottom: 1.5rem;
+        transform: translate(0, 1rem);
+      }
+
+      .toast.show { transform: translate(0, 0); }
+    }
+
+    @media (min-width: 1024px) {
+      .info__name { font-size: 2.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Nav (mounted by /js/components.js) ── -->
+  <div data-component="nav"></div>
+
+  <main class="container">
+
+    <!-- Breadcrumb — content set by JS once product loads -->
+    <nav class="breadcrumb" id="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="breadcrumb__sep">/</span>
+      <a href="/shop.html">Shop</a>
+    </nav>
+
+    <!-- Main product container — replaced by JS when data is loaded -->
+    <div id="productRoot">
+
+      <!-- Initial skeleton (replaced on load) -->
+      <section class="product">
+
+        <div class="gallery">
+          <div class="gallery__main skeleton-block"></div>
+        </div>
+
+        <div class="info info-skeleton">
+          <div class="skeleton-block skeleton-line sk-name"></div>
+          <div class="skeleton-block skeleton-line sk-price"></div>
+          <div class="skeleton-block skeleton-line sk-text"></div>
+          <div class="skeleton-block skeleton-line sk-text"></div>
+          <div class="skeleton-block skeleton-line sk-text sk-text--short"></div>
+          <div class="skeleton-block skeleton-line sk-block"></div>
+          <div class="skeleton-block skeleton-line sk-block"></div>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- Below the fold: full description + related (filled on load) -->
+    <section class="description-section" id="descriptionSection" hidden>
+      <h2>About this product</h2>
+      <div class="description-section__body" id="descriptionBody"></div>
+    </section>
+
+    <section class="related-section" id="relatedSection" hidden>
+      <h2>You might also like</h2>
+      <div class="related-grid" id="relatedGrid"></div>
+    </section>
+
+  </main>
+
+  <!-- ── Footer (mounted by /js/components.js) ── -->
+  <div data-component="footer"></div>
+
+  <!-- Toast notification (lives outside main, fixed position) -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+
+  <!-- Scripts -->
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+    import { addToCart } from '/js/cart.js';
+
+    // ─────────────────────────────────────────────────────────────────
+    // CONSTANTS + helpers
+    // ─────────────────────────────────────────────────────────────────
+
+    const SIZE_ORDER = { XS: 1, S: 2, M: 3, L: 4, XL: 5, XXL: 6, XXXL: 7 };
+
+    // Hex codes for known color names (lowercased). Matches the shop page.
+    const COLOR_MAP = {
+      'white':         '#ffffff',
+      'cream':         '#f5e9d4',
+      'beige':         '#e8dcc4',
+      'tan':           '#d2b48c',
+      'khaki':         '#c4a575',
+      'gold':          '#C9A84C',
+      'yellow':        '#e8c34a',
+      'orange':        '#cc7a3b',
+      'red':           '#b33a3a',
+      'maroon':        '#6e2929',
+      'pink':          '#d4a8b8',
+      'purple':        '#6a4378',
+      'blue':          '#4a6fa5',
+      'light blue':    '#a8c5db',
+      'navy':          '#1e2a44',
+      'teal':          '#2d7a7e',
+      'green':         '#2d6b3f',
+      'forest green':  '#1B4D2E',
+      'olive':         '#6b7f3a',
+      'brown':         '#5a3e2b',
+      'gray':          '#888888',
+      'grey':          '#888888',
+      'charcoal':      '#36454f',
+      'black':         '#1a1a1a',
+    };
+
+    const CATEGORY_LABELS = {
+      polo: 'Polo Shirts', 't-shirt': 'T-Shirts',
+      shorts: 'Shorts', pants: 'Pants', others: 'Others',
+    };
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function formatPrice(amount) {
+      return '₱' + Number(amount).toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+
+    function colorToHex(name) {
+      return COLOR_MAP[String(name).trim().toLowerCase()] || '#999999';
+    }
+
+    function pickPrimaryImage(images) {
+      if (!images || images.length === 0) return null;
+      const primary = images.find(i => i.is_primary);
+      if (primary) return primary.image_url;
+      const sorted = [...images].sort((a, b) => a.display_order - b.display_order);
+      return sorted[0].image_url;
+    }
+
+    // Sort images by display_order, with the primary image first
+    function sortImages(images) {
+      return [...(images || [])].sort((a, b) => {
+        if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+        return a.display_order - b.display_order;
+      });
+    }
+
+    // Get online inventory row + threshold for a variant
+    function getOnlineInventory(variant) {
+      const inv = (variant.inventory ?? []).find(i => i.channel === 'online');
+      return {
+        quantity:  inv?.quantity  ?? 0,
+        threshold: inv?.low_stock_threshold ?? 5,
+      };
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // STATE
+    // ─────────────────────────────────────────────────────────────────
+
+    const state = {
+      product:        null,    // Raw product data
+      images:         [],      // Sorted images
+      variantMap:     {},      // "color|size" → { id, price, sku, stock, threshold }
+      allColors:      [],      // Distinct colors in order
+      allSizes:       [],      // Distinct sizes in apparel order
+      sizesByColor:   {},      // color → Set of sizes that variant exists for
+
+      // Current selection
+      selectedColor:  null,
+      selectedSize:   null,
+      currentImage:   0,       // Index in state.images
+      quantity:       1,
+    };
+
+    // ─────────────────────────────────────────────────────────────────
+    // DATA LOADING
+    // ─────────────────────────────────────────────────────────────────
+
+    async function loadProduct(productId) {
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          id, name, description, category, base_price, is_active,
+          variants (
+            id, color, size, sku, price_override,
+            inventory ( channel, quantity, low_stock_threshold )
+          ),
+          product_images ( image_url, is_primary, display_order )
+        `)
+        .eq('id', productId)
+        .single();
+
+      if (error) {
+        console.error('Failed to load product:', error);
+        return null;
+      }
+      return data;
+    }
+
+    async function loadRelatedProducts(category, excludeId) {
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          id, name, base_price,
+          product_images ( image_url, is_primary, display_order )
+        `)
+        .eq('is_active', true)
+        .eq('category', category)
+        .neq('id', excludeId)
+        .order('created_at', { ascending: false })
+        .limit(4);
+
+      if (error) {
+        console.error('Failed to load related products:', error);
+        return [];
+      }
+      return data ?? [];
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // INDEX VARIANTS
+    // Build lookups so the UI can find variant data quickly.
+    // ─────────────────────────────────────────────────────────────────
+
+    function indexVariants(product) {
+      const variants = product.variants ?? [];
+
+      // variantMap keyed by "color|size" for instant lookup
+      const variantMap = {};
+      const colorSet   = new Set();
+      const sizeSet    = new Set();
+      const sizesByColor = {};
+
+      for (const v of variants) {
+        const key = `${v.color}|${v.size}`;
+        const inv = getOnlineInventory(v);
+
+        variantMap[key] = {
+          id:        v.id,
+          sku:       v.sku,
+          color:     v.color,
+          size:      v.size,
+          price:     Number(v.price_override ?? product.base_price),
+          stock:     inv.quantity,
+          threshold: inv.threshold,
+        };
+
+        colorSet.add(v.color);
+        sizeSet.add(v.size);
+
+        if (!sizesByColor[v.color]) sizesByColor[v.color] = new Set();
+        sizesByColor[v.color].add(v.size);
+      }
+
+      // Sort colors alphabetically, sizes in apparel order
+      const allColors = [...colorSet].sort((a, b) => a.localeCompare(b));
+      const allSizes  = [...sizeSet].sort(
+        (a, b) => (SIZE_ORDER[a] ?? 99) - (SIZE_ORDER[b] ?? 99)
+      );
+
+      return { variantMap, allColors, allSizes, sizesByColor };
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // RENDERING — main product layout
+    // ─────────────────────────────────────────────────────────────────
+
+    function renderProduct() {
+      const p = state.product;
+      const root = document.getElementById('productRoot');
+
+      // Breadcrumb update
+      const breadcrumb = document.getElementById('breadcrumb');
+      breadcrumb.innerHTML = `
+        <a href="/">Home</a>
+        <span class="breadcrumb__sep">/</span>
+        <a href="/shop.html?category=${encodeURIComponent(p.category)}">${escapeHtml(CATEGORY_LABELS[p.category] ?? p.category)}</a>
+        <span class="breadcrumb__sep">/</span>
+        <span class="breadcrumb__current">${escapeHtml(p.name)}</span>
+      `;
+
+      // Document title
+      document.title = `${p.name} — Ducks Unlimited`;
+
+      // ── Main product layout ──
+      root.innerHTML = `
+        <section class="product">
+
+          <!-- Image gallery -->
+          <div class="gallery">
+            <div class="gallery__main" id="galleryMain">
+              ${renderMainImage()}
+            </div>
+            <div class="gallery__thumbs" id="galleryThumbs">
+              ${renderThumbs()}
+            </div>
+          </div>
+
+          <!-- Info column -->
+          <div class="info">
+
+            <span class="info__category">${escapeHtml(CATEGORY_LABELS[p.category] ?? p.category)}</span>
+            <h1 class="info__name">${escapeHtml(p.name)}</h1>
+            <p class="info__price" id="priceDisplay">${formatPrice(p.base_price)}</p>
+
+            ${p.description
+              ? `<p class="info__short-desc">${escapeHtml(firstSentences(p.description, 2))}</p>`
+              : ''}
+
+            <!-- Color selector -->
+            <div class="info-block">
+              <div class="info-block__head">
+                <span class="info-block__label">
+                  Color
+                  <span class="info-block__label-value" id="colorValue"></span>
+                </span>
+              </div>
+              <div class="swatches" id="swatches"></div>
+            </div>
+
+            <!-- Size selector -->
+            <div class="info-block">
+              <div class="info-block__head">
+                <span class="info-block__label">
+                  Size
+                  <span class="info-block__label-value" id="sizeValue"></span>
+                </span>
+                <a href="/size-guide.html" class="size-guide-link">View Size Guide</a>
+              </div>
+              <div class="sizes" id="sizes"></div>
+            </div>
+
+            <!-- Stock status -->
+            <div id="stockStatus"></div>
+
+            <!-- Quantity selector -->
+            <div class="info-block">
+              <div class="info-block__head">
+                <span class="info-block__label">Quantity</span>
+              </div>
+              <div class="qty-row">
+                <div class="qty-control">
+                  <button type="button" class="qty-btn" id="qtyDec" aria-label="Decrease quantity">−</button>
+                  <input type="number" class="qty-input" id="qtyInput" value="1" min="1" aria-label="Quantity" />
+                  <button type="button" class="qty-btn" id="qtyInc" aria-label="Increase quantity">+</button>
+                </div>
+                <span class="qty-max-hint" id="qtyMaxHint"></span>
+              </div>
+            </div>
+
+            <!-- Add to cart -->
+            <button type="button" class="btn btn-primary btn-lg btn-block add-to-cart" id="addToCartBtn" disabled>
+              Add to Cart
+            </button>
+
+          </div>
+        </section>
+      `;
+
+      // Below-the-fold sections
+      const descSection = document.getElementById('descriptionSection');
+      const descBody    = document.getElementById('descriptionBody');
+      if (p.description) {
+        descBody.textContent = p.description;
+        descSection.hidden = false;
+      }
+
+      // Now wire up the interactive bits
+      renderSwatches();
+      renderSizes();
+      renderStockStatus();
+      renderQty();
+      wireEvents();
+    }
+
+    // ── Take the first N sentences out of the description for the short blurb
+    function firstSentences(text, n) {
+      if (!text) return '';
+      const sentences = text.split(/(?<=[.!?])\s+/).slice(0, n);
+      return sentences.join(' ');
+    }
+
+    // ── Image gallery ──
+
+    function renderMainImage() {
+      if (state.images.length === 0) {
+        return `
+          <div class="gallery__placeholder">
+            <svg viewBox="0 0 64 48" width="64" height="48" fill="currentColor" aria-hidden="true">
+              <ellipse cx="36" cy="30" rx="22" ry="13" opacity="0.7"/>
+              <circle cx="18" cy="20" r="10" opacity="0.85"/>
+              <polygon points="2,19 12,21 2,23"/>
+              <circle cx="18" cy="17" r="1.8" fill="#F5F0E8"/>
+            </svg>
+            <span class="gallery__placeholder-mark">Ducks Unlimited</span>
+            <span class="gallery__placeholder-sub">est. 1995</span>
+          </div>
+        `;
+      }
+      const img = state.images[state.currentImage];
+      return `<img src="${escapeHtml(img.image_url)}" alt="${escapeHtml(state.product.name)}" />`;
+    }
+
+    function renderThumbs() {
+      if (state.images.length <= 1) return '';
+
+      return state.images.map((img, i) => `
+        <button type="button"
+                class="gallery__thumb ${i === state.currentImage ? 'is-active' : ''}"
+                data-index="${i}"
+                aria-label="View image ${i + 1}">
+          <img src="${escapeHtml(img.image_url)}" alt="" />
+        </button>
+      `).join('');
+    }
+
+    function setMainImage(index) {
+      if (index < 0 || index >= state.images.length) return;
+      state.currentImage = index;
+      document.getElementById('galleryMain').innerHTML = renderMainImage();
+
+      // Toggle is-active on thumbs without re-rendering everything
+      document.querySelectorAll('.gallery__thumb').forEach(thumb => {
+        thumb.classList.toggle('is-active', Number(thumb.dataset.index) === index);
+      });
+    }
+
+    // ── Color swatches ──
+
+    function renderSwatches() {
+      const container = document.getElementById('swatches');
+      container.innerHTML = '';
+
+      for (const color of state.allColors) {
+        const isSelected = state.selectedColor === color;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `swatch${isSelected ? ' is-selected' : ''}`;
+        btn.dataset.color = color;
+        btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+        btn.innerHTML = `
+          <span class="swatch__dot" style="background:${colorToHex(color)}"></span>
+          <span class="swatch__name">${escapeHtml(color)}</span>
+        `;
+        container.appendChild(btn);
+      }
+
+      document.getElementById('colorValue').textContent =
+        state.selectedColor ?? '';
+    }
+
+    // ── Size buttons ──
+
+    function renderSizes() {
+      const container = document.getElementById('sizes');
+      container.innerHTML = '';
+
+      // Which sizes are available depends on the selected color (if any).
+      // When no color is picked, all sizes that exist anywhere are enabled.
+      const availableSizes = state.selectedColor
+        ? state.sizesByColor[state.selectedColor] ?? new Set()
+        : new Set(state.allSizes);
+
+      for (const size of state.allSizes) {
+        const isSelected  = state.selectedSize === size;
+        const isAvailable = availableSizes.has(size);
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `size-btn${isSelected ? ' is-selected' : ''}`;
+        btn.dataset.size = size;
+        btn.disabled = !isAvailable;
+        btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+        btn.textContent = size;
+        container.appendChild(btn);
+      }
+
+      document.getElementById('sizeValue').textContent =
+        state.selectedSize ?? '';
+    }
+
+    // ── Stock status + price ──
+
+    function getSelectedVariant() {
+      if (!state.selectedColor || !state.selectedSize) return null;
+      return state.variantMap[`${state.selectedColor}|${state.selectedSize}`] ?? null;
+    }
+
+    function renderStockStatus() {
+      const container = document.getElementById('stockStatus');
+      const v = getSelectedVariant();
+      const p = state.product;
+
+      // Update price display based on whether a variant is selected
+      const priceEl = document.getElementById('priceDisplay');
+      priceEl.textContent = v ? formatPrice(v.price) : formatPrice(p.base_price);
+
+      // Stock status
+      if (!v) {
+        container.innerHTML = `
+          <div class="stock-status stock-status--hint">
+            Select a color and size to see availability.
+          </div>
+        `;
+        return;
+      }
+
+      if (v.stock <= 0) {
+        container.innerHTML = `
+          <div class="stock-status stock-status--out">Out of Stock</div>
+        `;
+      } else if (v.stock <= v.threshold) {
+        container.innerHTML = `
+          <div class="stock-status stock-status--low">
+            Low Stock — only ${v.stock} left
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="stock-status stock-status--in">In Stock</div>
+        `;
+      }
+    }
+
+    // ── Quantity ──
+
+    function renderQty() {
+      const v = getSelectedVariant();
+      const input = document.getElementById('qtyInput');
+      const dec   = document.getElementById('qtyDec');
+      const inc   = document.getElementById('qtyInc');
+      const hint  = document.getElementById('qtyMaxHint');
+      const cta   = document.getElementById('addToCartBtn');
+
+      // Max quantity = stock for the selected variant, or 1 when none selected
+      const maxQty = v ? v.stock : 1;
+
+      // Clamp quantity to valid range
+      if (state.quantity > maxQty) state.quantity = Math.max(1, maxQty);
+      if (state.quantity < 1)      state.quantity = 1;
+
+      input.value = state.quantity;
+      input.max = Math.max(1, maxQty);
+
+      // Disable controls if no variant or out of stock
+      const disabled = !v || v.stock <= 0;
+      input.disabled = disabled;
+      dec.disabled   = disabled || state.quantity <= 1;
+      inc.disabled   = disabled || state.quantity >= maxQty;
+
+      hint.textContent = v && v.stock > 0 ? `Max ${v.stock}` : '';
+
+      // Add-to-cart button enabled only when there's something to add
+      cta.disabled = disabled;
+      cta.textContent = (!v)
+        ? 'Select Color & Size'
+        : (v.stock <= 0 ? 'Out of Stock' : 'Add to Cart');
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // EVENT WIRING
+    // ─────────────────────────────────────────────────────────────────
+
+    function wireEvents() {
+
+      // Thumb clicks
+      document.getElementById('galleryThumbs').addEventListener('click', (e) => {
+        const thumb = e.target.closest('.gallery__thumb');
+        if (!thumb) return;
+        setMainImage(Number(thumb.dataset.index));
+      });
+
+      // Color swatch clicks
+      document.getElementById('swatches').addEventListener('click', (e) => {
+        const swatch = e.target.closest('.swatch');
+        if (!swatch) return;
+
+        const color = swatch.dataset.color;
+        state.selectedColor = color;
+
+        // If the currently selected size isn't available in the new color,
+        // clear it. Without this, we'd be showing a stale invalid selection.
+        const availableSizes = state.sizesByColor[color] ?? new Set();
+        if (state.selectedSize && !availableSizes.has(state.selectedSize)) {
+          state.selectedSize = null;
+        }
+
+        state.quantity = 1; // reset qty when selection changes
+        renderSwatches();
+        renderSizes();
+        renderStockStatus();
+        renderQty();
+      });
+
+      // Size button clicks
+      document.getElementById('sizes').addEventListener('click', (e) => {
+        const btn = e.target.closest('.size-btn');
+        if (!btn || btn.disabled) return;
+
+        state.selectedSize = btn.dataset.size;
+        state.quantity = 1;
+        renderSizes();
+        renderStockStatus();
+        renderQty();
+      });
+
+      // Quantity buttons
+      document.getElementById('qtyDec').addEventListener('click', () => {
+        if (state.quantity > 1) { state.quantity -= 1; renderQty(); }
+      });
+      document.getElementById('qtyInc').addEventListener('click', () => {
+        const v = getSelectedVariant();
+        const max = v ? v.stock : 1;
+        if (state.quantity < max) { state.quantity += 1; renderQty(); }
+      });
+
+      // Direct typing into the quantity input
+      document.getElementById('qtyInput').addEventListener('change', (e) => {
+        const v = getSelectedVariant();
+        const max = v ? v.stock : 1;
+        let n = parseInt(e.target.value, 10);
+        if (!Number.isFinite(n) || n < 1) n = 1;
+        if (n > max) n = max;
+        state.quantity = n;
+        renderQty();
+      });
+
+      // Add to cart
+      document.getElementById('addToCartBtn').addEventListener('click', () => {
+        const v = getSelectedVariant();
+        if (!v || v.stock <= 0 || state.quantity < 1) return;
+
+        addToCart(v.id, state.quantity, {
+          productName:  state.product.name,
+          variantLabel: `${v.color} · ${v.size}`,
+          sku:          v.sku,
+          price:        v.price,
+          imageUrl:     state.images[0]?.image_url ?? '',
+        });
+
+        showToast('Added to cart');
+      });
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // TOAST
+    // ─────────────────────────────────────────────────────────────────
+
+    const toastEl = document.getElementById('toast');
+    let toastTimer;
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      toastEl.textContent = message;
+      toastEl.classList.add('show');
+      toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2500);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // RELATED PRODUCTS
+    // ─────────────────────────────────────────────────────────────────
+
+    function renderRelated(products) {
+      if (products.length === 0) return;
+
+      const section = document.getElementById('relatedSection');
+      const grid    = document.getElementById('relatedGrid');
+      section.hidden = false;
+
+      grid.innerHTML = '';
+
+      for (const p of products) {
+        const img = pickPrimaryImage(p.product_images);
+        const card = document.createElement('a');
+        card.className = 'related-card';
+        card.href = `/product.html?id=${encodeURIComponent(p.id)}`;
+        card.innerHTML = `
+          <div class="related-card__image">
+            ${img
+              ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(p.name)}" loading="lazy" />`
+              : `<div class="gallery__placeholder">
+                   <span class="gallery__placeholder-mark">Ducks Unlimited</span>
+                 </div>`}
+          </div>
+          <div class="related-card__body">
+            <h3 class="related-card__name">${escapeHtml(p.name)}</h3>
+            <p class="related-card__price">${formatPrice(p.base_price)}</p>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // ERROR STATES
+    // ─────────────────────────────────────────────────────────────────
+
+    function showError(title, message, ctaText = 'Browse the Shop', ctaHref = '/shop.html') {
+      document.title = `${title} — Ducks Unlimited`;
+      document.getElementById('productRoot').innerHTML = `
+        <div class="error-state">
+          <h2>${escapeHtml(title)}</h2>
+          <p>${escapeHtml(message)}</p>
+          <a href="${escapeHtml(ctaHref)}" class="btn btn-primary">${escapeHtml(ctaText)}</a>
+        </div>
+      `;
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // INIT
+    // ─────────────────────────────────────────────────────────────────
+
+    async function init() {
+      const productId = new URLSearchParams(window.location.search).get('id');
+      if (!productId) {
+        showError(
+          'No product selected',
+          'Looks like there was no product ID in the URL. Try browsing our full catalog instead.'
+        );
+        return;
+      }
+
+      const product = await loadProduct(productId);
+      if (!product) {
+        showError(
+          'Product not found',
+          'This product may have been removed, or the link is broken.'
+        );
+        return;
+      }
+
+      // If the product is inactive, treat it as not-found from the customer's POV
+      if (product.is_active === false) {
+        showError(
+          'Product unavailable',
+          'This product is no longer available. Browse our shop for similar items.'
+        );
+        return;
+      }
+
+      // Populate state
+      state.product = product;
+      state.images  = sortImages(product.product_images);
+      Object.assign(state, indexVariants(product));
+
+      // Auto-select the first color so price shows immediately
+      // (most users will pick one anyway — this saves a click and prevents
+      // the "Select a color..." hint from being the first thing they see)
+      if (state.allColors.length > 0) {
+        state.selectedColor = state.allColors[0];
+      }
+
+      renderProduct();
+
+      // Related — load in parallel-ish (after main render so the page feels fast)
+      const related = await loadRelatedProducts(product.category, product.id);
+      renderRelated(related);
+    }
+
+    init();
+  </script>
+
+</body>
+</html>

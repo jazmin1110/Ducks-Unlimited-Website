@@ -471,6 +471,285 @@
 
     .panel-error.visible { display: block; }
 
+    /* ── Product images section (only shown when editing an existing product) ── */
+    .images-section {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #eee;
+    }
+
+    .images-heading {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1B4D2E;
+      margin-bottom: 0.25rem;
+    }
+
+    .images-subheading {
+      font-size: 0.78rem;
+      color: #888;
+      margin-bottom: 1rem;
+      line-height: 1.4;
+    }
+
+    .images-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 0.5rem;
+    }
+
+    /* Each image tile is square, with the image filling the whole thing */
+    .image-tile {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #faf7f2;
+      border: 1px solid #eee;
+      cursor: grab;
+      transition: box-shadow 0.15s, transform 0.15s;
+    }
+
+    .image-tile:hover {
+      box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    }
+
+    .image-tile:active { cursor: grabbing; }
+
+    .image-tile img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none; /* so drag events fire on the tile, not the <img> */
+      user-select: none;
+    }
+
+    /* "Primary" badge on the first image */
+    .image-tile .primary-badge {
+      position: absolute;
+      bottom: 4px;
+      left: 4px;
+      background: #C9A84C;
+      color: #fff;
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+      pointer-events: none;
+    }
+
+    /* X delete button in the top-right corner of each tile */
+    .image-tile .delete-image-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      border: none;
+      font-size: 0.95rem;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: background-color 0.15s;
+    }
+
+    .image-tile .delete-image-btn:hover { background: #b33a3a; }
+
+    /* Visual feedback during drag-and-drop */
+    .image-tile.dragging { opacity: 0.4; }
+
+    .image-tile.drag-over {
+      outline: 2px dashed #1B4D2E;
+      outline-offset: -2px;
+    }
+
+    /* "+" tile that opens the file picker (only shown when under 5 images) */
+    .upload-tile {
+      aspect-ratio: 1 / 1;
+      border: 2px dashed #ccc;
+      border-radius: 6px;
+      background: transparent;
+      color: #999;
+      font-size: 1.75rem;
+      font-weight: 300;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+      font-family: inherit;
+    }
+
+    .upload-tile:hover {
+      border-color: #1B4D2E;
+      color: #1B4D2E;
+      background-color: #faf7f2;
+    }
+
+    .upload-tile:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .images-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 0.75rem 0;
+      color: #aaa;
+      font-size: 0.85rem;
+    }
+
+    /* ── Variants section (only shown when editing an existing product) ── */
+    .variants-section {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #eee;
+    }
+
+    .variants-heading {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1B4D2E;
+      margin-bottom: 0.25rem;
+    }
+
+    .variants-subheading {
+      font-size: 0.78rem;
+      color: #888;
+      margin-bottom: 1rem;
+      line-height: 1.4;
+    }
+
+    .variants-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 0.75rem;
+      font-size: 0.85rem;
+    }
+
+    .variants-table th {
+      background: #faf7f2;
+      color: #555;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-align: left;
+      padding: 0.5rem 0.6rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    .variants-table td {
+      padding: 0.5rem 0.6rem;
+      border-bottom: 1px solid #f5f0e8;
+      vertical-align: middle;
+    }
+
+    /* Highlight the row currently being edited */
+    .variants-table tr.editing td { background: #f9f5ed; }
+
+    .variants-table .col-size    { width: 70px; }
+    .variants-table .col-price   { width: 95px; }
+    .variants-table .col-actions { width: 80px; text-align: right; }
+
+    .variant-input {
+      width: 100%;
+      padding: 0.4rem 0.55rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      background: #fff;
+    }
+
+    .variant-input:focus {
+      outline: none;
+      border-color: #1B4D2E;
+    }
+
+    /* "₱" prefix inside the price override cell */
+    .variant-price-wrap { position: relative; }
+
+    .variant-price-wrap .currency {
+      position: absolute;
+      left: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #aaa;
+      font-size: 0.78rem;
+      pointer-events: none;
+    }
+
+    .variant-price-wrap .variant-input { padding-left: 1.2rem; }
+
+    .variant-action-btn {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem;
+      padding: 0.3rem 0.6rem;
+      cursor: pointer;
+      color: #555;
+      transition: all 0.15s;
+    }
+
+    .variant-action-btn:hover        { border-color: #1B4D2E; color: #1B4D2E; }
+    .variant-action-btn.danger:hover { border-color: #b33a3a; color: #b33a3a; }
+
+    .variant-action-btn.primary {
+      background-color: #1B4D2E;
+      border-color: #1B4D2E;
+      color: #fff;
+    }
+
+    .variant-action-btn.primary:hover { background-color: #163d24; color: #fff; }
+
+    .variant-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .variants-empty {
+      text-align: center;
+      padding: 1.25rem 1rem;
+      color: #aaa;
+      font-size: 0.85rem;
+    }
+
+    /* Dashed-gold button below the variants table */
+    .btn-add-variant {
+      background-color: transparent;
+      border: 1px dashed #C9A84C;
+      color: #997f33;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 0.6rem 1rem;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.15s;
+    }
+
+    .btn-add-variant:hover {
+      background-color: #faf3df;
+      color: #1B4D2E;
+      border-color: #1B4D2E;
+    }
+
+    /* Monospace style for SKU cells */
+    .sku-cell {
+      font-family: 'SF Mono', Monaco, Menlo, monospace;
+      font-size: 0.8rem;
+      color: #444;
+    }
+
     /* ── Toast notification (bottom-right) ── */
     .toast {
       position: fixed;
@@ -605,6 +884,58 @@
         </div>
 
       </form>
+
+      <!-- ── Product images section (only visible when editing an existing product) ── -->
+      <section class="images-section" id="imagesSection" style="display: none;">
+
+        <h3 class="images-heading">Product Images</h3>
+        <p class="images-subheading">
+          Upload up to 5 images. JPG, PNG, or WEBP — max 5 MB each.
+          Drag to reorder; the first image is shown as the main photo.
+        </p>
+
+        <div class="images-grid" id="imagesGrid">
+          <!-- Tiles are rendered by JS -->
+        </div>
+
+        <!-- Hidden file input — triggered by clicking the upload tile -->
+        <input
+          type="file"
+          id="imageFileInput"
+          accept="image/jpeg,image/png,image/webp"
+          style="display: none;"
+        />
+
+      </section>
+
+      <!-- ── Variants section (only visible when editing an existing product) ── -->
+      <section class="variants-section" id="variantsSection" style="display: none;">
+
+        <h3 class="variants-heading">Variants</h3>
+        <p class="variants-subheading">
+          Each color + size combination is a variant. Inventory rows for the
+          <strong>online</strong> and <strong>greenhills_store</strong> channels are
+          created automatically at quantity 0.
+        </p>
+
+        <table class="variants-table">
+          <thead>
+            <tr>
+              <th>Color</th>
+              <th class="col-size">Size</th>
+              <th>SKU</th>
+              <th class="col-price">Override</th>
+              <th class="col-actions"></th>
+            </tr>
+          </thead>
+          <tbody id="variantsTableBody"></tbody>
+        </table>
+
+        <button type="button" class="btn-add-variant" id="addVariantBtn">
+          + Add Variant
+        </button>
+
+      </section>
 
     </div>
 
@@ -748,7 +1079,8 @@
       panelError.classList.add('visible');
     }
 
-    // Reset the form to blank (Add mode)
+    // Reset the form to blank (Add mode). Variants section is hidden because
+    // variants can only be created once a product row already exists.
     function resetForm() {
       productIdInput.value = '';
       nameInput.value = '';
@@ -759,6 +1091,8 @@
       panelTitle.textContent = 'Add Product';
       saveBtn.textContent = 'Save Product';
       clearPanelError();
+      document.getElementById('imagesSection').style.display = 'none';
+      document.getElementById('variantsSection').style.display = 'none';
     }
 
     // Open panel pre-filled with a product's data (Edit mode)
@@ -786,6 +1120,11 @@
       descInput.value      = p.description ?? '';
       priceInput.value     = p.base_price;
       activeInput.checked  = p.is_active;
+
+      // Reveal images and variants sections, then load both in parallel
+      document.getElementById('imagesSection').style.display = 'block';
+      document.getElementById('variantsSection').style.display = 'block';
+      await Promise.all([loadImages(p.id), loadVariants(p.id)]);
     }
 
     // ── Add Product button ──
@@ -866,6 +1205,519 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
     }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // PRODUCT IMAGES
+    // Up to 5 images per product. Files live in Supabase Storage in the
+    // 'product-images' bucket; their URLs and ordering are stored in the
+    // product_images table.
+    // ─────────────────────────────────────────────────────────────────────
+
+    const MAX_IMAGES_PER_PRODUCT = 5;
+    const MAX_IMAGE_SIZE_BYTES   = 5 * 1024 * 1024; // 5 MB
+    const ALLOWED_IMAGE_TYPES    = ['image/jpeg', 'image/png', 'image/webp'];
+
+    const imagesGrid     = document.getElementById('imagesGrid');
+    const imageFileInput = document.getElementById('imageFileInput');
+
+    // Local cache of the currently displayed product's images.
+    // Kept in sync with the DB so drag-and-drop can rearrange optimistically.
+    let currentImages = [];
+    // Index of the tile currently being dragged (null when no drag is happening)
+    let draggedIndex = null;
+
+    // Load all images for a product, then render the grid
+    async function loadImages(productId) {
+      imagesGrid.innerHTML = '<div class="images-empty">Loading…</div>';
+
+      const { data, error } = await supabase
+        .from('product_images')
+        .select('*')
+        .eq('product_id', productId)
+        .order('display_order');
+
+      if (error) {
+        imagesGrid.innerHTML = '<div class="images-empty">Could not load images.</div>';
+        console.error(error);
+        return;
+      }
+
+      currentImages = data || [];
+      renderImages();
+    }
+
+    // Render the cached images array as draggable tiles + the upload tile
+    function renderImages() {
+      imagesGrid.innerHTML = '';
+
+      currentImages.forEach((img, index) => {
+        const tile = document.createElement('div');
+        tile.className = 'image-tile';
+        tile.draggable = true;
+        tile.dataset.index = index;
+
+        tile.innerHTML = `
+          <img src="${escapeHtml(img.image_url)}" alt="" />
+          ${img.is_primary ? '<span class="primary-badge">Primary</span>' : ''}
+          <button type="button" class="delete-image-btn" aria-label="Delete image">×</button>
+        `;
+        attachDragHandlers(tile, index);
+        imagesGrid.appendChild(tile);
+      });
+
+      // Show the "+" upload tile only when there's room for more images
+      if (currentImages.length < MAX_IMAGES_PER_PRODUCT) {
+        const uploadTile = document.createElement('button');
+        uploadTile.type = 'button';
+        uploadTile.className = 'upload-tile';
+        uploadTile.textContent = '+';
+        uploadTile.title = 'Upload image';
+        uploadTile.addEventListener('click', () => imageFileInput.click());
+        imagesGrid.appendChild(uploadTile);
+      }
+    }
+
+    // Validate that the user-chosen file is an allowed type and not too big.
+    // Returns an error message string, or null if the file is OK.
+    function validateImageFile(file) {
+      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        return 'Only JPG, PNG, or WEBP images are allowed.';
+      }
+      if (file.size > MAX_IMAGE_SIZE_BYTES) {
+        return 'Image must be 5 MB or smaller.';
+      }
+      return null;
+    }
+
+    // Handle a file chosen via the hidden file input
+    async function handleImageUpload(event) {
+      const file = event.target.files[0];
+      event.target.value = ''; // clear so re-uploading the same file works
+      if (!file) return;
+
+      const validationError = validateImageFile(file);
+      if (validationError) {
+        showToast(validationError);
+        return;
+      }
+
+      const productId = productIdInput.value;
+      if (!productId) return;
+
+      // Build storage path: <productId>/<random>.<ext> — keeps each product's
+      // images in its own folder so they're easy to find / clean up.
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const filename = `${crypto.randomUUID()}.${ext}`;
+      const storagePath = `${productId}/${filename}`;
+
+      showToast('Uploading…');
+
+      // Step 1 — upload the binary file to Supabase Storage
+      const { error: uploadErr } = await supabase.storage
+        .from('product-images')
+        .upload(storagePath, file);
+
+      if (uploadErr) {
+        console.error(uploadErr);
+        showToast('Upload failed. Please try again.');
+        return;
+      }
+
+      // Step 2 — get the public URL for the new file
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(storagePath);
+
+      // Step 3 — insert a row in product_images linking the URL to this product
+      const newDisplayOrder = currentImages.length;
+      const { error: dbErr } = await supabase
+        .from('product_images')
+        .insert({
+          product_id:    productId,
+          image_url:     publicUrl,
+          display_order: newDisplayOrder,
+          is_primary:    newDisplayOrder === 0, // first image is automatically primary
+        });
+
+      if (dbErr) {
+        // DB insert failed — clean up the uploaded file to avoid orphans in storage
+        await supabase.storage.from('product-images').remove([storagePath]);
+        showToast('Could not save image. Please try again.');
+        console.error(dbErr);
+        return;
+      }
+
+      showToast('Image uploaded.');
+      await loadImages(productId);
+    }
+
+    // Delete an image — removes the DB row, the storage file, and re-numbers what's left
+    async function deleteImage(imageId, imageUrl) {
+      if (!window.confirm('Delete this image?')) return;
+
+      // 1) Delete the DB row first. If this fails, the file stays — better
+      //    than the opposite case where the DB row points at a missing file.
+      const { error: dbErr } = await supabase
+        .from('product_images')
+        .delete()
+        .eq('id', imageId);
+
+      if (dbErr) {
+        showToast('Could not delete image.');
+        console.error(dbErr);
+        return;
+      }
+
+      // 2) Best-effort cleanup of the storage file. The public URL looks like:
+      //    https://<project>.supabase.co/storage/v1/object/public/product-images/<path>
+      const match = imageUrl.match(/\/product-images\/(.+)$/);
+      if (match) {
+        await supabase.storage.from('product-images').remove([match[1]]);
+      }
+
+      // 3) Re-number remaining images so display_order stays 0..N-1
+      await renumberImages(productIdInput.value);
+
+      showToast('Image deleted.');
+      await loadImages(productIdInput.value);
+    }
+
+    // Ensure display_order is sequential (0..N-1) and exactly one row has is_primary = true
+    // (the one with display_order = 0). Called after every reorder or delete.
+    async function renumberImages(productId) {
+      const { data: imgs, error } = await supabase
+        .from('product_images')
+        .select('id, display_order, is_primary')
+        .eq('product_id', productId)
+        .order('display_order');
+
+      if (error || !imgs) return;
+
+      // Build a list of update promises — only for rows that actually need changing
+      const updates = imgs
+        .map((img, i) => {
+          const correctPrimary = (i === 0);
+          if (img.display_order !== i || img.is_primary !== correctPrimary) {
+            return supabase
+              .from('product_images')
+              .update({ display_order: i, is_primary: correctPrimary })
+              .eq('id', img.id);
+          }
+          return null;
+        })
+        .filter(Boolean);
+
+      await Promise.all(updates);
+    }
+
+    // ── Drag-and-drop reordering ──
+    // Uses the HTML5 drag-and-drop API. Each tile is a drop target — dropping
+    // one tile onto another swaps their positions in the currentImages array,
+    // then re-renders and persists the new order to the DB.
+    function attachDragHandlers(tile, index) {
+
+      tile.addEventListener('dragstart', () => {
+        draggedIndex = index;
+        tile.classList.add('dragging');
+      });
+
+      tile.addEventListener('dragend', () => {
+        tile.classList.remove('dragging');
+        // Clean up any drag-over highlights that didn't get cleared
+        document.querySelectorAll('.image-tile.drag-over')
+          .forEach(el => el.classList.remove('drag-over'));
+        draggedIndex = null;
+      });
+
+      tile.addEventListener('dragover', (e) => {
+        e.preventDefault(); // required to allow `drop` to fire
+        if (draggedIndex !== null && draggedIndex !== index) {
+          tile.classList.add('drag-over');
+        }
+      });
+
+      tile.addEventListener('dragleave', () => {
+        tile.classList.remove('drag-over');
+      });
+
+      tile.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        tile.classList.remove('drag-over');
+        if (draggedIndex === null || draggedIndex === index) return;
+
+        // Reorder the local array, then re-render right away for a snappy feel
+        const moved = currentImages.splice(draggedIndex, 1)[0];
+        currentImages.splice(index, 0, moved);
+        // Optimistically update is_primary on the local cache so the badge
+        // moves immediately, before the DB roundtrip finishes
+        currentImages.forEach((img, i) => {
+          img.display_order = i;
+          img.is_primary    = (i === 0);
+        });
+        renderImages();
+
+        // Persist the new ordering to the DB
+        await renumberImages(productIdInput.value);
+      });
+    }
+
+    // ── Image event wiring ──
+
+    // File picker change → upload
+    imageFileInput.addEventListener('change', handleImageUpload);
+
+    // Delegate clicks on delete-image buttons (works for dynamically rendered tiles)
+    imagesGrid.addEventListener('click', (e) => {
+      const btn = e.target.closest('.delete-image-btn');
+      if (!btn) return;
+      const tile = btn.closest('.image-tile');
+      const index = Number(tile.dataset.index);
+      const img = currentImages[index];
+      if (img) deleteImage(img.id, img.image_url);
+    });
+
+
+    // ─────────────────────────────────────────────────────────────────────
+    // VARIANTS MANAGEMENT
+    // Variants live below the product edit form. Each variant represents one
+    // color + size combination of its parent product, with a unique SKU and
+    // an optional price override.
+    // ─────────────────────────────────────────────────────────────────────
+
+    const variantsTableBody = document.getElementById('variantsTableBody');
+
+    // Alphabetical sort would put 'L' before 'M' — this map gives us the
+    // correct apparel-size ordering instead.
+    const SIZE_ORDER = { XS: 1, S: 2, M: 3, L: 4, XL: 5, XXL: 6, XXXL: 7 };
+
+    // Take a string and return its first N alphanumeric characters in uppercase.
+    // Used for SKU auto-suggestions: "Forest Green" → "FOR", "T-Shirt" → "TSHIR".
+    function abbreviate(text, length) {
+      if (!text) return '';
+      return text.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, length);
+    }
+
+    // Build a SKU suggestion like "DU-POLO-FOR-M" from category + color + size.
+    function suggestSku(category, color, size) {
+      const cat = abbreviate(category, 5);
+      const col = abbreviate(color, 3);
+      const sz  = abbreviate(size, 4);
+      return `DU-${cat}-${col}-${sz}`;
+    }
+
+    // Fetch this product's variants and render them in the table
+    async function loadVariants(productId) {
+      variantsTableBody.innerHTML =
+        '<tr><td colspan="5" class="variants-empty">Loading…</td></tr>';
+
+      const { data: variants, error } = await supabase
+        .from('variants')
+        .select('*')
+        .eq('product_id', productId);
+
+      if (error) {
+        variantsTableBody.innerHTML =
+          '<tr><td colspan="5" class="variants-empty">Failed to load variants.</td></tr>';
+        return;
+      }
+
+      if (!variants || variants.length === 0) {
+        variantsTableBody.innerHTML =
+          '<tr><td colspan="5" class="variants-empty">No variants yet. Click "+ Add Variant" to create one.</td></tr>';
+        return;
+      }
+
+      // Group by color (alphabetical), then sort sizes within each color
+      variants.sort((a, b) => {
+        if (a.color !== b.color) return a.color.localeCompare(b.color);
+        return (SIZE_ORDER[a.size] ?? 99) - (SIZE_ORDER[b.size] ?? 99);
+      });
+
+      variantsTableBody.innerHTML = '';
+
+      for (const v of variants) {
+        const tr = document.createElement('tr');
+        tr.dataset.variantId = v.id;
+        tr.innerHTML = `
+          <td>${escapeHtml(v.color)}</td>
+          <td>${escapeHtml(v.size)}</td>
+          <td class="sku-cell">${escapeHtml(v.sku)}</td>
+          <td>${
+            v.price_override != null
+              ? '₱' + Number(v.price_override).toLocaleString('en-PH', { minimumFractionDigits: 2 })
+              : '<span style="color:#bbb">—</span>'
+          }</td>
+          <td class="col-actions">
+            <button class="variant-action-btn danger" data-action="delete">Delete</button>
+          </td>
+        `;
+        variantsTableBody.appendChild(tr);
+      }
+    }
+
+    // Append an empty editable row at the bottom of the variants table
+    function addVariantRow() {
+      // If the "no variants yet" message is showing, remove it first
+      const emptyState = variantsTableBody.querySelector('.variants-empty');
+      if (emptyState) emptyState.closest('tr').remove();
+
+      const tr = document.createElement('tr');
+      tr.classList.add('editing');
+      tr.innerHTML = `
+        <td>
+          <input type="text" class="variant-input" data-field="color"
+                 placeholder="e.g. Forest Green" />
+        </td>
+        <td>
+          <select class="variant-input" data-field="size">
+            <option value="" disabled selected>—</option>
+            <option value="XS">XS</option>
+            <option value="S">S</option>
+            <option value="M">M</option>
+            <option value="L">L</option>
+            <option value="XL">XL</option>
+            <option value="XXL">XXL</option>
+            <option value="XXXL">XXXL</option>
+          </select>
+        </td>
+        <td>
+          <input type="text" class="variant-input sku-cell" data-field="sku"
+                 placeholder="DU-…" />
+        </td>
+        <td>
+          <div class="variant-price-wrap">
+            <span class="currency">₱</span>
+            <input type="number" class="variant-input" data-field="price"
+                   placeholder="—" min="0" step="0.01" />
+          </div>
+        </td>
+        <td class="col-actions">
+          <button type="button" class="variant-action-btn primary" data-action="save-new">
+            Save
+          </button>
+        </td>
+      `;
+      variantsTableBody.appendChild(tr);
+
+      // ── SKU auto-suggest ──
+      // While the user hasn't typed anything into the SKU field themselves,
+      // fill it in automatically when they change color or size.
+      const colorEl = tr.querySelector('[data-field="color"]');
+      const sizeEl  = tr.querySelector('[data-field="size"]');
+      const skuEl   = tr.querySelector('[data-field="sku"]');
+
+      let skuTouched = false;
+      skuEl.addEventListener('input', () => { skuTouched = true; });
+
+      const refreshSku = () => {
+        if (skuTouched) return;
+        skuEl.value = suggestSku(categoryInput.value, colorEl.value, sizeEl.value);
+      };
+      colorEl.addEventListener('input',  refreshSku);
+      sizeEl.addEventListener('change',  refreshSku);
+
+      colorEl.focus();
+    }
+
+    // Save a new variant row: inserts the variant, then auto-creates inventory
+    // rows for the 'online' and 'greenhills_store' channels at quantity 0.
+    async function saveVariantRow(rowEl) {
+      const color    = rowEl.querySelector('[data-field="color"]').value.trim();
+      const size     = rowEl.querySelector('[data-field="size"]').value;
+      const sku      = rowEl.querySelector('[data-field="sku"]').value.trim();
+      const priceStr = rowEl.querySelector('[data-field="price"]').value;
+      const priceOverride = priceStr === '' ? null : parseFloat(priceStr);
+
+      // Inline validation — show via toast since the panel-error sits up top
+      if (!color || !size || !sku) {
+        showToast('Color, size, and SKU are all required.');
+        return;
+      }
+      if (priceOverride !== null && (isNaN(priceOverride) || priceOverride < 0)) {
+        showToast('Price override must be a positive number.');
+        return;
+      }
+
+      const btn = rowEl.querySelector('[data-action="save-new"]');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+
+      // Step 1 — insert the variant and get its new ID back
+      const { data: newVariant, error: variantErr } = await supabase
+        .from('variants')
+        .insert({
+          product_id:     productIdInput.value,
+          color,
+          size,
+          sku,
+          price_override: priceOverride,
+        })
+        .select()
+        .single();
+
+      if (variantErr) {
+        btn.disabled = false;
+        btn.textContent = 'Save';
+        // Friendlier message for duplicate-SKU errors (Postgres unique violation)
+        if (variantErr.code === '23505') {
+          showToast(`SKU "${sku}" is already in use.`);
+        } else {
+          showToast('Could not save variant. Please try again.');
+          console.error(variantErr);
+        }
+        return;
+      }
+
+      // Step 2 — auto-create inventory rows for both channels at quantity 0
+      const { error: invErr } = await supabase.from('inventory').insert([
+        { variant_id: newVariant.id, channel: 'online',           quantity: 0 },
+        { variant_id: newVariant.id, channel: 'greenhills_store', quantity: 0 },
+      ]);
+
+      if (invErr) {
+        // Variant saved, but inventory init failed — admin may need to fix manually
+        showToast('Variant saved, but inventory could not be initialized.');
+        console.error(invErr);
+      } else {
+        showToast('Variant added.');
+      }
+
+      // Reload the variants table to replace the editable row with a display row
+      await loadVariants(productIdInput.value);
+    }
+
+    // Delete a variant. Inventory rows are removed automatically via the
+    // ON DELETE CASCADE on inventory.variant_id (see schema.sql).
+    async function deleteVariant(variantId) {
+      const confirmed = window.confirm('This will also delete its inventory records. Continue?');
+      if (!confirmed) return;
+
+      const { error } = await supabase.from('variants').delete().eq('id', variantId);
+      if (error) {
+        showToast('Could not delete variant.');
+        console.error(error);
+        return;
+      }
+
+      showToast('Variant deleted.');
+      await loadVariants(productIdInput.value);
+    }
+
+    // Wire up the "Add Variant" button
+    document.getElementById('addVariantBtn').addEventListener('click', addVariantRow);
+
+    // Delegate clicks on row action buttons so dynamically added rows work too
+    variantsTableBody.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+
+      const row    = btn.closest('tr');
+      const action = btn.dataset.action;
+
+      if      (action === 'save-new') saveVariantRow(row);
+      else if (action === 'delete')   deleteVariant(row.dataset.variantId);
+    });
+
 
     // ── Initial load ──
     await loadProducts();

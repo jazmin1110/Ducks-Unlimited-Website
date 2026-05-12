@@ -3,318 +3,600 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ducks Unlimited — Affordable Luxury Clothing</title>
+  <title>Ducks Unlimited — Filipino-made Egyptian Cotton Since 1995</title>
+  <meta name="description" content="Affordable luxury garments crafted in the Philippines since 1995. Egyptian cotton polos, t-shirts, and bottoms designed for everyday elegance." />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <link rel="stylesheet" href="/css/style.css" />
 
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background-color: #F5F0E8;
-      color: #1A1A1A;
+  <style>
+    /* ============================================================
+       Homepage-specific styles
+       Reusable patterns live in /css/style.css — anything below is
+       layout that only the homepage needs.
+       ============================================================ */
+
+    /* ── HERO ──────────────────────────────────────────────────── */
+
+    .hero {
+      background-color: var(--color-primary);
+      color: var(--color-bg);
+      padding: 4rem 0;
+      text-align: center;
+      min-height: 75vh;
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+
+      /* IMAGE SLOT: when you have a hero photo, uncomment these lines
+         and place the file at /public/img/hero.jpg.
+         background-image: url('/img/hero.jpg');
+         background-size: cover;
+         background-position: center;
+      */
+    }
+
+    .hero__inner { width: 100%; position: relative; z-index: 1; }
+
+    .hero__eyebrow {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 1rem;
+    }
+
+    .hero__headline {
+      font-family: var(--font-heading);
+      font-size: 2.5rem;
+      font-weight: 400;
+      color: var(--color-bg);
+      letter-spacing: 0.02em;
+      line-height: 1.05;
+      margin-bottom: 1.25rem;
+    }
+
+    /* The period after "Filipino-made" sits more elegantly in gold */
+    .hero__headline .accent { color: var(--color-accent); }
+
+    .hero__sub {
+      font-size: 1rem;
+      color: rgba(245, 240, 232, 0.85);
+      max-width: 520px;
+      margin: 0 auto 2rem;
       line-height: 1.6;
     }
 
-    /* ── Header/Nav ── */
-    header {
-      background-color: #fff;
-      border-bottom: 1px solid #e8e3d8;
-      padding: 1rem 1.5rem;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+    .hero__divider {
+      width: 60px;
+      height: 1px;
+      background: var(--color-accent);
+      margin: 0 auto 1.5rem;
+      opacity: 0.6;
     }
 
-    nav {
-      max-width: 1100px;
-      margin: 0 auto;
+    /* ── FEATURED CATEGORIES ───────────────────────────────────── */
+
+    .categories { background: var(--color-bg); }
+
+    /* On mobile the row scrolls horizontally; on desktop it grids out */
+    .categories__scroller {
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 1.5rem;
+      /* Hide scrollbar on most browsers — still scrollable via touch/drag */
+      scrollbar-width: none;
+    }
+    .categories__scroller::-webkit-scrollbar { display: none; }
+
+    .categories__grid {
       display: flex;
-      align-items: center;
+      gap: 0.85rem;
+      padding-bottom: 0.5rem;
+      /* Add side padding so the snap edges don't sit against the viewport */
+      padding-right: 1rem;
+    }
+
+    .cat-card {
+      flex: 0 0 70%;
+      min-height: 200px;
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
       justify-content: space-between;
-    }
-
-    .logo {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1.3rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: #1B4D2E;
       text-decoration: none;
-    }
-
-    .nav-links {
-      list-style: none;
-      display: flex;
-      gap: 2rem;
-      align-items: center;
-    }
-
-    .nav-links a {
-      text-decoration: none;
-      color: #1A1A1A;
-      font-size: 0.9rem;
-      font-weight: 500;
-      transition: color 0.2s;
-    }
-
-    .nav-links a:hover { color: #1B4D2E; }
-
-    .nav-links .admin-link {
-      background-color: #1B4D2E;
-      color: #fff;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-    }
-
-    .nav-links .admin-link:hover { background-color: #163d24; }
-
-    /* ── Hero ── */
-    .hero {
-      background: linear-gradient(135deg, #F5F0E8 0%, #f9f6f1 100%);
-      padding: 4rem 1.5rem;
-      text-align: center;
-    }
-
-    .hero-content {
-      max-width: 700px;
-      margin: 0 auto;
-    }
-
-    .hero h1 {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 2.5rem;
-      font-weight: 600;
-      color: #1B4D2E;
-      margin-bottom: 1rem;
-      letter-spacing: 0.02em;
-    }
-
-    .hero p {
-      font-size: 1.1rem;
-      color: #555;
-      margin-bottom: 2rem;
-      line-height: 1.8;
-    }
-
-    .cta-buttons {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      padding: 0.75rem 1.75rem;
-      border: none;
-      border-radius: 5px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 500;
-      text-decoration: none;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: inline-block;
-    }
-
-    .btn-primary {
-      background-color: #1B4D2E;
-      color: #fff;
-    }
-
-    .btn-primary:hover {
-      background-color: #163d24;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(27, 77, 46, 0.2);
-    }
-
-    .btn-secondary {
-      background-color: transparent;
-      color: #1B4D2E;
-      border: 2px solid #1B4D2E;
-    }
-
-    .btn-secondary:hover {
-      background-color: #1B4D2E;
-      color: #fff;
-    }
-
-    /* ── Main content ── */
-    main {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 3rem 1.5rem;
-      text-align: center;
-    }
-
-    .section-title {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 2rem;
-      font-weight: 600;
-      color: #1B4D2E;
-      margin-bottom: 2rem;
-    }
-
-    /* ── Feature cards ── */
-    .features {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 2rem;
-      margin-bottom: 3rem;
-    }
-
-    .feature-card {
-      background: #fff;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
       transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
     }
 
-    .feature-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    .cat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow);
+      text-decoration: none;
     }
 
-    .feature-icon {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .feature-card h3 {
-      font-size: 1.1rem;
-      color: #1A1A1A;
-      margin-bottom: 0.5rem;
-    }
-
-    .feature-card p {
-      font-size: 0.9rem;
-      color: #777;
-    }
-
-    /* ── Coming soon message ── */
-    .coming-soon {
-      background-color: #f0ebe1;
-      border: 1px solid #e0d8cc;
-      border-radius: 8px;
-      padding: 2rem;
-      margin: 2rem 0;
-      color: #666;
-    }
-
-    .coming-soon h2 {
-      font-family: 'Cormorant Garamond', serif;
+    .cat-card__name {
+      font-family: var(--font-heading);
       font-size: 1.5rem;
-      color: #1B4D2E;
-      margin-bottom: 0.5rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      line-height: 1.1;
     }
 
-    /* ── Footer ── */
-    footer {
-      background-color: #1B4D2E;
-      color: rgba(255, 255, 255, 0.8);
+    .cat-card__cta {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: auto;
+      opacity: 0.85;
+    }
+
+    /* Color variants for the cards — each has its own personality */
+    .cat-card--green {
+      background: var(--color-primary);
+      color: var(--color-bg);
+    }
+    .cat-card--gold {
+      background: var(--color-accent);
+      color: var(--color-white);
+    }
+    .cat-card--ivory {
+      background: var(--color-bg-warm);
+      color: var(--color-primary);
+      border: 1px solid var(--color-border);
+    }
+    .cat-card--dark {
+      background: var(--color-text);
+      color: var(--color-bg);
+    }
+
+    /* ── NEW ARRIVALS ──────────────────────────────────────────── */
+
+    .new-arrivals { background: var(--color-bg-warm); }
+
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.85rem;
+      margin-top: 1.5rem;
+    }
+
+    .product-card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--color-white);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .product-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+      text-decoration: none;
+    }
+
+    .product-card__image {
+      aspect-ratio: 1 / 1.2;
+      background: var(--color-bg-warm);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .product-card__image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Shown when a product has no image yet — keeps the grid looking clean */
+    .product-card__placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-family: var(--font-heading);
+      color: var(--color-primary);
+      background: linear-gradient(135deg, #f5f0e8, #fff);
+      padding: 1rem;
       text-align: center;
-      padding: 2rem 1.5rem;
-      margin-top: 3rem;
-      font-size: 0.85rem;
     }
 
-    footer a { color: #C9A84C; text-decoration: none; }
-    footer a:hover { text-decoration: underline; }
+    .product-card__placeholder-mark {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
 
-    @media (max-width: 768px) {
-      .hero h1 { font-size: 1.75rem; }
-      .nav-links { gap: 1rem; }
-      .cta-buttons { flex-direction: column; }
-      .btn { width: 100%; }
+    .product-card__placeholder-sub {
+      font-style: italic;
+      font-size: 0.65rem;
+      color: var(--color-accent);
+      letter-spacing: 0.14em;
+    }
+
+    .product-card__body {
+      padding: 0.85rem 1rem 1.1rem;
+    }
+
+    .product-card__name {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0 0 0.25rem;
+      line-height: 1.25;
+    }
+
+    .product-card__price {
+      font-size: 0.9rem;
+      color: var(--color-primary);
+      font-weight: 500;
+      margin: 0;
+    }
+
+    .products-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--color-text-light);
+      font-size: 0.9rem;
+    }
+
+    /* ── Skeleton placeholders shown while products are loading ──── */
+
+    .product-card--skeleton { pointer-events: none; }
+
+    .product-card--skeleton .product-card__image,
+    .skeleton-line {
+      background: linear-gradient(90deg, #f0ebe1 0%, #faf7f2 50%, #f0ebe1 100%);
+      background-size: 200% 100%;
+      animation: skeleton-pulse 1.4s ease-in-out infinite;
+    }
+
+    .skeleton-line {
+      height: 0.85rem;
+      border-radius: 3px;
+      margin-bottom: 0.45rem;
+    }
+    .skeleton-line--name  { width: 80%; height: 1rem; }
+    .skeleton-line--price { width: 40%; }
+
+    @keyframes skeleton-pulse {
+      0%, 100% { background-position: 100% 0; }
+      50%      { background-position: 0% 0; }
+    }
+
+    /* ── BRAND STORY ───────────────────────────────────────────── */
+
+    .story { background: var(--color-bg); text-align: center; }
+
+    .story__inner {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .story__divider {
+      width: 40px;
+      height: 1px;
+      background: var(--color-accent);
+      margin: 0 auto 1.5rem;
+      opacity: 0.7;
+    }
+
+    .story p {
+      font-size: 1.02rem;
+      line-height: 1.75;
+      color: var(--color-text);
+    }
+
+    .story__link {
+      display: inline-block;
+      margin-top: 1.25rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-primary);
+      border-bottom: 1px solid var(--color-accent);
+      padding-bottom: 0.2rem;
+    }
+
+    .story__link:hover {
+      color: var(--color-accent);
+      text-decoration: none;
+    }
+
+    /* ── DESKTOP (≥ 768px) ─────────────────────────────────────── */
+
+    @media (min-width: 768px) {
+
+      /* Hero scales up dramatically */
+      .hero { padding: 6rem 0; min-height: 85vh; }
+      .hero__headline { font-size: 4.5rem; }
+      .hero__sub      { font-size: 1.15rem; }
+
+      /* Categories become a 4-column grid (no more scroll) */
+      .categories__scroller { overflow-x: visible; margin-top: 2rem; }
+      .categories__grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        padding: 0;
+      }
+      .cat-card { flex: none; min-height: 240px; padding: 1.75rem; }
+      .cat-card__name { font-size: 1.7rem; }
+
+      /* Products become 4-column */
+      .products-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+        margin-top: 2rem;
+      }
+      .product-card__name  { font-size: 1.05rem; }
+      .product-card__price { font-size: 0.95rem; }
+
+      .story p { font-size: 1.15rem; }
+    }
+
+    @media (min-width: 1024px) {
+      .hero__headline { font-size: 5.5rem; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ── Header ── -->
-  <header>
-    <nav>
-      <a class="logo" href="/">Ducks Unlimited</a>
-      <ul class="nav-links">
-        <li><a href="#about">About</a></li>
-        <li><a href="#shop">Shop</a></li>
-        <li><a href="#contact">Contact</a></li>
-        <li><a href="/admin/index.html" class="admin-link">Admin</a></li>
-      </ul>
-    </nav>
-  </header>
+  <!-- ── Nav (mounted by /js/components.js) ── -->
+  <div data-component="nav"></div>
 
-  <!-- ── Hero ── -->
-  <section class="hero">
-    <div class="hero-content">
-      <h1>Affordable Luxury for Everyone</h1>
-      <p>Est. 1995 • Based in Greenhills, San Juan • Premium clothing at fair prices</p>
-      <div class="cta-buttons">
-        <button class="btn btn-primary" onclick="document.querySelector('#shop').scrollIntoView({behavior:'smooth'})">
-          Browse Collections
-        </button>
-        <a href="/admin/index.html" class="btn btn-secondary">Admin Portal</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── Main content ── -->
   <main>
-    <section id="about" style="margin-bottom: 3rem;">
-      <h2 class="section-title">About Ducks Unlimited</h2>
-      <p style="font-size: 1rem; color: #666; max-width: 600px; margin: 0 auto;">
-        Since 1995, Ducks Unlimited has been crafting quality clothing that's accessible to everyone.
-        We believe in affordable luxury — great design, premium materials, fair prices.
-      </p>
-    </section>
 
-    <section id="shop" style="margin-bottom: 3rem;">
-      <h2 class="section-title">Our Collections</h2>
-      <div class="features">
-        <div class="feature-card">
-          <div class="feature-icon">👔</div>
-          <h3>Polos</h3>
-          <p>Classic and modern styles. Perfect for work or casual wear.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">👕</div>
-          <h3>T-Shirts</h3>
-          <p>Comfortable, versatile everyday essentials.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🩳</div>
-          <h3>Shorts</h3>
-          <p>Lightweight and breathable. Perfect for the Philippine climate.</p>
-        </div>
-      </div>
+    <!-- ────────────────────────────────────────────────────────
+         HERO
+         Typographic-only for now. Add a background image via the
+         .hero CSS when ready (see comment in stylesheet above).
+         ──────────────────────────────────────────────────────── -->
+    <section class="hero">
+      <div class="container hero__inner">
 
-      <div class="coming-soon">
-        <h2>Store Coming Soon</h2>
-        <p>We're launching our online shop. Check back soon to browse our full catalog and place your order.</p>
-        <p style="margin-top: 1rem; font-size: 0.9rem; color: #999;">
-          In the meantime, visit our store in Greenhills, San Juan.
+        <div class="hero__eyebrow">Ducks Unlimited</div>
+
+        <h1 class="hero__headline">
+          Filipino-made<span class="accent">.</span><br />
+          Since 1995<span class="accent">.</span>
+        </h1>
+
+        <div class="hero__divider"></div>
+
+        <p class="hero__sub">
+          Egyptian cotton garments crafted for everyday elegance.
         </p>
+
+        <a href="/shop.html" class="btn btn-accent btn-lg">Shop Now</a>
+
       </div>
     </section>
 
-    <section id="contact">
-      <h2 class="section-title">Get in Touch</h2>
-      <p style="font-size: 1rem; color: #666; max-width: 600px; margin: 0 auto;">
-        Questions? Visit us at our Greenhills store or contact us for more information.
-      </p>
+    <!-- ────────────────────────────────────────────────────────
+         FEATURED CATEGORIES
+         Categories are hardcoded for now since they're a fixed
+         set defined by the schema (polo, t-shirt, shorts, pants).
+         If we ever add a categories table, swap this for a fetch.
+         ──────────────────────────────────────────────────────── -->
+    <section class="categories section">
+      <div class="container">
+        <p class="eyebrow text-center">Shop by Category</p>
+        <h2 class="text-center">Featured Categories</h2>
+      </div>
+
+      <!-- The scroller is the overflow container; the grid is its
+           single direct child so horizontal scroll works smoothly -->
+      <div class="categories__scroller">
+        <div class="container categories__grid">
+
+          <a class="cat-card cat-card--green" href="/shop.html?category=polo">
+            <span class="cat-card__name">Polo Shirts</span>
+            <span class="cat-card__cta">Shop →</span>
+          </a>
+
+          <a class="cat-card cat-card--gold" href="/shop.html?category=t-shirt">
+            <span class="cat-card__name">T-Shirts</span>
+            <span class="cat-card__cta">Shop →</span>
+          </a>
+
+          <a class="cat-card cat-card--ivory" href="/shop.html?category=shorts">
+            <span class="cat-card__name">Shorts</span>
+            <span class="cat-card__cta">Shop →</span>
+          </a>
+
+          <a class="cat-card cat-card--dark" href="/shop.html?category=pants">
+            <span class="cat-card__name">Pants</span>
+            <span class="cat-card__cta">Shop →</span>
+          </a>
+
+        </div>
+      </div>
     </section>
+
+    <!-- ────────────────────────────────────────────────────────
+         NEW ARRIVALS — filled by the inline script below
+         ──────────────────────────────────────────────────────── -->
+    <section class="new-arrivals section">
+      <div class="container">
+        <p class="eyebrow text-center">Just In</p>
+        <h2 class="text-center">New Arrivals</h2>
+
+        <div class="products-grid" id="newArrivalsGrid">
+          <!-- Skeleton cards while loading, replaced by real products on fetch -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ────────────────────────────────────────────────────────
+         BRAND STORY
+         ──────────────────────────────────────────────────────── -->
+    <section class="story section">
+      <div class="container story__inner">
+        <p class="eyebrow">Our Story</p>
+        <h2>Crafted in the Philippines</h2>
+        <div class="story__divider"></div>
+        <p>
+          For three decades, Ducks Unlimited has been a family-run, vertically
+          integrated workshop in the Philippines — from yarn to finished
+          garment, every piece is woven from the finest Egyptian cotton.
+        </p>
+        <p>
+          Affordable luxury that lasts. Made by hand. Designed to live in.
+        </p>
+        <a href="/about.html" class="story__link">About Us →</a>
+      </div>
+    </section>
+
   </main>
 
-  <!-- ── Footer ── -->
-  <footer>
-    <p>&copy; 2025 Ducks Unlimited. All rights reserved.</p>
-    <p style="margin-top: 0.5rem;">
-      <a href="/admin/index.html">Admin Portal</a>
-    </p>
-  </footer>
+  <!-- ── Footer (mounted by /js/components.js) ── -->
+  <div data-component="footer"></div>
+
+
+  <!-- ────────────────────────────────────────────────────────────
+       Scripts
+       ──────────────────────────────────────────────────────────── -->
+
+  <!-- Loads the nav + footer snippets from /public/components/ -->
+  <script type="module" src="/js/components.js"></script>
+
+  <!-- Sets up the cart and keeps the nav cart-count badge in sync -->
+  <script type="module" src="/js/cart.js"></script>
+
+  <!-- Page-specific: fetch the 8 newest active products into the grid -->
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+
+    const grid = document.getElementById('newArrivalsGrid');
+
+    // Small helpers ---------------------------------------------------
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function formatPrice(amount) {
+      return '₱' + Number(amount).toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+
+    // Render 8 placeholder cards so the section looks intentional
+    // while the real products load.
+    function showSkeletons(count) {
+      grid.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const card = document.createElement('div');
+        card.className = 'product-card product-card--skeleton';
+        card.innerHTML = `
+          <div class="product-card__image"></div>
+          <div class="product-card__body">
+            <div class="skeleton-line skeleton-line--name"></div>
+            <div class="skeleton-line skeleton-line--price"></div>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
+    // Pick the primary image for a product, falling back to the lowest-
+    // ordered image, or null if there are no images at all.
+    function pickPrimaryImage(product) {
+      const imgs = product.product_images || [];
+      if (imgs.length === 0) return null;
+      const primary = imgs.find(i => i.is_primary);
+      if (primary) return primary.image_url;
+      // Fall back to the image with the smallest display_order
+      const sorted = [...imgs].sort((a, b) => a.display_order - b.display_order);
+      return sorted[0].image_url;
+    }
+
+    function renderProducts(products) {
+      grid.innerHTML = '';
+      for (const p of products) {
+        const img = pickPrimaryImage(p);
+        const card = document.createElement('a');
+        card.className = 'product-card';
+        card.href = `/product.html?id=${encodeURIComponent(p.id)}`;
+        card.innerHTML = `
+          <div class="product-card__image">
+            ${img
+              ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(p.name)}" loading="lazy" />`
+              : `<div class="product-card__placeholder">
+                   <span class="product-card__placeholder-mark">Ducks Unlimited</span>
+                   <span class="product-card__placeholder-sub">est. 1995</span>
+                 </div>`}
+          </div>
+          <div class="product-card__body">
+            <h3 class="product-card__name">${escapeHtml(p.name)}</h3>
+            <p class="product-card__price">${formatPrice(p.base_price)}</p>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
+    function renderEmpty(message) {
+      grid.innerHTML = `<p class="products-empty">${escapeHtml(message)}</p>`;
+    }
+
+    // Fetch + render --------------------------------------------------
+
+    async function loadNewArrivals() {
+      showSkeletons(8);
+
+      // Pull the 8 newest active products, plus their images so we can
+      // pick the primary one without a second roundtrip.
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          id, name, base_price, created_at,
+          product_images ( image_url, display_order, is_primary )
+        `)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(8);
+
+      if (error) {
+        console.error('Failed to load new arrivals:', error);
+        renderEmpty('Could not load products. Please refresh the page.');
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        renderEmpty('New arrivals coming soon.');
+        return;
+      }
+
+      renderProducts(data);
+    }
+
+    loadNewArrivals();
+  </script>
 
 </body>
 </html>

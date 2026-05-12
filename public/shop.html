@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shop — Ducks Unlimited</title>
+  <meta name="description" content="Browse the full Ducks Unlimited catalog of Filipino-made Egyptian cotton garments." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    /* ============================================================
+       Shop page styles
+       Reusable patterns are in /css/style.css — this file holds
+       only the layout for the shop's grid + filter sidebar.
+       ============================================================ */
+
+    /* ── Page header ───────────────────────────────────────────── */
+
+    .shop-header {
+      background: var(--color-bg);
+      padding: 2rem 0 1rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .shop-header h1 {
+      text-align: center;
+      margin-bottom: 0.25rem;
+    }
+
+    .shop-header__sub {
+      text-align: center;
+      color: var(--color-text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* ── Two-column layout (sidebar + grid) ─────────────────────── */
+
+    .shop {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      padding-block: 1.5rem 3rem;
+    }
+
+    /* ── Top bar above the grid ─────────────────────────────────── */
+
+    .grid-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .results-count {
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+    }
+
+    .results-count strong { color: var(--color-text); font-weight: 500; }
+
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-left: auto;
+    }
+
+    .sort-select {
+      padding: 0.5rem 0.75rem;
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-white);
+      color: var(--color-text);
+      cursor: pointer;
+    }
+
+    .sort-select:focus { outline: none; border-color: var(--color-primary); }
+
+    /* Mobile-only button that opens the filter drawer */
+    .filter-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0.9rem;
+      background: var(--color-primary);
+      color: var(--color-white);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .filter-toggle__count {
+      background: var(--color-accent);
+      color: var(--color-white);
+      font-size: 0.7rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: var(--radius-pill);
+      min-width: 18px;
+      text-align: center;
+    }
+
+    /* ── Filter sidebar ─────────────────────────────────────────── */
+
+    .filter-sidebar {
+      background: var(--color-white);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .filter-sidebar__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .filter-sidebar__title {
+      font-family: var(--font-heading);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      letter-spacing: 0.02em;
+    }
+
+    .filter-clear-btn {
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem;
+      font-family: var(--font-body);
+    }
+
+    .filter-clear-btn:hover { color: var(--color-primary); }
+    .filter-clear-btn:disabled {
+      color: var(--color-text-light);
+      cursor: not-allowed;
+      text-decoration: none;
+    }
+
+    /* Mobile-only close (X) button at top right of the drawer */
+    .filter-drawer-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      line-height: 1;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      padding: 0.25rem;
+    }
+
+    /* ── Filter groups (each filter type is a labeled section) ──── */
+
+    .filter-group {
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .filter-group:last-of-type { border-bottom: none; }
+
+    .filter-group__label {
+      display: block;
+      font-family: var(--font-body);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 0.65rem;
+    }
+
+    .filter-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    /* ── Custom checkbox styling ─────────────────────────────── */
+
+    .filter-check {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      cursor: pointer;
+      font-size: 0.88rem;
+      color: var(--color-text);
+      user-select: none;
+    }
+
+    /* Hide the native checkbox but keep it functional for accessibility */
+    .filter-check input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .filter-check__box {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid var(--color-border);
+      border-radius: 3px;
+      background: var(--color-white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .filter-check__box::after {
+      content: '';
+      width: 10px;
+      height: 6px;
+      border-left: 2px solid var(--color-white);
+      border-bottom: 2px solid var(--color-white);
+      transform: rotate(-45deg) translate(1px, -1px);
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+
+    .filter-check input:checked + .filter-check__box {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+    .filter-check input:checked + .filter-check__box::after { opacity: 1; }
+
+    .filter-check input:focus-visible + .filter-check__box {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    /* Small swatch dot rendered next to a color option */
+    .filter-check__swatch {
+      flex-shrink: 0;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.1);
+      margin-left: 0.1rem;
+    }
+
+    .filter-check__count {
+      margin-left: auto;
+      font-size: 0.75rem;
+      color: var(--color-text-light);
+    }
+
+    /* ── Dual-thumb price range slider ────────────────────────── */
+
+    .range-slider {
+      position: relative;
+      height: 36px;
+      margin: 0.25rem 0 0.5rem;
+    }
+
+    .range-slider__track,
+    .range-slider__fill {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 4px;
+      border-radius: 2px;
+    }
+
+    .range-slider__track {
+      left: 0;
+      right: 0;
+      background: var(--color-border);
+    }
+
+    .range-slider__fill {
+      background: var(--color-primary);
+      /* left and right are set in JS as percentages */
+      left: 0;
+      right: 0;
+    }
+
+    /* Two range inputs stacked on top of each other. We hide the
+       native track and only style the thumb so they appear as one
+       slider with two draggable thumbs. */
+    .range-slider input[type='range'] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 36px;
+      background: transparent;
+      pointer-events: none;
+      -webkit-appearance: none;
+      appearance: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .range-slider input[type='range']::-webkit-slider-runnable-track {
+      background: transparent;
+      height: 4px;
+    }
+
+    .range-slider input[type='range']::-moz-range-track {
+      background: transparent;
+      height: 4px;
+    }
+
+    .range-slider input[type='range']::-webkit-slider-thumb {
+      pointer-events: auto;
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      border: 2px solid var(--color-white);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+      cursor: pointer;
+    }
+
+    .range-slider input[type='range']::-moz-range-thumb {
+      pointer-events: auto;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      border: 2px solid var(--color-white);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+      cursor: pointer;
+    }
+
+    .range-display {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      font-size: 0.82rem;
+      color: var(--color-text-muted);
+    }
+
+    .range-display strong {
+      color: var(--color-text);
+      font-weight: 500;
+    }
+
+    /* ── Product grid ──────────────────────────────────────────── */
+
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.85rem;
+    }
+
+    .product-card {
+      position: relative;
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--color-white);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .product-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+      text-decoration: none;
+    }
+
+    .product-card__image {
+      aspect-ratio: 1 / 1.2;
+      background: var(--color-bg-warm);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .product-card__image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Branded placeholder when no image — duck silhouette + brand name */
+    .product-card__placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, #f5f0e8, #fff);
+      color: var(--color-primary);
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .product-card__placeholder svg { color: var(--color-primary); opacity: 0.7; }
+
+    .product-card__placeholder-mark {
+      font-family: var(--font-heading);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .product-card__placeholder-sub {
+      font-style: italic;
+      font-size: 0.62rem;
+      color: var(--color-accent);
+      letter-spacing: 0.14em;
+    }
+
+    /* "Out of Stock" overlay */
+    .product-card__oos {
+      position: absolute;
+      inset: 0;
+      background: rgba(245, 240, 232, 0.78);
+      backdrop-filter: blur(1px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .product-card__oos span {
+      background: var(--color-text);
+      color: var(--color-bg);
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 0.45rem 1rem;
+      border-radius: var(--radius-pill);
+    }
+
+    .product-card__body { padding: 0.85rem 1rem 1.1rem; }
+
+    .product-card__name {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0 0 0.3rem;
+      line-height: 1.25;
+    }
+
+    .product-card__price {
+      font-size: 0.9rem;
+      color: var(--color-primary);
+      font-weight: 500;
+      margin: 0;
+    }
+
+    .product-card__price small {
+      font-size: 0.7rem;
+      font-weight: 400;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--color-text-light);
+      margin-right: 0.2rem;
+    }
+
+    /* Color dots row at the bottom of the card */
+    .product-card__colors {
+      display: flex;
+      gap: 0.3rem;
+      margin-top: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .color-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.08);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
+    }
+
+    .color-dot--more {
+      width: auto;
+      height: auto;
+      padding: 0 0.3rem;
+      border: none;
+      font-size: 0.65rem;
+      color: var(--color-text-light);
+      font-weight: 500;
+      line-height: 14px;
+    }
+
+    /* ── Skeleton state ────────────────────────────────────────── */
+
+    .product-card--skeleton { pointer-events: none; }
+    .product-card--skeleton .product-card__image,
+    .skeleton-line {
+      background: linear-gradient(90deg, #f0ebe1 0%, #faf7f2 50%, #f0ebe1 100%);
+      background-size: 200% 100%;
+      animation: skeleton-pulse 1.4s ease-in-out infinite;
+    }
+
+    .skeleton-line {
+      height: 0.85rem;
+      border-radius: 3px;
+      margin-bottom: 0.45rem;
+    }
+    .skeleton-line--name  { width: 80%; height: 1rem; }
+    .skeleton-line--price { width: 40%; }
+
+    @keyframes skeleton-pulse {
+      0%, 100% { background-position: 100% 0; }
+      50%      { background-position: 0% 0; }
+    }
+
+    /* ── Empty state when filters yield no results ──────────────── */
+
+    .grid-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--color-text-muted);
+    }
+
+    .grid-empty h3 {
+      color: var(--color-text);
+      margin-bottom: 0.5rem;
+    }
+
+    .grid-empty p { font-size: 0.9rem; }
+
+    /* ── Mobile-only: drawer behavior for the filter sidebar ───── */
+
+    /* Overlay shown behind the drawer when it's open */
+    .filter-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+
+    .filter-overlay.open { opacity: 1; pointer-events: all; }
+
+    @media (max-width: 1023.98px) {
+      .filter-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 85%;
+        max-width: 360px;
+        z-index: 201;
+        overflow-y: auto;
+        border-radius: 0;
+        transform: translateX(-100%);
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+        padding-top: 0;
+      }
+
+      .filter-sidebar.open { transform: translateX(0); }
+
+      .filter-sidebar__header {
+        position: sticky;
+        top: 0;
+        background: var(--color-white);
+        z-index: 1;
+        padding: 1rem 1.25rem;
+        margin: 0 -1.25rem 1rem;
+        border-bottom: 1px solid var(--color-border);
+      }
+    }
+
+    /* ── Desktop layout (≥ 1024px) ─────────────────────────────── */
+
+    @media (min-width: 768px) {
+      .products-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+      }
+      .product-card__name  { font-size: 1.05rem; }
+    }
+
+    @media (min-width: 1024px) {
+      .shop {
+        grid-template-columns: 260px 1fr;
+        gap: 2.5rem;
+        padding-block: 2rem 4rem;
+        align-items: start;
+      }
+
+      .filter-sidebar {
+        position: sticky;
+        top: 80px; /* below the sticky nav */
+      }
+
+      /* Hide the mobile-only controls */
+      .filter-toggle,
+      .filter-drawer-close,
+      .filter-overlay {
+        display: none !important;
+      }
+
+      .products-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Nav (mounted by /js/components.js) ── -->
+  <div data-component="nav"></div>
+
+  <!-- ── Page header ── -->
+  <header class="shop-header">
+    <div class="container">
+      <h1>Shop</h1>
+      <p class="shop-header__sub">Every piece is hand-finished in our Greenhills workshop.</p>
+    </div>
+  </header>
+
+  <main class="container shop">
+
+    <!-- ── Overlay for the mobile filter drawer ── -->
+    <div class="filter-overlay" id="filterOverlay"></div>
+
+    <!-- ── Filter sidebar ── -->
+    <aside class="filter-sidebar" id="filterSidebar" aria-label="Product filters">
+
+      <div class="filter-sidebar__header">
+        <span class="filter-sidebar__title">Filters</span>
+        <button type="button" class="filter-clear-btn" id="clearFiltersBtn" disabled>
+          Clear all
+        </button>
+        <button type="button" class="filter-drawer-close" id="closeDrawerBtn" aria-label="Close filters">×</button>
+      </div>
+
+      <!-- Category checkboxes — rendered by JS once products load -->
+      <div class="filter-group">
+        <span class="filter-group__label">Category</span>
+        <div class="filter-options" id="categoryOptions">
+          <span class="filter-check__count">Loading…</span>
+        </div>
+      </div>
+
+      <!-- Size checkboxes — fixed set -->
+      <div class="filter-group">
+        <span class="filter-group__label">Size</span>
+        <div class="filter-options" id="sizeOptions">
+          <!-- Rendered by JS so we can attach the same event handler pattern -->
+        </div>
+      </div>
+
+      <!-- Color checkboxes — rendered by JS once products load -->
+      <div class="filter-group">
+        <span class="filter-group__label">Color</span>
+        <div class="filter-options" id="colorOptions">
+          <span class="filter-check__count">Loading…</span>
+        </div>
+      </div>
+
+      <!-- Price range -->
+      <div class="filter-group">
+        <span class="filter-group__label">Price Range</span>
+
+        <div class="range-slider">
+          <div class="range-slider__track"></div>
+          <div class="range-slider__fill" id="priceFill"></div>
+          <input type="range" min="0" max="5000" step="50" value="0"    id="priceMin" aria-label="Minimum price" />
+          <input type="range" min="0" max="5000" step="50" value="5000" id="priceMax" aria-label="Maximum price" />
+        </div>
+
+        <div class="range-display">
+          <span>₱<strong id="minPriceDisplay">0</strong></span>
+          <span>—</span>
+          <span>₱<strong id="maxPriceDisplay">5,000</strong></span>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ── Main column: toolbar + grid ── -->
+    <section>
+
+      <div class="grid-toolbar">
+        <div class="results-count" id="resultsCount">Loading…</div>
+
+        <div class="toolbar-right">
+          <!-- Mobile-only — opens the filter drawer -->
+          <button type="button" class="filter-toggle hide-desktop" id="openDrawerBtn">
+            <span>Filters</span>
+            <span class="filter-toggle__count" id="filterToggleCount" style="display:none;">0</span>
+          </button>
+
+          <label for="sortSelect" class="sr-only">Sort by</label>
+          <select id="sortSelect" class="sort-select">
+            <option value="newest">Sort: Newest</option>
+            <option value="price-asc">Sort: Price (Low to High)</option>
+            <option value="price-desc">Sort: Price (High to Low)</option>
+            <option value="name">Sort: Name A-Z</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="products-grid" id="productsGrid">
+        <!-- Skeleton cards while loading, replaced by JS -->
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ── Footer (mounted by /js/components.js) ── -->
+  <div data-component="footer"></div>
+
+
+  <!-- Scripts -->
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+
+    // ─────────────────────────────────────────────────────────────────
+    // CONSTANTS
+    // ─────────────────────────────────────────────────────────────────
+
+    const FIXED_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+    const SIZE_ORDER  = { XS: 1, S: 2, M: 3, L: 4, XL: 5, XXL: 6, XXXL: 7 };
+
+    const PRICE_MIN = 0;
+    const PRICE_MAX = 5000;
+
+    // Map common color names → hex values for the color dots. Lowercase keys.
+    // Unknown colors fall back to a neutral gray (see colorToHex below).
+    const COLOR_MAP = {
+      'white':         '#ffffff',
+      'cream':         '#f5e9d4',
+      'beige':         '#e8dcc4',
+      'tan':           '#d2b48c',
+      'khaki':         '#c4a575',
+      'gold':          '#C9A84C',
+      'yellow':        '#e8c34a',
+      'orange':        '#cc7a3b',
+      'red':           '#b33a3a',
+      'maroon':        '#6e2929',
+      'pink':          '#d4a8b8',
+      'purple':        '#6a4378',
+      'blue':          '#4a6fa5',
+      'light blue':    '#a8c5db',
+      'navy':          '#1e2a44',
+      'teal':          '#2d7a7e',
+      'green':         '#2d6b3f',
+      'forest green':  '#1B4D2E',
+      'olive':         '#6b7f3a',
+      'brown':         '#5a3e2b',
+      'gray':          '#888888',
+      'grey':          '#888888',
+      'charcoal':      '#36454f',
+      'black':         '#1a1a1a',
+    };
+
+    const CATEGORY_LABELS = {
+      polo:       'Polo Shirts',
+      't-shirt':  'T-Shirts',
+      shorts:     'Shorts',
+      pants:      'Pants',
+      others:     'Others',
+    };
+
+    // ─────────────────────────────────────────────────────────────────
+    // STATE
+    // ─────────────────────────────────────────────────────────────────
+
+    const state = {
+      // Raw products with computed fields like minPrice, colors, sizes, etc.
+      products: [],
+
+      // Current filter selections. Sets give us fast `.has()` checks.
+      filters: {
+        categories: new Set(),
+        sizes:      new Set(),
+        colors:     new Set(),
+        minPrice:   PRICE_MIN,
+        maxPrice:   PRICE_MAX,
+      },
+
+      sort: 'newest',
+    };
+
+    // ─────────────────────────────────────────────────────────────────
+    // ELEMENT REFERENCES
+    // ─────────────────────────────────────────────────────────────────
+
+    const grid               = document.getElementById('productsGrid');
+    const resultsCountEl     = document.getElementById('resultsCount');
+    const sortSelect         = document.getElementById('sortSelect');
+
+    const categoryOptionsEl  = document.getElementById('categoryOptions');
+    const sizeOptionsEl      = document.getElementById('sizeOptions');
+    const colorOptionsEl     = document.getElementById('colorOptions');
+
+    const priceMinInput      = document.getElementById('priceMin');
+    const priceMaxInput      = document.getElementById('priceMax');
+    const priceFill          = document.getElementById('priceFill');
+    const minPriceDisplay    = document.getElementById('minPriceDisplay');
+    const maxPriceDisplay    = document.getElementById('maxPriceDisplay');
+
+    const clearBtn           = document.getElementById('clearFiltersBtn');
+
+    const sidebar            = document.getElementById('filterSidebar');
+    const overlay            = document.getElementById('filterOverlay');
+    const openDrawerBtn      = document.getElementById('openDrawerBtn');
+    const closeDrawerBtn     = document.getElementById('closeDrawerBtn');
+    const filterToggleCount  = document.getElementById('filterToggleCount');
+
+    // ─────────────────────────────────────────────────────────────────
+    // HELPERS
+    // ─────────────────────────────────────────────────────────────────
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function formatPrice(amount) {
+      return Number(amount).toLocaleString('en-PH', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      });
+    }
+
+    function colorToHex(name) {
+      return COLOR_MAP[String(name).trim().toLowerCase()] || '#999999';
+    }
+
+    function pickPrimaryImage(images) {
+      if (!images || images.length === 0) return null;
+      const primary = images.find(i => i.is_primary);
+      if (primary) return primary.image_url;
+      const sorted = [...images].sort((a, b) => a.display_order - b.display_order);
+      return sorted[0].image_url;
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // LOAD + ENRICH PRODUCTS
+    // ─────────────────────────────────────────────────────────────────
+
+    async function loadProducts() {
+      const { data, error } = await supabase
+        .from('products')
+        .select(`
+          id, name, base_price, category, created_at,
+          variants (
+            id, color, size, price_override,
+            inventory ( channel, quantity )
+          ),
+          product_images ( image_url, is_primary, display_order )
+        `)
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('Failed to load products:', error);
+        return [];
+      }
+      return data ?? [];
+    }
+
+    // Add computed fields to each product so we can filter and render quickly.
+    function enrichProduct(p) {
+      const variants = p.variants ?? [];
+
+      const prices  = variants.map(v => Number(v.price_override ?? p.base_price));
+      const minPrice = prices.length ? Math.min(...prices) : Number(p.base_price);
+      const maxPrice = prices.length ? Math.max(...prices) : Number(p.base_price);
+
+      // Distinct colors & sizes across variants
+      const colors = [...new Set(variants.map(v => v.color))];
+      const sizes  = [...new Set(variants.map(v => v.size))];
+
+      // Total online inventory across all variants. If 0 → "Out of Stock".
+      const onlineStock = variants.reduce((total, v) => {
+        const row = (v.inventory ?? []).find(i => i.channel === 'online');
+        return total + (row?.quantity ?? 0);
+      }, 0);
+
+      return {
+        id:          p.id,
+        name:        p.name,
+        category:    p.category,
+        basePrice:   Number(p.base_price),
+        createdAt:   p.created_at,
+        variants,
+        minPrice,
+        maxPrice,
+        colors,
+        sizes,
+        onlineStock,
+        outOfStock:  onlineStock === 0,
+        imageUrl:    pickPrimaryImage(p.product_images),
+      };
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // BUILD FILTER UI (categories + colors come from the products)
+    // ─────────────────────────────────────────────────────────────────
+
+    function renderFilterOptions(container, options, type) {
+      container.innerHTML = '';
+      for (const opt of options) {
+        const label = document.createElement('label');
+        label.className = 'filter-check';
+
+        const swatch = type === 'color'
+          ? `<span class="filter-check__swatch" style="background:${colorToHex(opt.value)}"></span>`
+          : '';
+
+        label.innerHTML = `
+          <input type="checkbox" data-filter="${type}" value="${escapeHtml(opt.value)}" />
+          <span class="filter-check__box" aria-hidden="true"></span>
+          ${swatch}
+          <span>${escapeHtml(opt.label)}</span>
+          <span class="filter-check__count">${opt.count}</span>
+        `;
+        container.appendChild(label);
+      }
+    }
+
+    function buildFilterUI() {
+      // Categories — count products in each
+      const catCounts = new Map();
+      for (const p of state.products) {
+        catCounts.set(p.category, (catCounts.get(p.category) ?? 0) + 1);
+      }
+      const categories = [...catCounts.entries()]
+        .map(([value, count]) => ({
+          value,
+          label: CATEGORY_LABELS[value] ?? value,
+          count,
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+
+      renderFilterOptions(categoryOptionsEl, categories, 'category');
+
+      // Sizes — fixed list, with counts for context
+      const sizeCounts = new Map();
+      for (const p of state.products) {
+        for (const s of p.sizes) sizeCounts.set(s, (sizeCounts.get(s) ?? 0) + 1);
+      }
+      const sizes = FIXED_SIZES
+        .filter(s => sizeCounts.has(s)) // hide sizes no product carries
+        .map(s => ({ value: s, label: s, count: sizeCounts.get(s) }));
+
+      // Fall back to the full list if no sizes are tracked yet
+      const sizesToShow = sizes.length ? sizes
+        : FIXED_SIZES.map(s => ({ value: s, label: s, count: 0 }));
+
+      renderFilterOptions(sizeOptionsEl, sizesToShow, 'size');
+
+      // Colors — gather distinct from variants, count products per color
+      const colorCounts = new Map();
+      for (const p of state.products) {
+        for (const c of p.colors) colorCounts.set(c, (colorCounts.get(c) ?? 0) + 1);
+      }
+      const colors = [...colorCounts.entries()]
+        .map(([value, count]) => ({ value, label: value, count }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+
+      renderFilterOptions(colorOptionsEl, colors, 'color');
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // FILTERING + SORTING
+    // ─────────────────────────────────────────────────────────────────
+
+    function productMatchesFilters(p, f) {
+      // Category — product's category must be in the selected set
+      if (f.categories.size > 0 && !f.categories.has(p.category)) return false;
+
+      // Price — at least one variant must fall in the selected range
+      const inRange = (price) => price >= f.minPrice && price <= f.maxPrice;
+      const variantPrices = p.variants.length
+        ? p.variants.map(v => Number(v.price_override ?? p.basePrice))
+        : [p.basePrice];
+      if (!variantPrices.some(inRange)) return false;
+
+      // Size + color — at least one variant must match BOTH (when both are active)
+      const needSize  = f.sizes.size  > 0;
+      const needColor = f.colors.size > 0;
+      if (needSize || needColor) {
+        const hasMatchingVariant = p.variants.some(v => {
+          if (needSize  && !f.sizes.has(v.size))   return false;
+          if (needColor && !f.colors.has(v.color)) return false;
+          return true;
+        });
+        if (!hasMatchingVariant) return false;
+      }
+
+      return true;
+    }
+
+    function getFiltered() {
+      return state.products.filter(p => productMatchesFilters(p, state.filters));
+    }
+
+    const SORTERS = {
+      'newest':     (a, b) => b.createdAt.localeCompare(a.createdAt),
+      'price-asc':  (a, b) => a.minPrice - b.minPrice,
+      'price-desc': (a, b) => b.minPrice - a.minPrice,
+      'name':       (a, b) => a.name.localeCompare(b.name),
+    };
+
+    function getFilteredAndSorted() {
+      const sorter = SORTERS[state.sort] || SORTERS.newest;
+      return getFiltered().sort(sorter);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // RENDERING
+    // ─────────────────────────────────────────────────────────────────
+
+    // Inline SVG used for the "no image" placeholder. Simple side-view
+    // duck silhouette — replace with your real logo when ready.
+    const DUCK_SVG = `
+      <svg viewBox="0 0 64 48" width="48" height="36" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <ellipse cx="36" cy="30" rx="22" ry="13"/>
+        <circle cx="18" cy="20" r="10"/>
+        <polygon points="2,19 12,21 2,23"/>
+        <circle cx="18" cy="17" r="1.8" fill="#F5F0E8"/>
+      </svg>
+    `;
+
+    function showSkeletons(count = 8) {
+      grid.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const card = document.createElement('div');
+        card.className = 'product-card product-card--skeleton';
+        card.innerHTML = `
+          <div class="product-card__image"></div>
+          <div class="product-card__body">
+            <div class="skeleton-line skeleton-line--name"></div>
+            <div class="skeleton-line skeleton-line--price"></div>
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
+    function renderGrid(products) {
+      if (products.length === 0) {
+        grid.innerHTML = `
+          <div class="grid-empty">
+            <h3>No products match these filters.</h3>
+            <p>Try clearing some filters to see more options.</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = '';
+
+      for (const p of products) {
+        const card = document.createElement('a');
+        card.className = 'product-card';
+        card.href = `/product.html?id=${encodeURIComponent(p.id)}`;
+
+        // Price label — "From ₱X" when variants differ, "₱X" when they don't
+        const priceHtml = p.minPrice === p.maxPrice
+          ? `<p class="product-card__price">₱${formatPrice(p.minPrice)}</p>`
+          : `<p class="product-card__price"><small>From</small>₱${formatPrice(p.minPrice)}</p>`;
+
+        // Color dots — show up to 5, then a "+N" pill for the rest
+        const colorsToShow = p.colors.slice(0, 5);
+        const remainingColors = p.colors.length - colorsToShow.length;
+        const colorsHtml = p.colors.length
+          ? `
+            <div class="product-card__colors">
+              ${colorsToShow.map(c => `
+                <span class="color-dot" style="background:${colorToHex(c)}" title="${escapeHtml(c)}"></span>
+              `).join('')}
+              ${remainingColors > 0 ? `<span class="color-dot color-dot--more">+${remainingColors}</span>` : ''}
+            </div>
+          `
+          : '';
+
+        card.innerHTML = `
+          <div class="product-card__image">
+            ${p.imageUrl
+              ? `<img src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" loading="lazy" />`
+              : `<div class="product-card__placeholder">
+                   ${DUCK_SVG}
+                   <span class="product-card__placeholder-mark">Ducks Unlimited</span>
+                   <span class="product-card__placeholder-sub">est. 1995</span>
+                 </div>`}
+            ${p.outOfStock ? `<div class="product-card__oos"><span>Out of Stock</span></div>` : ''}
+          </div>
+          <div class="product-card__body">
+            <h3 class="product-card__name">${escapeHtml(p.name)}</h3>
+            ${priceHtml}
+            ${colorsHtml}
+          </div>
+        `;
+
+        grid.appendChild(card);
+      }
+    }
+
+    function renderCount(visible, total) {
+      resultsCountEl.innerHTML = total === 0
+        ? 'No products yet.'
+        : `Showing <strong>${visible}</strong> of <strong>${total}</strong> product${total === 1 ? '' : 's'}`;
+    }
+
+    function activeFilterCount() {
+      const f = state.filters;
+      return f.categories.size + f.sizes.size + f.colors.size
+        + (f.minPrice !== PRICE_MIN ? 1 : 0)
+        + (f.maxPrice !== PRICE_MAX ? 1 : 0);
+    }
+
+    function updateMobileFilterBadge() {
+      const count = activeFilterCount();
+      if (count > 0) {
+        filterToggleCount.textContent = count;
+        filterToggleCount.style.display = 'inline-block';
+      } else {
+        filterToggleCount.style.display = 'none';
+      }
+    }
+
+    function updateClearButton() {
+      clearBtn.disabled = activeFilterCount() === 0;
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // PRICE RANGE
+    // ─────────────────────────────────────────────────────────────────
+
+    function updatePriceFill() {
+      const range = PRICE_MAX - PRICE_MIN;
+      const leftPct  = ((Number(priceMinInput.value) - PRICE_MIN) / range) * 100;
+      const rightPct = ((PRICE_MAX - Number(priceMaxInput.value)) / range) * 100;
+      priceFill.style.left  = `${leftPct}%`;
+      priceFill.style.right = `${rightPct}%`;
+    }
+
+    function updatePriceDisplay() {
+      minPriceDisplay.textContent = formatPrice(Number(priceMinInput.value));
+      maxPriceDisplay.textContent = formatPrice(Number(priceMaxInput.value));
+    }
+
+    // Keep the two thumbs from crossing each other
+    function clampPriceInputs() {
+      let min = Number(priceMinInput.value);
+      let max = Number(priceMaxInput.value);
+      if (min > max) {
+        // Whichever was just adjusted is the "active" one — push the other
+        priceMinInput.value = max;
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // URL ↔ STATE SYNC
+    // Filter state in the URL so the filtered view is shareable.
+    // ─────────────────────────────────────────────────────────────────
+
+    function applyFiltersToURL() {
+      const p = new URLSearchParams();
+      const f = state.filters;
+      if (f.categories.size) p.set('category', [...f.categories].join(','));
+      if (f.sizes.size)      p.set('size',     [...f.sizes].join(','));
+      if (f.colors.size)     p.set('color',    [...f.colors].join(','));
+      if (f.minPrice !== PRICE_MIN) p.set('min',  f.minPrice);
+      if (f.maxPrice !== PRICE_MAX) p.set('max',  f.maxPrice);
+      if (state.sort !== 'newest')   p.set('sort', state.sort);
+
+      const qs = p.toString();
+      // Use replaceState so we don't pollute browser history while users tweak filters
+      history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
+    }
+
+    function readFiltersFromURL() {
+      const p = new URLSearchParams(window.location.search);
+
+      const parseSet = key => new Set(
+        (p.get(key) ?? '').split(',').map(s => s.trim()).filter(Boolean)
+      );
+
+      state.filters.categories = parseSet('category');
+      state.filters.sizes      = parseSet('size');
+      state.filters.colors     = parseSet('color');
+
+      const min = Number(p.get('min'));
+      const max = Number(p.get('max'));
+      state.filters.minPrice = Number.isFinite(min) ? min : PRICE_MIN;
+      state.filters.maxPrice = Number.isFinite(max) && max > 0 ? max : PRICE_MAX;
+
+      state.sort = p.get('sort') || 'newest';
+    }
+
+    // After reading URL state, sync the UI controls so they match
+    function syncUIFromState() {
+      // Checkboxes
+      document.querySelectorAll('input[data-filter]').forEach(input => {
+        const type = input.dataset.filter;
+        const set = state.filters[`${type}s`] ?? state.filters[`${type === 'category' ? 'categories' : type + 's'}`];
+        // Map data-filter type to the matching state key:
+        //   category → categories,  size → sizes,  color → colors
+        const stateKey = ({ category: 'categories', size: 'sizes', color: 'colors' })[type];
+        input.checked = stateKey ? state.filters[stateKey].has(input.value) : false;
+      });
+
+      priceMinInput.value = state.filters.minPrice;
+      priceMaxInput.value = state.filters.maxPrice;
+      updatePriceFill();
+      updatePriceDisplay();
+
+      sortSelect.value = state.sort;
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // MAIN UPDATE — call this after any filter/sort change
+    // ─────────────────────────────────────────────────────────────────
+
+    function update() {
+      const visible = getFilteredAndSorted();
+      renderGrid(visible);
+      renderCount(visible.length, state.products.length);
+      updateClearButton();
+      updateMobileFilterBadge();
+      applyFiltersToURL();
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // EVENT WIRING
+    // ─────────────────────────────────────────────────────────────────
+
+    // Delegate checkbox changes from any filter group
+    document.querySelectorAll('.filter-options').forEach(container => {
+      container.addEventListener('change', (e) => {
+        const input = e.target.closest('input[data-filter]');
+        if (!input) return;
+        const type = input.dataset.filter;
+        const stateKey = ({ category: 'categories', size: 'sizes', color: 'colors' })[type];
+        if (!stateKey) return;
+
+        if (input.checked) state.filters[stateKey].add(input.value);
+        else               state.filters[stateKey].delete(input.value);
+
+        update();
+      });
+    });
+
+    // Price slider events
+    [priceMinInput, priceMaxInput].forEach(input => {
+      input.addEventListener('input', () => {
+        clampPriceInputs();
+        state.filters.minPrice = Number(priceMinInput.value);
+        state.filters.maxPrice = Number(priceMaxInput.value);
+        updatePriceFill();
+        updatePriceDisplay();
+        update();
+      });
+    });
+
+    // Sort dropdown
+    sortSelect.addEventListener('change', () => {
+      state.sort = sortSelect.value;
+      update();
+    });
+
+    // Clear all filters
+    clearBtn.addEventListener('click', () => {
+      state.filters.categories.clear();
+      state.filters.sizes.clear();
+      state.filters.colors.clear();
+      state.filters.minPrice = PRICE_MIN;
+      state.filters.maxPrice = PRICE_MAX;
+      state.sort = 'newest';
+      syncUIFromState();
+      update();
+    });
+
+    // Mobile filter drawer
+    function openDrawer() {
+      sidebar.classList.add('open');
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeDrawer() {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    openDrawerBtn.addEventListener('click', openDrawer);
+    closeDrawerBtn.addEventListener('click', closeDrawer);
+    overlay.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar.classList.contains('open')) closeDrawer();
+    });
+
+    // ─────────────────────────────────────────────────────────────────
+    // INIT
+    // ─────────────────────────────────────────────────────────────────
+
+    async function init() {
+      showSkeletons(8);
+
+      const raw = await loadProducts();
+      state.products = raw.map(enrichProduct);
+
+      // Build the filter sidebar from the products we just loaded
+      buildFilterUI();
+
+      // Read URL params and tick the matching checkboxes / set price
+      readFiltersFromURL();
+      syncUIFromState();
+
+      // Initial draw
+      updatePriceFill();
+      updatePriceDisplay();
+      update();
+    }
+
+    init();
+  </script>
+
+</body>
+</html>
