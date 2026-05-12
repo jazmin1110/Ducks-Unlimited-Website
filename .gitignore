@@ -1,12 +1,31 @@
-# Secret keys — never upload these to GitHub
+# ─── Secret keys — NEVER commit these ───
 .env
+.env.local
+.env.production
+.env.*.local
 
-# macOS system files
+# ─── Dependencies (we don't have any, but just in case) ───
+node_modules/
+
+# ─── Build / cache artifacts ───
+.vercel/
+.next/
+.cache/
+dist/
+build/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── macOS / Windows / editor noise ───
 .DS_Store
-
-# Editor folders
+Thumbs.db
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# Vercel build output
-.vercel/
+# ─── Misc ───
+.tmp/
+*.local

@@ -1,0 +1,298 @@
+<!-- =============================================================================
+     Ducks Unlimited — Site Navigation
+     =============================================================================
+     Reusable nav for customer-facing pages. Drop into any page either by:
+       (a) Pasting this markup directly into the page, OR
+       (b) Fetching this file and injecting into a placeholder element.
+
+     Requirements:
+       - /css/style.css must be loaded (for CSS variables and fonts)
+       - /js/cart.js can be loaded to auto-update the cart count badge
+
+     The mobile hamburger uses the CSS checkbox-hack — works without JS.
+     ============================================================================= -->
+
+<header class="site-nav">
+  <div class="container site-nav__row">
+
+    <!-- ── Logo + tagline ── -->
+    <a class="site-nav__brand" href="/">
+      <span class="site-nav__logo">Ducks Unlimited</span>
+      <span class="site-nav__tagline">est. 1995</span>
+    </a>
+
+    <!-- ── Hamburger checkbox (hidden, drives mobile menu via :checked) ── -->
+    <input
+      type="checkbox"
+      id="navToggle"
+      class="site-nav__toggle"
+      aria-label="Toggle menu"
+    />
+
+    <!-- ── Cart icon — always visible, even on mobile ── -->
+    <a class="site-nav__cart" href="/cart.html" aria-label="View cart">
+      <!-- Inline SVG cart icon — no external dependency -->
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none"
+           stroke="currentColor" stroke-width="1.6"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="9"  cy="20" r="1.4"></circle>
+        <circle cx="18" cy="20" r="1.4"></circle>
+        <path d="M3 4h2l2.5 12h12L22 7H6"></path>
+      </svg>
+      <!-- Count is auto-updated by /js/cart.js — has-items class controls visibility -->
+      <span class="site-nav__cart-count" data-cart-count>0</span>
+    </a>
+
+    <!-- ── Hamburger label (the visible toggle button on mobile) ── -->
+    <label for="navToggle" class="site-nav__hamburger" aria-hidden="true">
+      <span></span>
+      <span></span>
+      <span></span>
+    </label>
+
+    <!-- ── Navigation links ── -->
+    <nav class="site-nav__menu" aria-label="Primary">
+      <ul class="site-nav__links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/shop.html">Shop</a></li>
+        <li><a href="/about.html">About</a></li>
+      </ul>
+    </nav>
+
+  </div>
+</header>
+
+
+<style>
+  /* All selectors prefixed with .site-nav__ to avoid collisions with page styles */
+
+  .site-nav {
+    background: var(--color-white);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .site-nav__row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    min-height: 64px;
+    padding-block: 0.75rem;
+    gap: 0.5rem;
+  }
+
+  /* ── Brand ── */
+  .site-nav__brand {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    line-height: 1.1;
+    flex: 1; /* push everything else to the right on mobile */
+    order: 1;
+  }
+
+  .site-nav__brand:hover { text-decoration: none; }
+
+  .site-nav__logo {
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .site-nav__tagline {
+    font-size: 0.65rem;
+    font-style: italic;
+    color: var(--color-text-light);
+    letter-spacing: 0.12em;
+    margin-top: 0.1rem;
+  }
+
+  /* ── Hamburger checkbox (hidden — only the label is visible) ── */
+  .site-nav__toggle {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+  }
+
+  /* Keyboard focus indicator on the label when the hidden checkbox is focused */
+  .site-nav__toggle:focus-visible + .site-nav__cart + .site-nav__hamburger {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* ── Cart icon ── */
+  .site-nav__cart {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    color: var(--color-text);
+    text-decoration: none;
+    padding: 0.4rem;
+    order: 2;
+  }
+
+  .site-nav__cart:hover { color: var(--color-primary); text-decoration: none; }
+
+  .site-nav__cart-count {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: none; /* hidden until cart has items (.has-items class added by cart.js) */
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--color-accent);
+    color: var(--color-white);
+    font-family: var(--font-body);
+    font-size: 0.68rem;
+    font-weight: 500;
+    border-radius: var(--radius-pill);
+    line-height: 1;
+  }
+
+  .site-nav__cart-count.has-items { display: inline-flex; }
+
+  /* ── Hamburger button ── */
+  .site-nav__hamburger {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 28px;
+    height: 22px;
+    padding: 4px 0;
+    cursor: pointer;
+    order: 3;
+  }
+
+  .site-nav__hamburger span {
+    display: block;
+    height: 2px;
+    background: var(--color-primary);
+    border-radius: 1px;
+    transition: transform 0.2s, opacity 0.2s;
+    transform-origin: center;
+  }
+
+  /* When checked, animate the three bars into an X */
+  .site-nav__toggle:checked ~ .site-nav__hamburger span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+  .site-nav__toggle:checked ~ .site-nav__hamburger span:nth-child(2) {
+    opacity: 0;
+  }
+  .site-nav__toggle:checked ~ .site-nav__hamburger span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  /* ── Mobile menu — collapsed by default, expands when checkbox is :checked ── */
+  .site-nav__menu {
+    flex-basis: 100%;
+    order: 4;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease, margin-top 0.25s ease;
+  }
+
+  .site-nav__toggle:checked ~ .site-nav__menu {
+    max-height: 300px;
+    margin-top: 0.5rem;
+  }
+
+  .site-nav__links {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .site-nav__links li {
+    border-top: 1px solid var(--color-border-light);
+  }
+
+  .site-nav__links a {
+    display: block;
+    padding: 0.85rem 0;
+    font-size: 0.95rem;
+    color: var(--color-text);
+  }
+
+  .site-nav__links a:hover { color: var(--color-primary); text-decoration: none; }
+
+
+  /* ── Desktop layout (≥ 768px) ── */
+  @media (min-width: 768px) {
+
+    .site-nav__row {
+      flex-wrap: nowrap;
+      min-height: 72px;
+      gap: 1rem;
+    }
+
+    .site-nav__brand {
+      flex: 0 0 auto;
+    }
+
+    .site-nav__logo { font-size: 1.35rem; }
+
+    /* Hamburger is hidden on desktop */
+    .site-nav__hamburger { display: none; }
+
+    /* Menu becomes inline between brand and cart */
+    .site-nav__menu {
+      flex: 1;
+      flex-basis: auto;
+      order: 2;
+      max-height: none;
+      overflow: visible;
+      margin-top: 0;
+    }
+
+    .site-nav__cart {
+      order: 3;
+      padding-inline: 0.5rem;
+    }
+
+    .site-nav__links {
+      flex-direction: row;
+      justify-content: center;
+      gap: 2rem;
+    }
+
+    .site-nav__links li {
+      border-top: none;
+    }
+
+    .site-nav__links a {
+      padding: 0.5rem 0;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-text);
+      position: relative;
+    }
+
+    /* Underline animation on hover */
+    .site-nav__links a::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -2px;
+      height: 2px;
+      background: var(--color-primary);
+      transform: scaleX(0);
+      transition: transform 0.2s;
+    }
+
+    .site-nav__links a:hover::after { transform: scaleX(1); }
+  }
+</style>

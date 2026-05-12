@@ -182,6 +182,14 @@ create table orders (
   -- Null until payment is confirmed. Used to look up the transaction in PayMongo.
   paymongo_payment_id text,
 
+  -- Courier tracking number — entered by staff when fulfillment_status is set
+  -- to 'shipped'. Null until then.
+  tracking_number     text,
+
+  -- Free-text notes for staff (e.g. "called customer to confirm address").
+  -- Never shown to the customer.
+  internal_notes      text,
+
   created_at          timestamptz not null default now()
 );
 
@@ -243,17 +251,58 @@ comment on column order_items.price_at_purchase is
 
 
 -- =============================================================================
+-- PRODUCT IMAGES
+-- URLs of product photos. The actual image files live in Supabase Storage
+-- in the 'product-images' bucket (see storage_setup.sql for that setup).
+-- Each product can have up to 5 images, enforced by the admin UI.
+-- =============================================================================
+
+create table product_images (
+  id            uuid primary key default gen_random_uuid(),
+
+  -- Which product this image belongs to
+  product_id    uuid not null references products (id) on delete cascade,
+
+  -- Public URL to the image file in Supabase Storage
+  image_url     text not null,
+
+  -- Position in the gallery, 0-indexed. The image with display_order = 0
+  -- is the main/featured image shown first on the storefront.
+  display_order integer not null default 0 check (display_order >= 0),
+
+  -- Convenience flag — true for the image with the smallest display_order.
+  -- Kept in sync by the admin panel UI as images are added/reordered/deleted.
+  is_primary    boolean not null default false,
+
+  created_at    timestamptz not null default now()
+);
+
+comment on table product_images is
+  'Image URLs for products. Files live in the product-images storage bucket.';
+
+comment on column product_images.display_order is
+  '0-indexed position in the gallery. Smallest = main/featured image.';
+
+comment on column product_images.is_primary is
+  'True for the image with the smallest display_order. Managed by the admin UI.';
+
+-- Index for fast lookups by product
+create index product_images_product_id_idx on product_images (product_id, display_order);
+
+
+-- =============================================================================
 -- ROW LEVEL SECURITY (RLS)
 -- Controls who can read or write each table.
 -- Supabase uses Postgres RLS — policies are enforced at the database level.
 -- =============================================================================
 
 -- Enable RLS on every table (denies all access by default until policies are added)
-alter table products    enable row level security;
-alter table variants    enable row level security;
-alter table inventory   enable row level security;
-alter table orders      enable row level security;
-alter table order_items enable row level security;
+alter table products       enable row level security;
+alter table variants       enable row level security;
+alter table inventory      enable row level security;
+alter table orders         enable row level security;
+alter table order_items    enable row level security;
+alter table product_images enable row level security;
 
 
 -- -----------------------------------------------------------------------------
@@ -394,6 +443,31 @@ create policy "Admins can read order items"
   using (true);
 
 -- Order items are never updated or deleted after an order is placed
+
+
+-- -----------------------------------------------------------------------------
+-- PRODUCT IMAGES — public read, admin write
+-- -----------------------------------------------------------------------------
+
+-- Anyone can view product images (needed to render product photos on storefront)
+create policy "Public can read product images"
+  on product_images for select
+  using (true);
+
+create policy "Admins can insert product images"
+  on product_images for insert
+  to authenticated
+  with check (true);
+
+create policy "Admins can update product images"
+  on product_images for update
+  to authenticated
+  using (true);
+
+create policy "Admins can delete product images"
+  on product_images for delete
+  to authenticated
+  using (true);
 
 
 -- =============================================================================

@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orders — Ducks Unlimited Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: #F5F0E8;
+      color: #1A1A1A;
+      min-height: 100vh;
+    }
+
+    /* ── Nav (same as other admin pages) ── */
+    nav {
+      background-color: #1B4D2E;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-brand {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.4rem 0.75rem;
+      border-radius: 4px;
+      transition: background-color 0.15s, color 0.15s;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      background-color: rgba(255,255,255,0.12);
+      color: #fff;
+    }
+
+    .btn-logout {
+      background: none;
+      border: 1px solid rgba(255,255,255,0.35);
+      color: rgba(255,255,255,0.8);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 0.35rem 0.9rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 0.5rem;
+      transition: background-color 0.15s, color 0.15s;
+    }
+
+    .btn-logout:hover { background-color: rgba(255,255,255,0.12); color: #fff; }
+
+    /* ── Page layout ── */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    .page-header { margin-bottom: 1.5rem; }
+
+    .page-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #1B4D2E;
+    }
+
+    .page-subtitle {
+      font-size: 0.9rem;
+      color: #777;
+      margin-top: 0.25rem;
+    }
+
+    /* ── Filters bar ── */
+    .filters-bar {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+      padding: 1rem;
+      margin-bottom: 1rem;
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr;
+      gap: 0.75rem;
+      align-items: end;
+    }
+
+    @media (max-width: 900px) {
+      .filters-bar { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 540px) {
+      .filters-bar { grid-template-columns: 1fr; }
+    }
+
+    .filter-field label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #777;
+      margin-bottom: 0.35rem;
+    }
+
+    .filter-field input,
+    .filter-field select {
+      width: 100%;
+      padding: 0.55rem 0.85rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      color: #1A1A1A;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+
+    .filter-field input:focus,
+    .filter-field select:focus {
+      outline: none;
+      border-color: #1B4D2E;
+    }
+
+    /* ── Orders table ── */
+    .table-wrap {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+      overflow-x: auto;
+    }
+
+    table.orders-list {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 880px;
+    }
+
+    table.orders-list thead {
+      background-color: #1B4D2E;
+      color: #fff;
+    }
+
+    table.orders-list th {
+      text-align: left;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.85rem 1rem;
+      white-space: nowrap;
+    }
+
+    table.orders-list th.col-total { text-align: right; }
+
+    table.orders-list tbody tr {
+      border-bottom: 1px solid #f0ebe1;
+      transition: background-color 0.1s;
+      cursor: pointer;
+    }
+
+    table.orders-list tbody tr:last-child { border-bottom: none; }
+    table.orders-list tbody tr:hover      { background-color: #faf7f2; }
+
+    table.orders-list td {
+      padding: 0.9rem 1rem;
+      font-size: 0.9rem;
+      vertical-align: middle;
+    }
+
+    table.orders-list td.col-total {
+      text-align: right;
+      font-weight: 500;
+    }
+
+    .cell-order-num {
+      font-family: 'SF Mono', Monaco, Menlo, monospace;
+      font-weight: 500;
+      color: #1B4D2E;
+    }
+
+    .cell-date-main {
+      font-size: 0.9rem;
+      color: #1A1A1A;
+    }
+
+    .cell-date-sub {
+      font-size: 0.75rem;
+      color: #999;
+      margin-top: 0.1rem;
+    }
+
+    .cell-customer {
+      font-weight: 500;
+      color: #1A1A1A;
+    }
+
+    .cell-items {
+      color: #666;
+    }
+
+    /* ── Status badges (shared between table + panel) ── */
+    .status-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.65rem;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    /* Payment status colors */
+    .pay-pending  { background: #fff4d6; color: #997f33; }
+    .pay-paid     { background: #e6f2ec; color: #1B4D2E; }
+    .pay-failed   { background: #fdf0f0; color: #b33a3a; }
+
+    /* Fulfillment status colors */
+    .ful-pending   { background: #f0ebe1; color: #777; }
+    .ful-packed    { background: #e0ebf5; color: #2d5a87; }
+    .ful-shipped   { background: #fff4d6; color: #997f33; }
+    .ful-delivered { background: #e6f2ec; color: #1B4D2E; }
+
+    /* Stack the two badges vertically in tight columns */
+    .badge-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      align-items: flex-start;
+    }
+
+    /* ── Table state messages ── */
+    .table-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #aaa;
+      font-size: 0.9rem;
+    }
+
+    .table-state button {
+      margin-top: 0.75rem;
+      background: none;
+      border: 1px solid #ddd;
+      color: #555;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      padding: 0.45rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .table-state button:hover { border-color: #1B4D2E; color: #1B4D2E; }
+
+    /* ── Slide-in detail panel ── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+
+    .overlay.open { opacity: 1; pointer-events: all; }
+
+    .panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100vh;
+      width: 100%;
+      /* Wider than other panels — orders have a lot of info */
+      max-width: 520px;
+      background: #fff;
+      z-index: 201;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+    }
+
+    .panel.open { transform: translateX(0); }
+
+    .panel-header {
+      background-color: #1B4D2E;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.25rem;
+      height: 56px;
+      flex-shrink: 0;
+    }
+
+    .panel-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .panel-close {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.7);
+      font-size: 1.4rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0.25rem;
+      transition: color 0.15s;
+    }
+
+    .panel-close:hover { color: #fff; }
+
+    .panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
+    }
+
+    .panel-loading {
+      padding: 3rem 1.25rem;
+      text-align: center;
+      color: #aaa;
+      font-size: 0.9rem;
+    }
+
+    /* ── Panel sections ── */
+    .order-section {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    .order-section:last-of-type { border-bottom: none; }
+
+    .section-heading {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1B4D2E;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.85rem;
+    }
+
+    /* ── Order summary at very top of panel ── */
+    .order-summary {
+      background: #faf7f2;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    .summary-row-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .order-number {
+      font-family: 'SF Mono', Monaco, Menlo, monospace;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #1B4D2E;
+    }
+
+    .order-date {
+      font-size: 0.82rem;
+      color: #777;
+    }
+
+    .summary-badges {
+      margin-top: 0.6rem;
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .summary-total {
+      margin-top: 0.85rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid #e8e3d8;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .summary-total-label {
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #777;
+    }
+
+    .summary-total-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1A1A1A;
+    }
+
+    /* ── Customer info ── */
+    .info-row {
+      display: flex;
+      gap: 0.5rem;
+      font-size: 0.88rem;
+      margin-bottom: 0.4rem;
+      align-items: flex-start;
+    }
+
+    .info-label {
+      flex: 0 0 80px;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #999;
+      padding-top: 0.1rem;
+    }
+
+    .info-value {
+      flex: 1;
+      color: #1A1A1A;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .info-value a {
+      color: #1B4D2E;
+      text-decoration: none;
+    }
+
+    .info-value a:hover { text-decoration: underline; }
+
+    /* ── Line items table ── */
+    table.items-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    table.items-table td {
+      padding: 0.55rem 0;
+      border-bottom: 1px solid #f5f0e8;
+      vertical-align: top;
+    }
+
+    table.items-table tr:last-child td { border-bottom: none; }
+
+    .item-name {
+      font-weight: 500;
+      color: #1A1A1A;
+    }
+
+    .item-variant {
+      font-size: 0.78rem;
+      color: #888;
+      margin-top: 0.15rem;
+    }
+
+    .item-qty   { white-space: nowrap; color: #555; text-align: right; padding-right: 0.75rem !important; }
+    .item-price { white-space: nowrap; color: #1A1A1A; font-weight: 500; text-align: right; }
+
+    .items-total {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid #ddd;
+      font-weight: 500;
+      font-size: 0.95rem;
+    }
+
+    /* ── Editable form section ── */
+    .field {
+      margin-bottom: 1rem;
+    }
+
+    .field:last-child { margin-bottom: 0; }
+
+    .field label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 0.4rem;
+    }
+
+    .field input[type="text"],
+    .field select,
+    .field textarea {
+      width: 100%;
+      padding: 0.6rem 0.85rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      color: #1A1A1A;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      outline: none;
+      border-color: #1B4D2E;
+    }
+
+    .field textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    /* Yellow warning shown when status is "shipped" but tracking is empty */
+    .tracking-warning {
+      display: none;
+      background: #fff4d6;
+      border-left: 3px solid #C9A84C;
+      color: #6b561f;
+      font-size: 0.82rem;
+      padding: 0.55rem 0.85rem;
+      border-radius: 4px;
+      margin-top: 0.5rem;
+    }
+
+    .tracking-warning.visible { display: block; }
+
+    /* PayMongo ID has monospace font + smaller size */
+    .paymongo-id {
+      font-family: 'SF Mono', Monaco, Menlo, monospace;
+      font-size: 0.82rem;
+      color: #555;
+      word-break: break-all;
+    }
+
+    .paymongo-id-empty {
+      font-style: italic;
+      color: #aaa;
+    }
+
+    /* ── Panel footer ── */
+    .panel-footer {
+      padding: 1rem 1.25rem;
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 0.75rem;
+      flex-shrink: 0;
+      background: #fff;
+    }
+
+    .btn-save {
+      flex: 1;
+      padding: 0.7rem;
+      background-color: #1B4D2E;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.15s, opacity 0.15s;
+    }
+
+    .btn-save:hover { background-color: #163d24; }
+    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-cancel {
+      padding: 0.7rem 1.25rem;
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      color: #555;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .btn-cancel:hover { border-color: #999; }
+
+    /* Inline error inside panel */
+    .panel-error {
+      display: none;
+      background: #fdf0f0;
+      border: 1px solid #e8c0c0;
+      color: #b33a3a;
+      border-radius: 5px;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.85rem;
+      margin: 1.25rem 1.5rem 0;
+    }
+
+    .panel-error.visible { display: block; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: #1B4D2E;
+      color: #fff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      z-index: 300;
+      transform: translateY(8px);
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- ── Nav ── -->
+  <nav>
+    <a class="nav-brand" href="/admin/dashboard.html">Ducks Unlimited</a>
+    <ul class="nav-links">
+      <li><a href="/admin/dashboard.html">Dashboard</a></li>
+      <li><a href="/admin/products.html">Products</a></li>
+      <li><a href="/admin/inventory.html">Inventory</a></li>
+      <li><a href="/admin/orders.html" class="active">Orders</a></li>
+      <li><button class="btn-logout" id="logoutBtn">Log Out</button></li>
+    </ul>
+  </nav>
+
+  <main>
+
+    <div class="page-header">
+      <h1 class="page-title">Orders</h1>
+      <p class="page-subtitle">All online orders. Click any order to view details and update fulfillment status.</p>
+    </div>
+
+    <!-- ── Filters bar ── -->
+    <div class="filters-bar">
+
+      <div class="filter-field">
+        <label for="filterSearch">Search</label>
+        <input
+          type="search"
+          id="filterSearch"
+          placeholder="Order # or customer name…"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="filter-field">
+        <label for="filterPayment">Payment</label>
+        <select id="filterPayment">
+          <option value="">All</option>
+          <option value="pending">Pending</option>
+          <option value="paid">Paid</option>
+          <option value="failed">Failed</option>
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label for="filterFulfillment">Fulfillment</label>
+        <select id="filterFulfillment">
+          <option value="">All</option>
+          <option value="pending">Pending</option>
+          <option value="packed">Packed</option>
+          <option value="shipped">Shipped</option>
+          <option value="delivered">Delivered</option>
+        </select>
+      </div>
+
+      <div class="filter-field">
+        <label for="filterFromDate">From</label>
+        <input type="date" id="filterFromDate" />
+      </div>
+
+      <div class="filter-field">
+        <label for="filterToDate">To</label>
+        <input type="date" id="filterToDate" />
+      </div>
+
+    </div>
+
+    <!-- ── Orders table ── -->
+    <div class="table-wrap">
+      <table class="orders-list">
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Items</th>
+            <th class="col-total">Total</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="ordersTableBody">
+          <tr><td colspan="6" class="table-state">Loading orders…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!-- ── Slide-in detail panel ── -->
+  <div class="overlay" id="overlay"></div>
+
+  <div class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle">
+
+    <div class="panel-header">
+      <span class="panel-title" id="panelTitle">Order Details</span>
+      <button class="panel-close" id="panelCloseBtn" aria-label="Close panel">×</button>
+    </div>
+
+    <!-- Body sections rendered dynamically into here -->
+    <div class="panel-body" id="panelBody">
+      <div class="panel-loading">Loading…</div>
+    </div>
+
+    <div class="panel-footer">
+      <button type="button" class="btn-cancel" id="panelCancelBtn">Cancel</button>
+      <button type="button" class="btn-save"   id="saveBtn">Save Changes</button>
+    </div>
+
+  </div>
+
+  <!-- ── Toast ── -->
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+
+    // ── Auth guard ──
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) window.location.href = '/admin/index.html';
+
+    // ── Log out ──
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.href = '/admin/index.html';
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // CONSTANTS & ELEMENT REFERENCES
+    // ─────────────────────────────────────────────────────────────────────
+
+    // Filter inputs
+    const searchInput        = document.getElementById('filterSearch');
+    const paymentSelect      = document.getElementById('filterPayment');
+    const fulfillmentSelect  = document.getElementById('filterFulfillment');
+    const fromDateInput      = document.getElementById('filterFromDate');
+    const toDateInput        = document.getElementById('filterToDate');
+
+    // Table + panel
+    const tableBody  = document.getElementById('ordersTableBody');
+    const overlay    = document.getElementById('overlay');
+    const panel      = document.getElementById('panel');
+    const panelTitle = document.getElementById('panelTitle');
+    const panelBody  = document.getElementById('panelBody');
+    const saveBtn    = document.getElementById('saveBtn');
+    const toast      = document.getElementById('toast');
+
+    // Display labels for status codes
+    const PAYMENT_LABELS = {
+      pending: 'Pending',
+      paid:    'Paid',
+      failed:  'Failed',
+    };
+
+    const FULFILLMENT_LABELS = {
+      pending:   'Pending',
+      packed:    'Packed',
+      shipped:   'Shipped',
+      delivered: 'Delivered',
+    };
+
+    // ─────────────────────────────────────────────────────────────────────
+    // STATE
+    // ─────────────────────────────────────────────────────────────────────
+
+    // All orders fetched from the DB (used by the list view)
+    let allOrders = [];
+
+    // After filters applied
+    let filteredView = [];
+
+    // Full data of the order currently open in the detail panel
+    let currentOrder = null;
+
+    // ─────────────────────────────────────────────────────────────────────
+    // HELPERS
+    // ─────────────────────────────────────────────────────────────────────
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    let toastTimer;
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.add('show');
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // Format a price in PHP — e.g. "₱1,250.00"
+    function formatPrice(amount) {
+      return '₱' + Number(amount).toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+
+    // Format a date for the table — "May 11, 2026 / 2:30 PM" split across two lines
+    function formatDate(iso) {
+      const d = new Date(iso);
+      return {
+        main: d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }),
+        sub:  d.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' }),
+      };
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // DATA LOADING (LIST VIEW)
+    // ─────────────────────────────────────────────────────────────────────
+
+    async function loadOrders() {
+      tableBody.innerHTML = '<tr><td colspan="6" class="table-state">Loading orders…</td></tr>';
+
+      // Fetch just what we need for the list — fast and small.
+      // order_items(count) embeds a count of related items without pulling
+      // the actual rows.
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          id, order_number, customer_name, total_amount,
+          payment_status, fulfillment_status, created_at,
+          order_items ( count )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error(error);
+        tableBody.innerHTML = '<tr><td colspan="6" class="table-state">Failed to load orders. Please refresh.</td></tr>';
+        return;
+      }
+
+      allOrders = (data || []).map(o => ({
+        id:                 o.id,
+        orderNumber:        o.order_number,
+        customerName:       o.customer_name,
+        totalAmount:        Number(o.total_amount),
+        paymentStatus:      o.payment_status,
+        fulfillmentStatus:  o.fulfillment_status,
+        createdAt:          o.created_at,
+        itemCount:          o.order_items?.[0]?.count ?? 0,
+      }));
+
+      applyFiltersAndRender();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // FILTERING + LIST RENDERING
+    // ─────────────────────────────────────────────────────────────────────
+
+    function applyFiltersAndRender() {
+      const q        = searchInput.value.trim().toLowerCase();
+      const pay      = paymentSelect.value;
+      const ful      = fulfillmentSelect.value;
+      const from     = fromDateInput.value ? new Date(fromDateInput.value + 'T00:00:00') : null;
+      const to       = toDateInput.value   ? new Date(toDateInput.value   + 'T23:59:59.999') : null;
+
+      filteredView = allOrders.filter(o => {
+        // Search matches order number OR customer name (case-insensitive)
+        if (q) {
+          const haystack = (o.orderNumber + ' ' + o.customerName).toLowerCase();
+          if (!haystack.includes(q)) return false;
+        }
+        if (pay && o.paymentStatus     !== pay) return false;
+        if (ful && o.fulfillmentStatus !== ful) return false;
+
+        // Date range — inclusive on both ends
+        if (from || to) {
+          const created = new Date(o.createdAt);
+          if (from && created < from) return false;
+          if (to   && created > to)   return false;
+        }
+
+        return true;
+      });
+
+      renderTable();
+    }
+
+    function renderTable() {
+      if (filteredView.length === 0) {
+        const hasFilters = searchInput.value || paymentSelect.value || fulfillmentSelect.value
+                         || fromDateInput.value || toDateInput.value;
+
+        if (allOrders.length === 0) {
+          tableBody.innerHTML = '<tr><td colspan="6" class="table-state">No orders yet. They\'ll appear here when customers place orders.</td></tr>';
+        } else if (hasFilters) {
+          tableBody.innerHTML = `<tr><td colspan="6" class="table-state">
+              No orders match your filters.
+              <br><button type="button" id="clearFiltersBtn">Clear filters</button>
+            </td></tr>`;
+          document.getElementById('clearFiltersBtn').addEventListener('click', clearFilters);
+        } else {
+          tableBody.innerHTML = '<tr><td colspan="6" class="table-state">No orders.</td></tr>';
+        }
+        return;
+      }
+
+      tableBody.innerHTML = '';
+
+      for (const o of filteredView) {
+        const dt = formatDate(o.createdAt);
+        const tr = document.createElement('tr');
+        tr.dataset.orderId = o.id;
+
+        tr.innerHTML = `
+          <td><span class="cell-order-num">${escapeHtml(o.orderNumber)}</span></td>
+          <td>
+            <div class="cell-date-main">${dt.main}</div>
+            <div class="cell-date-sub">${dt.sub}</div>
+          </td>
+          <td><span class="cell-customer">${escapeHtml(o.customerName)}</span></td>
+          <td><span class="cell-items">${o.itemCount} item${o.itemCount === 1 ? '' : 's'}</span></td>
+          <td class="col-total">${formatPrice(o.totalAmount)}</td>
+          <td>
+            <div class="badge-stack">
+              <span class="status-badge pay-${o.paymentStatus}">${PAYMENT_LABELS[o.paymentStatus]}</span>
+              <span class="status-badge ful-${o.fulfillmentStatus}">${FULFILLMENT_LABELS[o.fulfillmentStatus]}</span>
+            </div>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      }
+    }
+
+    function clearFilters() {
+      searchInput.value = '';
+      paymentSelect.value = '';
+      fulfillmentSelect.value = '';
+      fromDateInput.value = '';
+      toDateInput.value = '';
+      applyFiltersAndRender();
+    }
+
+    // Live filtering
+    searchInput.addEventListener('input', applyFiltersAndRender);
+    paymentSelect.addEventListener('change', applyFiltersAndRender);
+    fulfillmentSelect.addEventListener('change', applyFiltersAndRender);
+    fromDateInput.addEventListener('change', applyFiltersAndRender);
+    toDateInput.addEventListener('change', applyFiltersAndRender);
+
+    // Row click → open detail panel
+    tableBody.addEventListener('click', (e) => {
+      const tr = e.target.closest('tr');
+      if (!tr || !tr.dataset.orderId) return;
+      openOrderPanel(tr.dataset.orderId);
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // PANEL — open / close
+    // ─────────────────────────────────────────────────────────────────────
+
+    function openPanel() {
+      panel.classList.add('open');
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePanel() {
+      panel.classList.remove('open');
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+      currentOrder = null;
+    }
+
+    overlay.addEventListener('click', closePanel);
+    document.getElementById('panelCloseBtn').addEventListener('click', closePanel);
+    document.getElementById('panelCancelBtn').addEventListener('click', closePanel);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && panel.classList.contains('open')) closePanel();
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // PANEL — load and render a single order
+    // ─────────────────────────────────────────────────────────────────────
+
+    async function openOrderPanel(orderId) {
+      panelTitle.textContent = 'Order Details';
+      panelBody.innerHTML = '<div class="panel-loading">Loading…</div>';
+      openPanel();
+
+      // Pull the full order plus its line items, joined through variants to products
+      const { data: order, error } = await supabase
+        .from('orders')
+        .select(`
+          id, order_number, customer_name, customer_email, customer_phone, shipping_address,
+          total_amount, payment_status, fulfillment_status, paymongo_payment_id,
+          tracking_number, internal_notes, created_at,
+          order_items (
+            id, quantity, price_at_purchase,
+            variants (
+              id, color, size, sku,
+              products ( name )
+            )
+          )
+        `)
+        .eq('id', orderId)
+        .single();
+
+      if (error || !order) {
+        console.error(error);
+        panelBody.innerHTML = '<div class="panel-loading">Could not load this order.</div>';
+        return;
+      }
+
+      currentOrder = order;
+      panelTitle.textContent = order.order_number;
+      renderOrderPanel(order);
+    }
+
+    function renderOrderPanel(order) {
+      const created = new Date(order.created_at);
+      const dateStr = created.toLocaleString('en-PH', {
+        year:  'numeric',
+        month: 'short',
+        day:   'numeric',
+        hour:  'numeric',
+        minute:'2-digit',
+      });
+
+      // ── Build the line items HTML ──
+      const itemRows = (order.order_items || []).map(it => {
+        const v   = it.variants;
+        const p   = v?.products;
+        const sub = Number(it.price_at_purchase) * it.quantity;
+
+        return `
+          <tr>
+            <td>
+              <div class="item-name">${escapeHtml(p?.name ?? 'Unknown product')}</div>
+              <div class="item-variant">
+                ${escapeHtml(v?.color ?? '')} · ${escapeHtml(v?.size ?? '')}
+                · <span style="font-family:monospace;">${escapeHtml(v?.sku ?? '')}</span>
+              </div>
+            </td>
+            <td class="item-qty">×${it.quantity}</td>
+            <td class="item-price">${formatPrice(sub)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // ── Render the full panel body ──
+      panelBody.innerHTML = `
+        <!-- Order summary block at the top -->
+        <div class="order-summary">
+          <div class="summary-row-top">
+            <span class="order-number">${escapeHtml(order.order_number)}</span>
+            <span class="order-date">${dateStr}</span>
+          </div>
+          <div class="summary-badges">
+            <span class="status-badge pay-${order.payment_status}">
+              Payment: ${PAYMENT_LABELS[order.payment_status]}
+            </span>
+            <span class="status-badge ful-${order.fulfillment_status}">
+              Fulfillment: ${FULFILLMENT_LABELS[order.fulfillment_status]}
+            </span>
+          </div>
+          <div class="summary-total">
+            <span class="summary-total-label">Order Total</span>
+            <span class="summary-total-value">${formatPrice(order.total_amount)}</span>
+          </div>
+        </div>
+
+        <!-- Customer info -->
+        <section class="order-section">
+          <h3 class="section-heading">Customer</h3>
+          <div class="info-row">
+            <span class="info-label">Name</span>
+            <span class="info-value">${escapeHtml(order.customer_name)}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Email</span>
+            <span class="info-value">
+              <a href="mailto:${escapeHtml(order.customer_email)}">${escapeHtml(order.customer_email)}</a>
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Phone</span>
+            <span class="info-value">
+              ${order.customer_phone
+                ? `<a href="tel:${escapeHtml(order.customer_phone)}">${escapeHtml(order.customer_phone)}</a>`
+                : '<span style="color:#aaa;">—</span>'}
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Shipping</span>
+            <span class="info-value">${escapeHtml(order.shipping_address)}</span>
+          </div>
+        </section>
+
+        <!-- Line items -->
+        <section class="order-section">
+          <h3 class="section-heading">Items</h3>
+          <table class="items-table">
+            <tbody>${itemRows || '<tr><td colspan="3" style="color:#aaa;">No items.</td></tr>'}</tbody>
+          </table>
+          <div class="items-total">
+            <span>Total</span>
+            <span>${formatPrice(order.total_amount)}</span>
+          </div>
+        </section>
+
+        <!-- Payment info (read-only — payment_status is updated by PayMongo webhook) -->
+        <section class="order-section">
+          <h3 class="section-heading">Payment</h3>
+          <div class="info-row">
+            <span class="info-label">Status</span>
+            <span class="info-value">
+              <span class="status-badge pay-${order.payment_status}">${PAYMENT_LABELS[order.payment_status]}</span>
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">PayMongo&nbsp;ID</span>
+            <span class="info-value">
+              ${order.paymongo_payment_id
+                ? `<span class="paymongo-id">${escapeHtml(order.paymongo_payment_id)}</span>`
+                : '<span class="paymongo-id paymongo-id-empty">— not yet recorded —</span>'}
+            </span>
+          </div>
+        </section>
+
+        <!-- Editable: fulfillment status + tracking number -->
+        <section class="order-section">
+          <h3 class="section-heading">Fulfillment</h3>
+          <div class="field">
+            <label for="fulfillmentSelect">Status</label>
+            <select id="fulfillmentSelect">
+              <option value="pending"   ${order.fulfillment_status === 'pending'   ? 'selected' : ''}>Pending</option>
+              <option value="packed"    ${order.fulfillment_status === 'packed'    ? 'selected' : ''}>Packed</option>
+              <option value="shipped"   ${order.fulfillment_status === 'shipped'   ? 'selected' : ''}>Shipped</option>
+              <option value="delivered" ${order.fulfillment_status === 'delivered' ? 'selected' : ''}>Delivered</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="trackingInput">Tracking Number</label>
+            <input
+              type="text"
+              id="trackingInput"
+              placeholder="e.g. JNT1234567890"
+              value="${escapeHtml(order.tracking_number ?? '')}"
+            />
+            <div class="tracking-warning" id="trackingWarning">
+              Please enter a tracking number — this order is marked as shipped.
+            </div>
+          </div>
+        </section>
+
+        <!-- Editable: internal staff notes -->
+        <section class="order-section">
+          <h3 class="section-heading">Internal Notes</h3>
+          <div class="field">
+            <textarea
+              id="notesInput"
+              placeholder="Notes for staff only — e.g. 'called customer to confirm address'…"
+            >${escapeHtml(order.internal_notes ?? '')}</textarea>
+          </div>
+        </section>
+
+        <!-- Inline error appears here when save validation fails -->
+        <div class="panel-error" id="panelError"></div>
+      `;
+
+      // ── Wire up dynamic behavior on the rendered form ──
+      const fulSelect   = document.getElementById('fulfillmentSelect');
+      const trackingIn  = document.getElementById('trackingInput');
+      const trackingWarn = document.getElementById('trackingWarning');
+
+      // When fulfillment is set to "shipped" and tracking is empty, show
+      // a warning + autofocus the tracking field (the "prompt").
+      function updateTrackingWarning() {
+        const needsTracking = fulSelect.value === 'shipped' && !trackingIn.value.trim();
+        trackingWarn.classList.toggle('visible', needsTracking);
+      }
+
+      fulSelect.addEventListener('change', () => {
+        // If they just switched to shipped without tracking, focus the field
+        if (fulSelect.value === 'shipped' && !trackingIn.value.trim()) {
+          trackingIn.focus();
+        }
+        updateTrackingWarning();
+      });
+
+      trackingIn.addEventListener('input', updateTrackingWarning);
+
+      // Initial check (in case the order is already shipped with no tracking yet)
+      updateTrackingWarning();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // SAVE
+    // ─────────────────────────────────────────────────────────────────────
+
+    saveBtn.addEventListener('click', handleSave);
+
+    async function handleSave() {
+      if (!currentOrder) return;
+
+      const fulSelect  = document.getElementById('fulfillmentSelect');
+      const trackingIn = document.getElementById('trackingInput');
+      const notesIn    = document.getElementById('notesInput');
+      const errorEl    = document.getElementById('panelError');
+
+      const newFulfillment = fulSelect.value;
+      const newTracking    = trackingIn.value.trim();
+      const newNotes       = notesIn.value;
+
+      function showPanelError(msg) {
+        errorEl.textContent = msg;
+        errorEl.classList.add('visible');
+      }
+
+      function clearPanelError() {
+        errorEl.textContent = '';
+        errorEl.classList.remove('visible');
+      }
+
+      clearPanelError();
+
+      // Block save if marking as shipped without a tracking number — this is
+      // what the spec means by "prompt the manager to enter a tracking number".
+      if (newFulfillment === 'shipped' && !newTracking) {
+        showPanelError('Please enter a tracking number before marking this order as shipped.');
+        trackingIn.focus();
+        return;
+      }
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving…';
+
+      const { error } = await supabase
+        .from('orders')
+        .update({
+          fulfillment_status: newFulfillment,
+          // Store empty tracking / notes as null rather than empty strings,
+          // so the DB clearly says "no value here yet"
+          tracking_number:    newTracking || null,
+          internal_notes:     newNotes.trim() || null,
+        })
+        .eq('id', currentOrder.id);
+
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Changes';
+
+      if (error) {
+        console.error(error);
+        showPanelError('Could not save changes. Please try again.');
+        return;
+      }
+
+      closePanel();
+      showToast('Order updated.');
+      await loadOrders(); // refresh list so the new status is reflected
+    }
+
+
+    // ── Initial load ──
+    await loadOrders();
+
+    // Deep-link support: /admin/orders.html?order=<id>
+    // Auto-opens the detail panel for that order. Used by the dashboard's
+    // Recent Orders table so clicking lands directly on the right one.
+    const orderParam = new URLSearchParams(window.location.search).get('order');
+    if (orderParam) openOrderPanel(orderParam);
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout — Ducks Unlimited</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    /* ============================================================
+       Checkout page styles
+       ============================================================ */
+
+    .checkout { padding-block: 1.5rem 3rem; }
+
+    .checkout-header { margin-bottom: 1.5rem; }
+    .checkout-header h1 { margin-bottom: 0.25rem; }
+    .checkout-header__sub { color: var(--color-text-muted); font-size: 0.9rem; }
+
+    /* Two-column layout (stacked on mobile, side-by-side on desktop) */
+    .checkout-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    /* ── Form sections (cards) ─────────────────────────────────── */
+
+    .form-section {
+      background: var(--color-white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .form-section:last-child { margin-bottom: 0; }
+
+    .form-section h2 {
+      font-size: 1.15rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--color-border-light);
+    }
+
+    /* Two fields side-by-side on wider forms */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.85rem;
+    }
+
+    @media (min-width: 540px) {
+      .form-row.two-col { grid-template-columns: 1fr 1fr; }
+      .form-row.zip-row { grid-template-columns: 1fr 140px; }
+    }
+
+    /* ── Inline error message under a field ────────────────────── */
+
+    .field-error {
+      display: none;
+      color: var(--color-error);
+      font-size: 0.8rem;
+      margin-top: 0.3rem;
+      line-height: 1.4;
+    }
+
+    .field--has-error .input,
+    .field--has-error .select,
+    .field--has-error .textarea {
+      border-color: var(--color-error);
+      box-shadow: 0 0 0 3px rgba(179, 58, 58, 0.08);
+    }
+
+    .field--has-error .field-error { display: block; }
+
+    /* ── Order summary card ─────────────────────────────────────── */
+
+    .summary-card {
+      background: var(--color-white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      padding: 1.5rem;
+    }
+
+    .summary-card h2 {
+      font-size: 1.15rem;
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--color-border-light);
+    }
+
+    /* ── Summary line items ─────────────────────────────────────── */
+
+    .summary-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      padding-bottom: 1rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .summary-item {
+      display: flex;
+      gap: 0.85rem;
+      align-items: flex-start;
+    }
+
+    .summary-item__image {
+      flex-shrink: 0;
+      width: 54px;
+      height: 64px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--color-bg-warm);
+    }
+
+    .summary-item__image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .summary-item__placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-heading);
+      font-size: 0.5rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-primary);
+      text-align: center;
+      padding: 0.25rem;
+      background: linear-gradient(135deg, #f5f0e8, #fff);
+    }
+
+    .summary-item__body { flex: 1; min-width: 0; }
+
+    .summary-item__name {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--color-text);
+      line-height: 1.3;
+    }
+
+    .summary-item__variant {
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      margin-top: 0.1rem;
+    }
+
+    .summary-item__qty {
+      font-size: 0.78rem;
+      color: var(--color-text-light);
+      margin-top: 0.2rem;
+    }
+
+    .summary-item__price {
+      flex-shrink: 0;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--color-text);
+      white-space: nowrap;
+    }
+
+    /* ── Totals rows ───────────────────────────────────────────── */
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-block: 0.45rem;
+      font-size: 0.92rem;
+    }
+
+    .summary-row__label { color: var(--color-text-muted); }
+    .summary-row__value { color: var(--color-text); font-weight: 500; }
+
+    .summary-row--total {
+      padding-top: 1rem;
+      margin-top: 0.5rem;
+      border-top: 1px solid var(--color-border-light);
+      font-size: 1rem;
+    }
+
+    .summary-row--total .summary-row__label {
+      color: var(--color-text);
+      font-weight: 500;
+    }
+
+    .summary-row--total .summary-row__value {
+      font-family: var(--font-heading);
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
+    /* ── Submit button + status ─────────────────────────────────── */
+
+    .place-order-btn {
+      margin-top: 1.25rem;
+    }
+
+    /* Banner shown above the form if the API rejects with an error */
+    .form-banner {
+      display: none;
+      background: var(--color-error-bg);
+      border: 1px solid rgba(179, 58, 58, 0.25);
+      color: var(--color-error);
+      border-radius: var(--radius);
+      padding: 0.75rem 1rem;
+      font-size: 0.88rem;
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+
+    .form-banner.visible { display: block; }
+
+    /* Help text shown about payment + redirect */
+    .payment-help {
+      margin-top: 0.85rem;
+      font-size: 0.78rem;
+      color: var(--color-text-light);
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .payment-help strong { color: var(--color-text-muted); }
+
+    /* ── Empty + skeleton states ───────────────────────────────── */
+
+    .checkout-empty {
+      text-align: center;
+      padding: 3rem 1rem 4rem;
+      max-width: 460px;
+      margin: 0 auto;
+    }
+
+    .checkout-empty h2 { margin-bottom: 0.5rem; }
+    .checkout-empty p  { color: var(--color-text-muted); margin-bottom: 1.5rem; }
+
+    .skeleton-block {
+      background: linear-gradient(90deg, #f0ebe1 0%, #faf7f2 50%, #f0ebe1 100%);
+      background-size: 200% 100%;
+      animation: skeleton-pulse 1.4s ease-in-out infinite;
+      border-radius: 4px;
+    }
+
+    @keyframes skeleton-pulse {
+      0%, 100% { background-position: 100% 0; }
+      50%      { background-position: 0% 0; }
+    }
+
+    /* ── Desktop layout ─────────────────────────────────────────── */
+
+    @media (min-width: 900px) {
+      .checkout-layout {
+        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+        gap: 2rem;
+        align-items: start;
+      }
+
+      .summary-card {
+        position: sticky;
+        top: 80px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div data-component="nav"></div>
+
+  <main class="container checkout">
+
+    <header class="checkout-header">
+      <h1>Checkout</h1>
+      <p class="checkout-header__sub" id="checkoutSubheader">Almost there — just a few details.</p>
+    </header>
+
+    <div id="checkoutRoot">
+      <!-- Filled by JS once we've read the cart -->
+      <div style="height:300px;" class="skeleton-block"></div>
+    </div>
+
+  </main>
+
+  <div data-component="footer"></div>
+
+
+  <!-- Scripts -->
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+    import { getCart, clearCart } from '/js/cart.js';
+
+    // ─────────────────────────────────────────────────────────────────
+    // CONSTANTS
+    // ─────────────────────────────────────────────────────────────────
+
+    const SHIPPING_FEE = 150;
+
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // PH phone: 11 digits starting with 09, or +63 followed by 10 digits
+    const PHONE_RE = /^(?:\+?63|0)9\d{9}$/;
+    const ZIP_RE   = /^\d{4}$/;
+
+    // ─────────────────────────────────────────────────────────────────
+    // STATE
+    // ─────────────────────────────────────────────────────────────────
+
+    const state = {
+      cart: [],        // localStorage cart items
+      stockMap: {},    // variantId → fresh data { stock, name, price, image, etc }
+      submitting: false,
+    };
+
+    // ─────────────────────────────────────────────────────────────────
+    // HELPERS
+    // ─────────────────────────────────────────────────────────────────
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function formatPrice(amount) {
+      return '₱' + Number(amount).toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+
+    function pickPrimaryImage(images) {
+      if (!images || images.length === 0) return null;
+      const primary = images.find(i => i.is_primary);
+      if (primary) return primary.image_url;
+      const sorted = [...images].sort((a, b) => a.display_order - b.display_order);
+      return sorted[0].image_url;
+    }
+
+    // Compute current subtotal using fresh prices + capped quantities
+    function computeSubtotal() {
+      let total = 0;
+      for (const item of state.cart) {
+        const info = state.stockMap[item.variantId];
+        if (!info) continue; // can't checkout a missing variant
+        const qty = Math.min(item.quantity, info.stock); // cap to fresh stock
+        if (qty <= 0) continue;
+        total += Number(info.price) * qty;
+      }
+      return total;
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // FETCH FRESH STOCK + PRICING
+    // ─────────────────────────────────────────────────────────────────
+
+    async function fetchStockMap(variantIds) {
+      if (variantIds.length === 0) return {};
+      const { data, error } = await supabase
+        .from('variants')
+        .select(`
+          id, color, size, sku, price_override,
+          products ( id, name, base_price, is_active,
+            product_images ( image_url, is_primary, display_order )
+          ),
+          inventory ( channel, quantity )
+        `)
+        .in('id', variantIds);
+
+      if (error) {
+        console.error('Checkout: fetch failed', error);
+        return {};
+      }
+
+      const map = {};
+      for (const v of (data || [])) {
+        const onlineRow = (v.inventory || []).find(i => i.channel === 'online');
+        const product   = v.products;
+        map[v.id] = {
+          stock:         onlineRow?.quantity ?? 0,
+          productName:   product?.name ?? '',
+          productActive: product?.is_active ?? false,
+          color:         v.color,
+          size:          v.size,
+          sku:           v.sku,
+          price:         Number(v.price_override ?? product?.base_price ?? 0),
+          imageUrl:      pickPrimaryImage(product?.product_images),
+        };
+      }
+      return map;
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // RENDERING
+    // ─────────────────────────────────────────────────────────────────
+
+    const root = document.getElementById('checkoutRoot');
+
+    function renderEmpty(reason = 'empty') {
+      const messages = {
+        empty: {
+          h: 'Your cart is empty',
+          p: 'Add some pieces to your cart before checking out.',
+        },
+        invalid: {
+          h: 'Cart contains unavailable items',
+          p: 'Please head back to your cart and remove items that are no longer available.',
+        },
+      };
+      const msg = messages[reason] ?? messages.empty;
+
+      root.innerHTML = `
+        <div class="checkout-empty">
+          <h2>${escapeHtml(msg.h)}</h2>
+          <p>${escapeHtml(msg.p)}</p>
+          ${reason === 'empty'
+            ? `<a href="/shop.html" class="btn btn-primary btn-lg">Continue Shopping</a>`
+            : `<a href="/cart.html" class="btn btn-primary btn-lg">Back to Cart</a>`}
+        </div>
+      `;
+    }
+
+    function renderCheckout() {
+      const summaryItemsHtml = state.cart.map(item => {
+        const info = state.stockMap[item.variantId];
+        if (!info) return '';
+        const qty = Math.min(item.quantity, info.stock);
+        if (qty <= 0) return '';
+
+        const lineTotal = Number(info.price) * qty;
+        const imgUrl = info.imageUrl || item.imageUrl;
+
+        return `
+          <div class="summary-item">
+            <div class="summary-item__image">
+              ${imgUrl
+                ? `<img src="${escapeHtml(imgUrl)}" alt="" loading="lazy" />`
+                : `<div class="summary-item__placeholder">DU</div>`}
+            </div>
+            <div class="summary-item__body">
+              <div class="summary-item__name">${escapeHtml(info.productName)}</div>
+              <div class="summary-item__variant">${escapeHtml(info.color)} · ${escapeHtml(info.size)}</div>
+              <div class="summary-item__qty">Qty: ${qty}</div>
+            </div>
+            <span class="summary-item__price">${formatPrice(lineTotal)}</span>
+          </div>
+        `;
+      }).join('');
+
+      const subtotal = computeSubtotal();
+      const total = subtotal + SHIPPING_FEE;
+
+      root.innerHTML = `
+        <form id="checkoutForm" novalidate>
+          <div class="checkout-layout">
+
+            <!-- ── LEFT: customer details form ── -->
+            <div>
+
+              <!-- Banner shown if the API call fails -->
+              <div class="form-banner" id="formBanner" role="alert"></div>
+
+              <section class="form-section">
+                <h2>Contact</h2>
+
+                <div class="field">
+                  <label class="field-label field-required" for="name">Full Name</label>
+                  <input class="input" type="text" id="name" name="name"
+                         autocomplete="name" required />
+                  <span class="field-error">Please enter your full name.</span>
+                </div>
+
+                <div class="field">
+                  <label class="field-label field-required" for="email">Email</label>
+                  <input class="input" type="email" id="email" name="email"
+                         autocomplete="email" required />
+                  <span class="field-error">Please enter a valid email address.</span>
+                </div>
+
+                <div class="field">
+                  <label class="field-label field-required" for="phone">Phone</label>
+                  <input class="input" type="tel" id="phone" name="phone"
+                         autocomplete="tel" placeholder="09XX XXX XXXX" required />
+                  <span class="field-hint">Philippine mobile number, e.g. 09171234567 or +639171234567.</span>
+                  <span class="field-error">Please enter a valid Philippine mobile number.</span>
+                </div>
+              </section>
+
+              <section class="form-section">
+                <h2>Shipping Address</h2>
+
+                <div class="field">
+                  <label class="field-label field-required" for="address">Street Address</label>
+                  <input class="input" type="text" id="address" name="address"
+                         autocomplete="street-address"
+                         placeholder="House/unit no., street, barangay"
+                         required />
+                  <span class="field-error">Please enter your street address.</span>
+                </div>
+
+                <div class="form-row two-col">
+                  <div class="field">
+                    <label class="field-label field-required" for="city">City</label>
+                    <input class="input" type="text" id="city" name="city"
+                           autocomplete="address-level2" required />
+                    <span class="field-error">Required.</span>
+                  </div>
+                  <div class="field">
+                    <label class="field-label field-required" for="province">Province</label>
+                    <input class="input" type="text" id="province" name="province"
+                           autocomplete="address-level1" required />
+                    <span class="field-error">Required.</span>
+                  </div>
+                </div>
+
+                <div class="form-row zip-row">
+                  <div></div>
+                  <div class="field">
+                    <label class="field-label field-required" for="zip">ZIP Code</label>
+                    <input class="input" type="text" id="zip" name="zip"
+                           inputmode="numeric" maxlength="4"
+                           autocomplete="postal-code" required />
+                    <span class="field-error">4-digit ZIP.</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="form-section">
+                <h2>Order Notes <span style="font-weight:400; font-size:0.85rem; color:var(--color-text-light);">(Optional)</span></h2>
+
+                <div class="field">
+                  <label class="field-label" for="notes">Anything we should know?</label>
+                  <textarea class="textarea" id="notes" name="notes"
+                            placeholder="Special instructions, gift wrapping, preferred delivery time…"></textarea>
+                </div>
+              </section>
+
+            </div>
+
+            <!-- ── RIGHT: order summary ── -->
+            <aside class="summary-card">
+
+              <h2>Order Summary</h2>
+
+              <div class="summary-items">${summaryItemsHtml}</div>
+
+              <div class="summary-row">
+                <span class="summary-row__label">Subtotal</span>
+                <span class="summary-row__value">${formatPrice(subtotal)}</span>
+              </div>
+
+              <div class="summary-row">
+                <span class="summary-row__label">Shipping</span>
+                <span class="summary-row__value">${formatPrice(SHIPPING_FEE)}</span>
+              </div>
+
+              <div class="summary-row summary-row--total">
+                <span class="summary-row__label">Total</span>
+                <span class="summary-row__value">${formatPrice(total)}</span>
+              </div>
+
+              <button type="submit"
+                      class="btn btn-primary btn-lg btn-block place-order-btn"
+                      id="placeOrderBtn">
+                Place Order
+              </button>
+
+              <p class="payment-help">
+                <strong>Secure checkout</strong> — you'll be redirected to PayMongo
+                to complete payment with credit card, GCash, GrabPay, or Maya.
+              </p>
+
+            </aside>
+
+          </div>
+        </form>
+      `;
+
+      wireFormEvents();
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // VALIDATION
+    // ─────────────────────────────────────────────────────────────────
+
+    const VALIDATORS = {
+      name:     v => v.trim().length > 0,
+      email:    v => EMAIL_RE.test(v.trim()),
+      phone:    v => PHONE_RE.test(v.replace(/[\s\-]/g, '')),
+      address:  v => v.trim().length > 0,
+      city:     v => v.trim().length > 0,
+      province: v => v.trim().length > 0,
+      zip:      v => ZIP_RE.test(v.trim()),
+    };
+
+    function setFieldError(name, hasError) {
+      const input = document.getElementById(name);
+      if (!input) return;
+      const wrapper = input.closest('.field');
+      if (!wrapper) return;
+      wrapper.classList.toggle('field--has-error', hasError);
+    }
+
+    function validateField(name, value) {
+      const isValid = VALIDATORS[name]?.(value) ?? true;
+      setFieldError(name, !isValid);
+      return isValid;
+    }
+
+    function validateAll() {
+      const form = document.getElementById('checkoutForm');
+      const data = Object.fromEntries(new FormData(form).entries());
+      let firstInvalid = null;
+
+      for (const name of Object.keys(VALIDATORS)) {
+        const ok = validateField(name, data[name] ?? '');
+        if (!ok && !firstInvalid) firstInvalid = name;
+      }
+      return { ok: !firstInvalid, firstInvalid, data };
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // FORM SUBMIT
+    // ─────────────────────────────────────────────────────────────────
+
+    function showBanner(message) {
+      const banner = document.getElementById('formBanner');
+      banner.textContent = message;
+      banner.classList.add('visible');
+      banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function hideBanner() {
+      const banner = document.getElementById('formBanner');
+      banner.textContent = '';
+      banner.classList.remove('visible');
+    }
+
+    function setSubmitting(submitting) {
+      state.submitting = submitting;
+      const btn = document.getElementById('placeOrderBtn');
+      btn.disabled = submitting;
+      btn.textContent = submitting ? 'Processing…' : 'Place Order';
+    }
+
+    function wireFormEvents() {
+      const form = document.getElementById('checkoutForm');
+
+      // Live validation — clear error as the user fixes the field
+      for (const name of Object.keys(VALIDATORS)) {
+        const input = document.getElementById(name);
+        input?.addEventListener('blur', () => validateField(name, input.value));
+        input?.addEventListener('input', () => {
+          if (input.closest('.field')?.classList.contains('field--has-error')) {
+            validateField(name, input.value);
+          }
+        });
+      }
+
+      // Submit handler
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (state.submitting) return;
+
+        hideBanner();
+
+        const { ok, firstInvalid, data } = validateAll();
+        if (!ok) {
+          // Focus the first invalid field for keyboard users
+          document.getElementById(firstInvalid)?.focus();
+          return;
+        }
+
+        setSubmitting(true);
+
+        // Build the payload — server re-validates everything authoritative
+        const payload = {
+          items: state.cart.map(i => ({
+            variantId: i.variantId,
+            quantity:  Math.min(i.quantity, state.stockMap[i.variantId]?.stock ?? i.quantity),
+          })),
+          customer: {
+            name:  data.name,
+            email: data.email,
+            phone: data.phone,
+          },
+          shipping: {
+            address:  data.address,
+            city:     data.city,
+            province: data.province,
+            zip:      data.zip,
+          },
+          notes: data.notes || '',
+        };
+
+        try {
+          const res = await fetch('/api/create-payment', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(payload),
+          });
+          const result = await res.json();
+
+          if (!res.ok) {
+            setSubmitting(false);
+            showBanner(result.error || 'Could not create your order. Please try again.');
+            return;
+          }
+
+          if (!result.paymentUrl) {
+            setSubmitting(false);
+            showBanner('Could not start payment. Please try again.');
+            return;
+          }
+
+          // Clear the cart — the order is recorded server-side now.
+          // If payment fails, the customer can rebuild the cart from /shop.html.
+          clearCart();
+
+          // Hand off to PayMongo. After payment, PayMongo redirects to
+          // /order-confirmation.html?order=<order_number> (configured via
+          // the success URL in create-payment.js).
+          window.location.href = result.paymentUrl;
+
+        } catch (err) {
+          console.error('Submit failed:', err);
+          setSubmitting(false);
+          showBanner('Could not reach the server. Please check your connection and try again.');
+        }
+      });
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // INIT
+    // ─────────────────────────────────────────────────────────────────
+
+    async function init() {
+      // ── Handle redirect from a failed PayMongo payment ──
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('status') === 'failed') {
+        // Don't clear the cart — let the customer try again
+        document.getElementById('checkoutSubheader').innerHTML =
+          '<span style="color: var(--color-error);">Payment was not completed. You can try again below.</span>';
+      }
+
+      state.cart = getCart();
+
+      if (state.cart.length === 0) {
+        renderEmpty('empty');
+        return;
+      }
+
+      // Fetch fresh data for the order summary
+      const ids = state.cart.map(i => i.variantId);
+      state.stockMap = await fetchStockMap(ids);
+
+      // If every cart item has gone away or is out of stock, send them back
+      const validItems = state.cart.filter(item => {
+        const info = state.stockMap[item.variantId];
+        return info && info.productActive && info.stock > 0;
+      });
+
+      if (validItems.length === 0) {
+        renderEmpty('invalid');
+        return;
+      }
+
+      renderCheckout();
+    }
+
+    init();
+  </script>
+
+</body>
+</html>

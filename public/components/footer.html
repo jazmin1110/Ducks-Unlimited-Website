@@ -1,0 +1,282 @@
+<!-- =============================================================================
+     Ducks Unlimited — Site Footer
+     =============================================================================
+     Reusable footer for customer-facing pages. Drop into any page either by:
+       (a) Pasting this markup directly into the page, OR
+       (b) Fetching this file and injecting into a placeholder element.
+
+     Requires /css/style.css to be loaded (for CSS variables and fonts).
+
+     TODO before launch: replace placeholder contact + social URLs with the
+     real values from the Ducks Unlimited Facebook page.
+     ============================================================================= -->
+
+<footer class="site-footer">
+  <div class="container site-footer__container">
+
+    <!-- ── Top section: 4 columns on desktop, stacked on mobile ── -->
+    <div class="site-footer__grid">
+
+      <!-- Brand block -->
+      <div class="site-footer__col site-footer__brand-col">
+        <div class="site-footer__logo">Ducks Unlimited</div>
+        <div class="site-footer__est">est. 1995</div>
+        <p class="site-footer__tagline">Filipino-made since 1995</p>
+      </div>
+
+      <!-- Quick links -->
+      <div class="site-footer__col">
+        <h4 class="site-footer__heading">Shop</h4>
+        <ul class="site-footer__links">
+          <li><a href="/shop.html">Shop All</a></li>
+          <li><a href="/about.html">About Us</a></li>
+          <li><a href="/size-guide.html">Size Guide</a></li>
+          <li><a href="/contact.html">Contact</a></li>
+        </ul>
+      </div>
+
+      <!-- Contact info -->
+      <div class="site-footer__col">
+        <h4 class="site-footer__heading">Get in Touch</h4>
+        <ul class="site-footer__links">
+          <!-- TODO: replace with real phone from the FB page -->
+          <li>
+            <a href="tel:+639XXXXXXXXX">+63 9XX XXX XXXX</a>
+          </li>
+          <!-- TODO: replace with real email from the FB page -->
+          <li>
+            <a href="mailto:hello@ducksunlimited.ph">hello@ducksunlimited.ph</a>
+          </li>
+          <li class="site-footer__address">
+            Greenhills Shopping Center<br />
+            San Juan, Metro Manila
+          </li>
+        </ul>
+      </div>
+
+      <!-- Social links -->
+      <div class="site-footer__col">
+        <h4 class="site-footer__heading">Follow Us</h4>
+        <ul class="site-footer__socials">
+          <!-- TODO: replace href values with real URLs -->
+          <li>
+            <a href="https://facebook.com/ducksunlimitedph"
+               target="_blank" rel="noopener" aria-label="Facebook">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                <path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.5 2.9h-2.3v7A10 10 0 0 0 22 12z"/>
+              </svg>
+              <span>Facebook</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://instagram.com/ducksunlimitedph"
+               target="_blank" rel="noopener" aria-label="Instagram">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+                   stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="5"/>
+                <circle cx="12" cy="12" r="4"/>
+                <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+              </svg>
+              <span>Instagram</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://shopee.ph/ducksunlimited"
+               target="_blank" rel="noopener" aria-label="Shopee">
+              <span class="site-footer__social-mono">S</span>
+              <span>Shopee</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://lazada.com.ph/shop/ducksunlimited"
+               target="_blank" rel="noopener" aria-label="Lazada">
+              <span class="site-footer__social-mono">L</span>
+              <span>Lazada</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- ── Bottom bar ── -->
+    <div class="site-footer__bottom">
+      <p>&copy; <span id="footerYear">2025</span> Ducks Unlimited. All rights reserved.</p>
+      <p class="site-footer__credit">Filipino-made since 1995 · Crafted in Greenhills</p>
+    </div>
+
+  </div>
+</footer>
+
+<!-- Tiny script to keep the copyright year fresh without manual edits -->
+<script>
+  (function () {
+    var el = document.getElementById('footerYear');
+    if (el) el.textContent = new Date().getFullYear();
+  })();
+</script>
+
+
+<style>
+  /* All selectors prefixed with .site-footer__ to avoid colliding with page styles */
+
+  .site-footer {
+    background-color: var(--color-primary);
+    color: rgba(255, 255, 255, 0.85);
+    padding-block: 2.5rem 1.5rem;
+    margin-top: 3rem;
+    font-size: 0.9rem;
+  }
+
+  .site-footer__container { /* uses .container utility from style.css */ }
+
+  /* ── Top grid — single column on mobile, 4 columns on desktop ── */
+  .site-footer__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .site-footer__col {
+    /* nothing per-column on mobile */
+  }
+
+  /* ── Brand block ── */
+  .site-footer__logo {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--color-white);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.1;
+  }
+
+  .site-footer__est {
+    font-size: 0.7rem;
+    font-style: italic;
+    color: var(--color-accent);
+    letter-spacing: 0.14em;
+    margin-top: 0.25rem;
+  }
+
+  .site-footer__tagline {
+    margin-top: 0.85rem;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.5;
+  }
+
+  /* ── Column heading ── */
+  .site-footer__heading {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin-bottom: 1rem;
+  }
+
+  /* ── Lists of links ── */
+  .site-footer__links,
+  .site-footer__socials {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .site-footer__links a,
+  .site-footer__socials a {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    font-size: 0.88rem;
+    transition: color 0.15s;
+  }
+
+  .site-footer__links a:hover,
+  .site-footer__socials a:hover {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .site-footer__address {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  /* ── Social links — icon + text inline ── */
+  .site-footer__socials a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .site-footer__socials svg {
+    color: var(--color-accent);
+    flex-shrink: 0;
+  }
+
+  /* Square monogram badge used for Shopee/Lazada (no real icons here) */
+  .site-footer__social-mono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    background: var(--color-accent);
+    border-radius: 3px;
+  }
+
+  /* ── Bottom bar ── */
+  .site-footer__bottom {
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .site-footer__bottom p { margin: 0; }
+
+  .site-footer__credit {
+    font-style: italic;
+    color: var(--color-accent);
+  }
+
+  /* ── Desktop layout (≥ 768px) ── */
+  @media (min-width: 768px) {
+
+    .site-footer { padding-block: 3.5rem 1.5rem; }
+
+    /* 4 columns side-by-side */
+    .site-footer__grid {
+      grid-template-columns: 1.4fr 1fr 1.2fr 1fr;
+      gap: 3rem;
+      margin-bottom: 3rem;
+    }
+
+    .site-footer__logo { font-size: 1.55rem; }
+
+    /* Bottom bar becomes inline on desktop */
+    .site-footer__bottom {
+      flex-direction: row;
+      justify-content: space-between;
+      text-align: left;
+    }
+  }
+</style>
