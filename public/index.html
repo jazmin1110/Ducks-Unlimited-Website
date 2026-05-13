@@ -304,21 +304,40 @@
       color: var(--color-text);
     }
 
-    .story__link {
-      display: inline-block;
-      margin-top: 1.25rem;
-      font-size: 0.85rem;
-      font-weight: 500;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--color-primary);
-      border-bottom: 1px solid var(--color-accent);
-      padding-bottom: 0.2rem;
+    /* Three brand-highlight stats below the paragraphs */
+    .story__stats {
+      margin-top: 2.5rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--color-border);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
     }
 
-    .story__link:hover {
-      color: var(--color-accent);
-      text-decoration: none;
+    .story-stat__num {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      letter-spacing: 0.02em;
+      line-height: 1.2;
+    }
+
+    .story-stat__label {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-top: 0.4rem;
+    }
+
+    @media (max-width: 540px) {
+      .story__stats {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+        padding-top: 1.5rem;
+        margin-top: 2rem;
+      }
     }
 
     /* ── DESKTOP (≥ 768px) ─────────────────────────────────────── */
@@ -447,22 +466,49 @@
     </section>
 
     <!-- ────────────────────────────────────────────────────────
-         BRAND STORY
+         ABOUT — brand story (anchorable as /#story from other pages)
          ──────────────────────────────────────────────────────── -->
-    <section class="story section">
+    <section class="story section" id="story">
       <div class="container story__inner">
+
         <p class="eyebrow">Our Story</p>
         <h2>Crafted in the Philippines</h2>
         <div class="story__divider"></div>
+
         <p>
-          For three decades, Ducks Unlimited has been a family-run, vertically
-          integrated workshop in the Philippines — from yarn to finished
-          garment, every piece is woven from the finest Egyptian cotton.
+          Since 1995, Ducks Unlimited has been a small family-run workshop in
+          Greenhills, San Juan — crafting garments the old-fashioned way, by
+          hand, one piece at a time.
         </p>
+
         <p>
-          Affordable luxury that lasts. Made by hand. Designed to live in.
+          Every shirt, polo, and pair of trousers begins with the finest
+          Egyptian cotton. We're vertically integrated: we weave the cloth,
+          cut the patterns, sew the seams, and finish each hem ourselves —
+          no middlemen, no outsourcing.
         </p>
-        <a href="/about.html" class="story__link">About Us →</a>
+
+        <p>
+          Three decades on, we're still doing it the same way. Because
+          affordable luxury isn't about cutting corners. It's about clothes
+          made to last, designed to live in, by people who care.
+        </p>
+
+        <div class="story__stats">
+          <div class="story-stat">
+            <div class="story-stat__num">Est. 1995</div>
+            <div class="story-stat__label">Family-run since</div>
+          </div>
+          <div class="story-stat">
+            <div class="story-stat__num">Hand-Finished</div>
+            <div class="story-stat__label">Every piece in Greenhills</div>
+          </div>
+          <div class="story-stat">
+            <div class="story-stat__num">Egyptian Cotton</div>
+            <div class="story-stat__label">Woven in-house</div>
+          </div>
+        </div>
+
       </div>
     </section>
 
