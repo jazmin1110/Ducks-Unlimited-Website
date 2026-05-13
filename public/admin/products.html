@@ -499,6 +499,23 @@
       gap: 0.5rem;
     }
 
+    /* Shown in place of the image tiles when no product has been saved yet */
+    .images-locked-notice,
+    .variants-locked-notice {
+      grid-column: 1 / -1;
+      padding: 1.5rem 1.25rem;
+      background: #faf7f2;
+      border: 1px dashed #d8d2c4;
+      border-radius: 6px;
+      text-align: center;
+      color: #888;
+      font-size: 0.85rem;
+      font-style: italic;
+      line-height: 1.5;
+    }
+
+    .variants-locked-notice { padding: 1.25rem 1rem; }
+
     /* Each image tile is square, with the image filling the whole thing */
     .image-tile {
       position: relative;
@@ -737,10 +754,18 @@
       transition: all 0.15s;
     }
 
-    .btn-add-variant:hover {
+    .btn-add-variant:hover:not(:disabled) {
       background-color: #faf3df;
       color: #1B4D2E;
       border-color: #1B4D2E;
+    }
+
+    .btn-add-variant:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      border-style: dashed;
+      border-color: #d8d2c4;
+      color: #aaa;
     }
 
     /* Monospace style for SKU cells */
@@ -1079,8 +1104,10 @@
       panelError.classList.add('visible');
     }
 
-    // Reset the form to blank (Add mode). Variants section is hidden because
-    // variants can only be created once a product row already exists.
+    // Reset the form to blank (Add mode). Both Images and Variants sections
+    // are always visible — when no product has been saved yet they render
+    // a "Save the product first" notice and disable the action controls.
+    // Once the product is saved (handleSave's insert path), they unlock.
     function resetForm() {
       productIdInput.value = '';
       nameInput.value = '';
@@ -1091,8 +1118,15 @@
       panelTitle.textContent = 'Add Product';
       saveBtn.textContent = 'Save Product';
       clearPanelError();
-      document.getElementById('imagesSection').style.display = 'none';
-      document.getElementById('variantsSection').style.display = 'none';
+
+      // Show both sections — they'll render their locked state because
+      // productIdInput.value is empty.
+      document.getElementById('imagesSection').style.display = 'block';
+      document.getElementById('variantsSection').style.display = 'block';
+
+      currentImages = [];
+      renderImages();      // renders locked notice when no product id
+      loadVariants('');    // renders locked notice when no product id
     }
 
     // Open panel pre-filled with a product's data (Edit mode)
@@ -1285,6 +1319,19 @@
     // Render the cached images array as draggable tiles + the upload tile
     function renderImages() {
       imagesGrid.innerHTML = '';
+
+      // ── Locked state when no product has been saved yet ──
+      // Image uploads require an existing product row (storage path uses
+      // the product id, and the product_images table has a FK to products).
+      // Show a friendly notice instead of the upload tile.
+      if (!productIdInput.value) {
+        imagesGrid.innerHTML = `
+          <div class="images-locked-notice">
+            Save the product first to start uploading images.
+          </div>
+        `;
+        return;
+      }
 
       currentImages.forEach((img, index) => {
         const tile = document.createElement('div');
@@ -1543,6 +1590,22 @@
 
     // Fetch this product's variants and render them in the table
     async function loadVariants(productId) {
+      const addBtn = document.getElementById('addVariantBtn');
+
+      // ── Locked state when no product has been saved yet ──
+      // Variants need a product_id FK, so we can't insert anything until
+      // the product exists. Disable the "+ Add Variant" button and show
+      // a notice in place of the table.
+      if (!productId) {
+        variantsTableBody.innerHTML =
+          '<tr><td colspan="5" class="variants-locked-notice">Save the product first to start adding variants.</td></tr>';
+        if (addBtn) addBtn.disabled = true;
+        return;
+      }
+
+      // Unlocked — re-enable the add button and render normally
+      if (addBtn) addBtn.disabled = false;
+
       variantsTableBody.innerHTML =
         '<tr><td colspan="5" class="variants-empty">Loading…</td></tr>';
 
