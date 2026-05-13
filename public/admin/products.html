@@ -1173,28 +1173,64 @@
         is_active: isActive,
       };
 
-      let error;
-
+      // ── UPDATE existing product ──
       if (id) {
-        // Editing an existing product — UPDATE
-        ({ error } = await supabase.from('products').update(payload).eq('id', id));
-      } else {
-        // New product — INSERT
-        ({ error } = await supabase.from('products').insert(payload));
-      }
+        const { error } = await supabase
+          .from('products').update(payload).eq('id', id);
 
-      saveBtn.disabled = false;
-      saveBtn.textContent = id ? 'Save Changes' : 'Save Product';
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Changes';
 
-      if (error) {
-        showPanelError('Something went wrong. Please try again.');
-        console.error(error);
+        if (error) {
+          showPanelError('Something went wrong. Please try again.');
+          console.error(error);
+          return;
+        }
+
+        closePanel();
+        showToast('Product updated.');
+        await loadProducts();
         return;
       }
 
-      closePanel();
-      showToast(id ? 'Product updated.' : 'Product added.');
-      await loadProducts(); // refresh the table
+      // ── INSERT new product ──
+      // Use .select().single() so we get the new row's ID back. Then,
+      // instead of closing the panel, we transition it into "edit mode"
+      // for the freshly-created product — that way the user can keep
+      // working in the same panel and immediately upload images + add
+      // variants (which both need a product_id to exist).
+      const { data: newProduct, error: insertErr } = await supabase
+        .from('products').insert(payload)
+        .select().single();
+
+      if (insertErr) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Product';
+        showPanelError('Something went wrong. Please try again.');
+        console.error(insertErr);
+        return;
+      }
+
+      // Switch the panel to edit mode for the new product
+      productIdInput.value   = newProduct.id;
+      panelTitle.textContent = 'Edit Product';
+      saveBtn.textContent    = 'Save Changes';
+      saveBtn.disabled       = false;
+
+      // Reveal the images + variants sections (hidden in add mode)
+      document.getElementById('imagesSection').style.display = 'block';
+      document.getElementById('variantsSection').style.display = 'block';
+
+      // Initialize the new sections — empty for a brand-new product
+      currentImages = [];
+      renderImages();
+      await loadVariants(newProduct.id);
+
+      showToast('Product saved — now add images and variants.');
+
+      // Refresh the table in the background so the new product appears.
+      // Not awaited — the user can keep working in the panel.
+      loadProducts();
     }
 
     // ── Utility: escape HTML to prevent XSS when inserting strings into innerHTML ──
