@@ -12,160 +12,219 @@
 
   <style>
     /* ============================================================
-       Homepage-specific styles
-       Reusable patterns live in /css/style.css — anything below is
-       layout that only the homepage needs.
+       Homepage — editorial Ralph-Lauren-style layout.
+       Reusable patterns live in /css/style.css; this file holds
+       layout that's specific to the homepage.
+
+       NOTE on imagery: hero + lifestyle blocks reference picsum.photos
+       placeholder URLs so the layout looks complete out of the box.
+       Replace with real DU photography (see TODOs below).
        ============================================================ */
 
     /* ── HERO ──────────────────────────────────────────────────── */
 
     .hero {
-      background-color: var(--color-primary);
-      color: var(--color-bg);
-      padding: 4rem 0;
-      text-align: center;
-      min-height: 75vh;
+      position: relative;
+      min-height: calc(100vh - var(--nav-total-h));
       display: flex;
       align-items: center;
-      position: relative;
+      justify-content: center;
+      color: var(--color-white);
+      text-align: center;
       overflow: hidden;
-
-      /* IMAGE SLOT: when you have a hero photo, uncomment these lines
-         and place the file at /public/img/hero.jpg.
-         background-image: url('/img/hero.jpg');
-         background-size: cover;
-         background-position: center;
-      */
+      background: var(--color-primary);
+      /* TODO: replace with real /img/hero.jpg when ready */
+      background-image:
+        linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.45)),
+        url('https://picsum.photos/seed/du-hero-2026/1920/1200');
+      background-size: cover;
+      background-position: center;
     }
 
-    .hero__inner { width: 100%; position: relative; z-index: 1; }
+    .hero__inner {
+      width: 100%;
+      max-width: 880px;
+      padding-inline: var(--space-md);
+      position: relative;
+      z-index: 1;
+    }
 
     .hero__eyebrow {
       font-size: 0.75rem;
       font-weight: 500;
-      letter-spacing: 0.2em;
+      letter-spacing: var(--ls-eyebrow);
       text-transform: uppercase;
       color: var(--color-accent);
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
     }
 
     .hero__headline {
       font-family: var(--font-heading);
-      font-size: 2.5rem;
+      font-size: var(--type-display);
       font-weight: 400;
-      color: var(--color-bg);
-      letter-spacing: 0.02em;
-      line-height: 1.05;
-      margin-bottom: 1.25rem;
+      color: var(--color-white);
+      letter-spacing: var(--ls-tight);
+      line-height: 1.02;
+      margin-bottom: 1.5rem;
     }
-
-    /* The period after "Filipino-made" sits more elegantly in gold */
-    .hero__headline .accent { color: var(--color-accent); }
 
     .hero__sub {
-      font-size: 1rem;
-      color: rgba(245, 240, 232, 0.85);
+      font-size: 1.05rem;
+      color: rgba(255, 255, 255, 0.85);
       max-width: 520px;
-      margin: 0 auto 2rem;
-      line-height: 1.6;
+      margin: 0 auto 2.5rem;
+      line-height: 1.7;
     }
 
-    .hero__divider {
-      width: 60px;
-      height: 1px;
-      background: var(--color-accent);
-      margin: 0 auto 1.5rem;
-      opacity: 0.6;
-    }
-
-    /* ── FEATURED CATEGORIES ───────────────────────────────────── */
-
-    .categories { background: var(--color-bg); }
-
-    /* On mobile the row scrolls horizontally; on desktop it grids out */
-    .categories__scroller {
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-      margin-top: 1.5rem;
-      /* Hide scrollbar on most browsers — still scrollable via touch/drag */
-      scrollbar-width: none;
-    }
-    .categories__scroller::-webkit-scrollbar { display: none; }
-
-    .categories__grid {
-      display: flex;
-      gap: 0.85rem;
-      padding-bottom: 0.5rem;
-      /* Add side padding so the snap edges don't sit against the viewport */
-      padding-right: 1rem;
-    }
-
-    .cat-card {
-      flex: 0 0 70%;
-      min-height: 200px;
-      border-radius: var(--radius-lg);
-      padding: 1.5rem;
-      scroll-snap-align: start;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      text-decoration: none;
-      transition: transform 0.2s, box-shadow 0.2s;
-      position: relative;
-    }
-
-    .cat-card:hover {
-      transform: translateY(-3px);
-      box-shadow: var(--shadow);
-      text-decoration: none;
-    }
-
-    .cat-card__name {
-      font-family: var(--font-heading);
-      font-size: 1.5rem;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      line-height: 1.1;
-    }
-
-    .cat-card__cta {
-      font-size: 0.75rem;
-      font-weight: 500;
-      letter-spacing: 0.12em;
+    /* Scroll indicator at the bottom of the hero */
+    .hero__scroll {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      color: var(--color-white);
+      opacity: 0.7;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
       text-transform: uppercase;
-      margin-top: auto;
-      opacity: 0.85;
+      writing-mode: vertical-rl;
+      animation: hero-scroll-bob 2.5s ease-in-out infinite;
     }
 
-    /* Color variants for the cards — each has its own personality */
-    .cat-card--green {
-      background: var(--color-primary);
-      color: var(--color-bg);
+    @keyframes hero-scroll-bob {
+      0%, 100% { transform: translate(-50%, 0); }
+      50%      { transform: translate(-50%, 8px); }
     }
-    .cat-card--gold {
-      background: var(--color-accent);
+
+    /* ── FEATURED COLLECTIONS MOSAIC ──────────────────────────── */
+    /* Three large image tiles + headline that link to category pages */
+
+    .collections {
+      background: var(--color-white);
+    }
+
+    .collections__intro {
+      text-align: center;
+      max-width: 640px;
+      margin: 0 auto var(--space-xl);
+    }
+
+    .collections__grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .collection-tile {
+      position: relative;
+      aspect-ratio: 4 / 5;
+      overflow: hidden;
+      display: block;
+      text-decoration: none;
       color: var(--color-white);
     }
-    .cat-card--ivory {
-      background: var(--color-bg-warm);
-      color: var(--color-primary);
-      border: 1px solid var(--color-border);
+
+    .collection-tile img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s ease;
     }
-    .cat-card--dark {
-      background: var(--color-text);
-      color: var(--color-bg);
+
+    .collection-tile:hover img { transform: scale(1.04); }
+
+    .collection-tile__overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 1.75rem;
+    }
+
+    .collection-tile__label {
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 0.4rem;
+    }
+
+    .collection-tile__name {
+      font-family: var(--font-heading);
+      font-size: 2rem;
+      letter-spacing: 0.02em;
+      line-height: 1.1;
+      margin-bottom: 0.75rem;
+    }
+
+    .collection-tile__cta {
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--color-white);
+      padding-bottom: 0.2rem;
+      align-self: flex-start;
+    }
+
+    /* ── EDITORIAL BLOCK (alternating image / text) ──────────── */
+
+    .editorial {
+      background: var(--color-bg);
+    }
+
+    .editorial__row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      align-items: stretch;
+    }
+
+    .editorial__row + .editorial__row {
+      border-top: 1px solid var(--color-border-light);
+    }
+
+    .editorial__media {
+      aspect-ratio: 4 / 5;
+      overflow: hidden;
+    }
+
+    .editorial__media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .editorial__copy {
+      padding: var(--space-2xl) var(--space-md);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-width: 540px;
+      margin-inline: auto;
+    }
+
+    .editorial__copy p {
+      font-size: 1rem;
+      line-height: 1.8;
+      color: var(--color-text);
+      margin-bottom: 1.25rem;
     }
 
     /* ── NEW ARRIVALS ──────────────────────────────────────────── */
 
     .new-arrivals { background: var(--color-bg-warm); }
 
+    .new-arrivals__head {
+      text-align: center;
+      margin-bottom: var(--space-xl);
+    }
+
     .products-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 0.85rem;
-      margin-top: 1.5rem;
+      gap: 1rem;
     }
 
     .product-card {
@@ -173,20 +232,15 @@
       text-decoration: none;
       color: inherit;
       background: var(--color-white);
-      border-radius: var(--radius-lg);
       overflow: hidden;
-      box-shadow: var(--shadow-sm);
-      transition: transform 0.15s, box-shadow 0.15s;
+      transition: transform 0.2s;
     }
 
-    .product-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow);
-      text-decoration: none;
-    }
+    .product-card:hover { text-decoration: none; }
+    .product-card:hover .product-card__image img { transform: scale(1.03); }
 
     .product-card__image {
-      aspect-ratio: 1 / 1.2;
+      aspect-ratio: 4 / 5;
       background: var(--color-bg-warm);
       position: relative;
       overflow: hidden;
@@ -196,10 +250,9 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      display: block;
+      transition: transform 0.5s ease;
     }
 
-    /* Shown when a product has no image yet — keeps the grid looking clean */
     .product-card__placeholder {
       width: 100%;
       height: 100%;
@@ -230,23 +283,25 @@
     }
 
     .product-card__body {
-      padding: 0.85rem 1rem 1.1rem;
+      padding: 1rem 0.25rem 0;
+      text-align: center;
     }
 
     .product-card__name {
       font-family: var(--font-heading);
-      font-size: 1rem;
+      font-size: 1.05rem;
       font-weight: 600;
       color: var(--color-text);
-      margin: 0 0 0.25rem;
+      margin: 0 0 0.3rem;
       line-height: 1.25;
+      letter-spacing: 0.01em;
     }
 
     .product-card__price {
-      font-size: 0.9rem;
-      color: var(--color-primary);
-      font-weight: 500;
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
       margin: 0;
+      letter-spacing: 0.04em;
     }
 
     .products-empty {
@@ -257,8 +312,13 @@
       font-size: 0.9rem;
     }
 
-    /* ── Skeleton placeholders shown while products are loading ──── */
+    .new-arrivals__cta {
+      display: flex;
+      justify-content: center;
+      margin-top: var(--space-xl);
+    }
 
+    /* Skeletons */
     .product-card--skeleton { pointer-events: none; }
 
     .product-card--skeleton .product-card__image,
@@ -271,109 +331,166 @@
     .skeleton-line {
       height: 0.85rem;
       border-radius: 3px;
-      margin-bottom: 0.45rem;
+      margin: 0 auto 0.45rem;
     }
-    .skeleton-line--name  { width: 80%; height: 1rem; }
-    .skeleton-line--price { width: 40%; }
+    .skeleton-line--name  { width: 60%; height: 1rem; }
+    .skeleton-line--price { width: 30%; }
 
     @keyframes skeleton-pulse {
       0%, 100% { background-position: 100% 0; }
       50%      { background-position: 0% 0; }
     }
 
-    /* ── BRAND STORY ───────────────────────────────────────────── */
+    /* ── HERITAGE STORY ───────────────────────────────────────── */
 
-    .story { background: var(--color-bg); text-align: center; }
+    .story {
+      background: var(--color-primary);
+      color: var(--color-white);
+      text-align: center;
+    }
 
     .story__inner {
-      max-width: 640px;
+      max-width: 720px;
       margin: 0 auto;
     }
 
-    .story__divider {
-      width: 40px;
-      height: 1px;
-      background: var(--color-accent);
-      margin: 0 auto 1.5rem;
-      opacity: 0.7;
-    }
+    .story h2 { color: var(--color-white); }
 
     .story p {
-      font-size: 1.02rem;
-      line-height: 1.75;
-      color: var(--color-text);
+      font-size: 1.05rem;
+      line-height: 1.8;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 1.25rem;
     }
 
-    /* Three brand-highlight stats below the paragraphs */
     .story__stats {
-      margin-top: 2.5rem;
-      padding-top: 2rem;
-      border-top: 1px solid var(--color-border);
+      margin-top: var(--space-xl);
+      padding-top: var(--space-lg);
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
+      grid-template-columns: 1fr;
+      gap: var(--space-md);
     }
 
     .story-stat__num {
       font-family: var(--font-heading);
-      font-size: 1.35rem;
-      font-weight: 600;
-      color: var(--color-primary);
+      font-size: 1.5rem;
+      font-weight: 400;
+      color: var(--color-accent);
       letter-spacing: 0.02em;
       line-height: 1.2;
     }
 
     .story-stat__label {
       font-size: 0.72rem;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: var(--color-text-muted);
+      color: rgba(255, 255, 255, 0.7);
       margin-top: 0.4rem;
     }
 
-    @media (max-width: 540px) {
-      .story__stats {
-        grid-template-columns: 1fr;
-        gap: 1.25rem;
-        padding-top: 1.5rem;
-        margin-top: 2rem;
-      }
+    /* ── JOURNAL TEASER ───────────────────────────────────────── */
+
+    .journal-teaser {
+      background: var(--color-bg);
+      text-align: center;
     }
 
-    /* ── DESKTOP (≥ 768px) ─────────────────────────────────────── */
+    .journal-teaser__grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-md);
+      margin-top: var(--space-xl);
+    }
+
+    .journal-card {
+      display: block;
+      text-decoration: none;
+      color: var(--color-text);
+      text-align: left;
+    }
+
+    .journal-card__media {
+      aspect-ratio: 3 / 2;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .journal-card__media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    .journal-card:hover .journal-card__media img { transform: scale(1.04); }
+
+    .journal-card__eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 0.5rem;
+    }
+
+    .journal-card__title {
+      font-family: var(--font-heading);
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+    }
+
+    .journal-card__excerpt {
+      font-size: 0.92rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── DESKTOP (≥ 768px) ────────────────────────────────────── */
 
     @media (min-width: 768px) {
 
-      /* Hero scales up dramatically */
-      .hero { padding: 6rem 0; min-height: 85vh; }
-      .hero__headline { font-size: 4.5rem; }
-      .hero__sub      { font-size: 1.15rem; }
+      .hero { background-attachment: fixed; }
+      .hero__sub { font-size: 1.2rem; }
 
-      /* Categories become a 4-column grid (no more scroll) */
-      .categories__scroller { overflow-x: visible; margin-top: 2rem; }
-      .categories__grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 1rem;
-        padding: 0;
+      /* 3-tile collections mosaic — first tile spans tall */
+      .collections__grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
       }
-      .cat-card { flex: none; min-height: 240px; padding: 1.75rem; }
-      .cat-card__name { font-size: 1.7rem; }
+      .collection-tile__name { font-size: 2.5rem; }
 
-      /* Products become 4-column */
+      /* Editorial rows: image left, copy right (and flip on alt rows) */
+      .editorial__row {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .editorial__row--reverse .editorial__media { order: 2; }
+      .editorial__row--reverse .editorial__copy  { order: 1; }
+
+      .editorial__media { aspect-ratio: auto; min-height: 560px; }
+      .editorial__copy  { padding: var(--space-3xl) var(--space-2xl); }
+      .editorial__copy p { font-size: 1.1rem; }
+
       .products-grid {
         grid-template-columns: repeat(4, 1fr);
         gap: 1.5rem;
-        margin-top: 2rem;
       }
-      .product-card__name  { font-size: 1.05rem; }
-      .product-card__price { font-size: 0.95rem; }
+      .product-card__name  { font-size: 1.1rem; }
+
+      .story__stats {
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-lg);
+      }
 
       .story p { font-size: 1.15rem; }
-    }
 
-    @media (min-width: 1024px) {
-      .hero__headline { font-size: 5.5rem; }
+      .journal-teaser__grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+      }
     }
   </style>
 </head>
@@ -385,130 +502,239 @@
   <main>
 
     <!-- ────────────────────────────────────────────────────────
-         HERO
-         Typographic-only for now. Add a background image via the
-         .hero CSS when ready (see comment in stylesheet above).
+         HERO — full-bleed editorial photograph + display headline
+         TODO: swap picsum.photos URL for real /img/hero.jpg
          ──────────────────────────────────────────────────────── -->
     <section class="hero">
-      <div class="container hero__inner">
-
-        <div class="hero__eyebrow">Ducks Unlimited</div>
-
+      <div class="hero__inner">
+        <p class="hero__eyebrow">Ducks Unlimited · Est. 1995</p>
         <h1 class="hero__headline">
-          Filipino-made<span class="accent">.</span><br />
-          Since 1995<span class="accent">.</span>
+          Affordable luxury,<br />
+          hand-finished in the Philippines.
         </h1>
-
-        <div class="hero__divider"></div>
-
         <p class="hero__sub">
-          Egyptian cotton garments crafted for everyday elegance.
+          Egyptian cotton garments, woven, cut, and sewn in our Greenhills
+          workshop — the way we've done it for three decades.
         </p>
-
-        <a href="/shop.html" class="btn btn-accent btn-lg">Shop Now</a>
-
+        <a href="/shop.html" class="btn btn-outline-light">Shop the Collection</a>
       </div>
+      <span class="hero__scroll" aria-hidden="true">Scroll</span>
     </section>
 
+
     <!-- ────────────────────────────────────────────────────────
-         FEATURED CATEGORIES
-         Categories are hardcoded for now since they're a fixed
-         set defined by the schema (polo, t-shirt, shorts, pants).
-         If we ever add a categories table, swap this for a fetch.
+         FEATURED COLLECTIONS MOSAIC
+         Three large editorial tiles linking to category pages.
          ──────────────────────────────────────────────────────── -->
-    <section class="categories section">
+    <section class="collections section-xl">
       <div class="container">
-        <p class="eyebrow text-center">Shop by Category</p>
-        <h2 class="text-center">Featured Categories</h2>
-      </div>
 
-      <!-- The scroller is the overflow container; the grid is its
-           single direct child so horizontal scroll works smoothly -->
-      <div class="categories__scroller">
-        <div class="container categories__grid">
+        <div class="collections__intro">
+          <p class="eyebrow">The Collection</p>
+          <h2 class="display-sm">Made for everyday elegance</h2>
+          <span class="editorial-rule"></span>
+        </div>
 
-          <a class="cat-card cat-card--green" href="/shop.html?category=polo">
-            <span class="cat-card__name">Polo Shirts</span>
-            <span class="cat-card__cta">Shop →</span>
+        <div class="collections__grid">
+
+          <a class="collection-tile" href="/shop.html?category=polo">
+            <!-- TODO: replace with real DU polo lifestyle photo -->
+            <img src="https://picsum.photos/seed/du-collection-polo/600/800" alt="Polo Shirts" />
+            <div class="collection-tile__overlay">
+              <span class="collection-tile__label">Iconic</span>
+              <h3 class="collection-tile__name">Polo Shirts</h3>
+              <span class="collection-tile__cta">Shop Polos</span>
+            </div>
           </a>
 
-          <a class="cat-card cat-card--gold" href="/shop.html?category=t-shirt">
-            <span class="cat-card__name">T-Shirts</span>
-            <span class="cat-card__cta">Shop →</span>
+          <a class="collection-tile" href="/shop.html?category=t-shirt">
+            <img src="https://picsum.photos/seed/du-collection-tshirt/600/800" alt="T-Shirts" />
+            <div class="collection-tile__overlay">
+              <span class="collection-tile__label">Essentials</span>
+              <h3 class="collection-tile__name">T-Shirts</h3>
+              <span class="collection-tile__cta">Shop T-Shirts</span>
+            </div>
           </a>
 
-          <a class="cat-card cat-card--ivory" href="/shop.html?category=shorts">
-            <span class="cat-card__name">Shorts</span>
-            <span class="cat-card__cta">Shop →</span>
-          </a>
-
-          <a class="cat-card cat-card--dark" href="/shop.html?category=pants">
-            <span class="cat-card__name">Pants</span>
-            <span class="cat-card__cta">Shop →</span>
+          <a class="collection-tile" href="/shop.html?category=bottoms">
+            <img src="https://picsum.photos/seed/du-collection-bottoms/600/800" alt="Bottoms" />
+            <div class="collection-tile__overlay">
+              <span class="collection-tile__label">Tailored</span>
+              <h3 class="collection-tile__name">Bottoms</h3>
+              <span class="collection-tile__cta">Shop Bottoms</span>
+            </div>
           </a>
 
         </div>
       </div>
     </section>
 
+
     <!-- ────────────────────────────────────────────────────────
-         NEW ARRIVALS — filled by the inline script below
+         EDITORIAL — alternating image / text blocks
+         Two rows: first image-left, second image-right.
          ──────────────────────────────────────────────────────── -->
-    <section class="new-arrivals section">
+    <section class="editorial">
+
+      <!-- Row 1: image left, copy right -->
+      <div class="editorial__row">
+        <div class="editorial__media">
+          <img src="https://picsum.photos/seed/du-editorial-cotton/900/1100"
+               alt="Egyptian cotton being woven" />
+        </div>
+        <div class="editorial__copy">
+          <p class="eyebrow">The Material</p>
+          <h2 class="display-sm">Woven from the finest Egyptian cotton.</h2>
+          <span class="editorial-rule editorial-rule--left"></span>
+          <p>
+            Every Ducks Unlimited garment begins with long-staple Egyptian
+            cotton — softer to the touch, stronger in the seam, and built to
+            outlast trend cycles. We weave the cloth ourselves so we can
+            guarantee what's inside each piece.
+          </p>
+          <p>
+            <a href="/journal/the-cotton-story" class="btn btn-outline-dark">
+              Read the Cotton Story
+            </a>
+          </p>
+        </div>
+      </div>
+
+      <!-- Row 2: copy left, image right -->
+      <div class="editorial__row editorial__row--reverse">
+        <div class="editorial__media">
+          <img src="https://picsum.photos/seed/du-editorial-workshop/900/1100"
+               alt="Hand-finishing in the Greenhills workshop" />
+        </div>
+        <div class="editorial__copy">
+          <p class="eyebrow">The Workshop</p>
+          <h2 class="display-sm">Hand-finished, one piece at a time.</h2>
+          <span class="editorial-rule editorial-rule--left"></span>
+          <p>
+            From the first cut to the final hem, every Ducks Unlimited piece
+            is finished by hand in our family-run workshop in Greenhills.
+            No middlemen, no outsourcing — just three decades of craft
+            passed down through our team.
+          </p>
+          <p>
+            <a href="/#story" class="btn btn-outline-dark">Discover Our Heritage</a>
+          </p>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ────────────────────────────────────────────────────────
+         NEW ARRIVALS — filled by inline script (Supabase fetch)
+         ──────────────────────────────────────────────────────── -->
+    <section class="new-arrivals section-xl">
       <div class="container">
-        <p class="eyebrow text-center">Just In</p>
-        <h2 class="text-center">New Arrivals</h2>
+        <div class="new-arrivals__head">
+          <p class="eyebrow">Just In</p>
+          <h2 class="display-sm">New Arrivals</h2>
+          <span class="editorial-rule"></span>
+        </div>
 
         <div class="products-grid" id="newArrivalsGrid">
-          <!-- Skeleton cards while loading, replaced by real products on fetch -->
+          <!-- Skeletons inserted here on load, replaced by real products -->
+        </div>
+
+        <div class="new-arrivals__cta">
+          <a href="/shop.html" class="btn btn-outline-dark">Shop All New</a>
         </div>
       </div>
     </section>
 
+
     <!-- ────────────────────────────────────────────────────────
-         ABOUT — brand story (anchorable as /#story from other pages)
+         HERITAGE STORY (#story anchor for nav)
          ──────────────────────────────────────────────────────── -->
-    <section class="story section" id="story">
+    <section class="story section-xl" id="story">
       <div class="container story__inner">
-
-        <p class="eyebrow">Our Story</p>
-        <h2>Crafted in the Philippines</h2>
-        <div class="story__divider"></div>
+        <p class="eyebrow" style="color: var(--color-accent);">Our Heritage</p>
+        <h2 class="display-sm display--light">Crafted in the Philippines since 1995</h2>
+        <span class="editorial-rule"></span>
 
         <p>
-          Since 1995, Ducks Unlimited has been a small family-run workshop in
-          Greenhills, San Juan — crafting garments the old-fashioned way, by
-          hand, one piece at a time.
+          Ducks Unlimited began as a small family workshop in Greenhills,
+          San Juan — a place to make beautiful, honest clothes the way they
+          used to be made: slowly, by hand, with care.
         </p>
-
         <p>
-          Every shirt, polo, and pair of trousers begins with the finest
-          Egyptian cotton. We're vertically integrated: we weave the cloth,
-          cut the patterns, sew the seams, and finish each hem ourselves —
-          no middlemen, no outsourcing.
-        </p>
-
-        <p>
-          Three decades on, we're still doing it the same way. Because
-          affordable luxury isn't about cutting corners. It's about clothes
-          made to last, designed to live in, by people who care.
+          Three decades on, we're still here, still vertically integrated,
+          still finishing every hem ourselves. Because affordable luxury
+          isn't about cutting corners. It's about clothes made to last,
+          designed to live in, by people who care.
         </p>
 
         <div class="story__stats">
           <div class="story-stat">
-            <div class="story-stat__num">Est. 1995</div>
+            <div class="story-stat__num">1995</div>
             <div class="story-stat__label">Family-run since</div>
           </div>
           <div class="story-stat">
-            <div class="story-stat__num">Hand-Finished</div>
-            <div class="story-stat__label">Every piece in Greenhills</div>
+            <div class="story-stat__num">100%</div>
+            <div class="story-stat__label">Hand-finished in Greenhills</div>
           </div>
           <div class="story-stat">
             <div class="story-stat__num">Egyptian Cotton</div>
             <div class="story-stat__label">Woven in-house</div>
           </div>
         </div>
+      </div>
+    </section>
 
+
+    <!-- ────────────────────────────────────────────────────────
+         JOURNAL TEASER — three story cards
+         Will be wired to the journal_posts table in Phase 4.
+         ──────────────────────────────────────────────────────── -->
+    <section class="journal-teaser section-xl">
+      <div class="container">
+        <p class="eyebrow">The Journal</p>
+        <h2 class="display-sm">Stories from the workshop</h2>
+        <span class="editorial-rule"></span>
+
+        <div class="journal-teaser__grid">
+
+          <a class="journal-card" href="/journal/the-cotton-story">
+            <div class="journal-card__media">
+              <img src="https://picsum.photos/seed/du-journal-1/600/400" alt="" />
+            </div>
+            <p class="journal-card__eyebrow">Materials</p>
+            <h3 class="journal-card__title">Why Egyptian Cotton Matters</h3>
+            <p class="journal-card__excerpt">
+              The longer the fiber, the softer the cloth — and the longer
+              your shirt lasts. A primer on what makes our cotton different.
+            </p>
+          </a>
+
+          <a class="journal-card" href="/journal/the-perfect-polo">
+            <div class="journal-card__media">
+              <img src="https://picsum.photos/seed/du-journal-2/600/400" alt="" />
+            </div>
+            <p class="journal-card__eyebrow">Style Guide</p>
+            <h3 class="journal-card__title">The Anatomy of a Perfect Polo</h3>
+            <p class="journal-card__excerpt">
+              From collar roll to placket length, six small details that
+              separate an everyday polo from one you'll wear for a decade.
+            </p>
+          </a>
+
+          <a class="journal-card" href="/journal/thirty-years">
+            <div class="journal-card__media">
+              <img src="https://picsum.photos/seed/du-journal-3/600/400" alt="" />
+            </div>
+            <p class="journal-card__eyebrow">Heritage</p>
+            <h3 class="journal-card__title">Thirty Years in Greenhills</h3>
+            <p class="journal-card__excerpt">
+              A family business, three generations in. How our workshop has
+              stayed small, stayed local, and stayed Filipino-made.
+            </p>
+          </a>
+
+        </div>
       </div>
     </section>
 
@@ -522,10 +748,7 @@
        Scripts
        ──────────────────────────────────────────────────────────── -->
 
-  <!-- Loads the nav + footer snippets from /public/components/ -->
   <script type="module" src="/js/components.js"></script>
-
-  <!-- Sets up the cart and keeps the nav cart-count badge in sync -->
   <script type="module" src="/js/cart.js"></script>
 
   <!-- Page-specific: fetch the 8 newest active products into the grid -->
@@ -533,8 +756,6 @@
     import { supabase } from '/lib/supabase.js';
 
     const grid = document.getElementById('newArrivalsGrid');
-
-    // Small helpers ---------------------------------------------------
 
     function escapeHtml(str) {
       return String(str ?? '')
@@ -551,8 +772,6 @@
       });
     }
 
-    // Render 8 placeholder cards so the section looks intentional
-    // while the real products load.
     function showSkeletons(count) {
       grid.innerHTML = '';
       for (let i = 0; i < count; i++) {
@@ -569,14 +788,11 @@
       }
     }
 
-    // Pick the primary image for a product, falling back to the lowest-
-    // ordered image, or null if there are no images at all.
     function pickPrimaryImage(product) {
       const imgs = product.product_images || [];
       if (imgs.length === 0) return null;
       const primary = imgs.find(i => i.is_primary);
       if (primary) return primary.image_url;
-      // Fall back to the image with the smallest display_order
       const sorted = [...imgs].sort((a, b) => a.display_order - b.display_order);
       return sorted[0].image_url;
     }
@@ -610,13 +826,9 @@
       grid.innerHTML = `<p class="products-empty">${escapeHtml(message)}</p>`;
     }
 
-    // Fetch + render --------------------------------------------------
-
     async function loadNewArrivals() {
       showSkeletons(8);
 
-      // Pull the 8 newest active products, plus their images so we can
-      // pick the primary one without a second roundtrip.
       const { data, error } = await supabase
         .from('products')
         .select(`
