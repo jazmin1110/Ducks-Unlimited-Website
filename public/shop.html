@@ -1465,13 +1465,13 @@
     });
 
     // Wishlist hearts — delegated so it works for cards added later too
-    grid.addEventListener('click', (e) => {
+    grid.addEventListener('click', async (e) => {
       const btn = e.target.closest('[data-wishlist-toggle]');
       if (!btn) return;
       e.preventDefault();
       e.stopPropagation();
       const id = btn.getAttribute('data-wishlist-toggle');
-      const nowActive = toggleWishlist(id);
+      const nowActive = await toggleWishlist(id);
       btn.classList.toggle('is-active', nowActive);
       btn.setAttribute('aria-pressed', nowActive ? 'true' : 'false');
     });

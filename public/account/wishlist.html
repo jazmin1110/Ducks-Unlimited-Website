@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Wishlist — Ducks Unlimited</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    .wishlist-back {
+      display: inline-block;
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      text-decoration: none;
+      margin-bottom: var(--space-md);
+    }
+    .wishlist-back:hover { color: var(--color-primary); }
+
+    .wishlist-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem 1rem;
+    }
+
+    .wl-card { position: relative; text-decoration: none; color: inherit; }
+    .wl-card:hover { text-decoration: none; }
+
+    .wl-card__image {
+      aspect-ratio: 4 / 5;
+      background: var(--color-bg-warm);
+      overflow: hidden;
+    }
+
+    .wl-card__image img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+    .wl-card:hover .wl-card__image img { transform: scale(1.04); }
+
+    .wl-card__body {
+      padding: 0.85rem 0.25rem 0;
+      text-align: center;
+    }
+
+    .wl-card__name {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0 0 0.3rem;
+    }
+
+    .wl-card__price {
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+    }
+
+    .wl-card__remove {
+      position: absolute;
+      top: 0.6rem;
+      right: 0.6rem;
+      width: 32px; height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.92);
+      border: none;
+      border-radius: 50%;
+      color: var(--color-text);
+      cursor: pointer;
+      transition: color 0.15s, transform 0.15s;
+      z-index: 1;
+    }
+    .wl-card__remove:hover { color: var(--color-error); transform: scale(1.08); }
+
+    .wl-empty {
+      text-align: center;
+      padding: var(--space-2xl) var(--space-md);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .wl-empty h2 {
+      font-family: var(--font-heading);
+      font-size: 1.75rem;
+      color: var(--color-primary);
+      margin-bottom: 0.5rem;
+    }
+    .wl-empty p {
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-md);
+    }
+
+    @media (min-width: 768px) {
+      .wishlist-grid { grid-template-columns: repeat(4, 1fr); gap: 2rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div data-component="nav"></div>
+
+  <main class="container account-shell">
+
+    <a href="/account/" class="wishlist-back">← Back to account</a>
+
+    <div class="account-header">
+      <p class="eyebrow">Saved Pieces</p>
+      <h1>My Wishlist</h1>
+      <p class="account-header__sub" id="wlCount"></p>
+    </div>
+
+    <div id="wlContent">
+      <!-- Filled by script below -->
+    </div>
+
+  </main>
+
+  <div data-component="footer"></div>
+
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+    import { requireSignIn } from '/js/auth.js';
+    import { getWishlist, removeFromWishlist } from '/js/wishlist.js';
+
+    const user = await requireSignIn();
+    if (!user) return;
+
+    const content = document.getElementById('wlContent');
+    const countEl = document.getElementById('wlCount');
+
+    function escapeHtml(str) {
+      return String(str ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function formatPrice(n) {
+      return '₱' + Number(n).toLocaleString('en-PH',
+        { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function pickPrimaryImage(images) {
+      if (!images || images.length === 0) return null;
+      const primary = images.find(i => i.is_primary);
+      if (primary) return primary.image_url;
+      return [...images].sort((a,b) => a.display_order - b.display_order)[0].image_url;
+    }
+
+    function renderEmpty() {
+      countEl.textContent = '';
+      content.innerHTML = `
+        <div class="wl-empty">
+          <h2>Nothing saved yet</h2>
+          <p>Tap the heart on any product to add it here for later.</p>
+          <a href="/shop.html" class="btn btn-primary">Shop the Collection</a>
+        </div>
+      `;
+    }
+
+    async function load() {
+      const ids = await getWishlist();
+      if (ids.length === 0) { renderEmpty(); return; }
+
+      // Pull the matching products + their images in one query
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, base_price, product_images ( image_url, display_order, is_primary )')
+        .in('id', ids)
+        .eq('is_active', true);
+
+      if (error) {
+        console.error(error);
+        content.innerHTML = '<p style="text-align:center;color:#777;">Could not load wishlist. Please refresh.</p>';
+        return;
+      }
+
+      if (!data || data.length === 0) { renderEmpty(); return; }
+
+      countEl.textContent = `${data.length} ${data.length === 1 ? 'piece' : 'pieces'} saved`;
+
+      const grid = document.createElement('div');
+      grid.className = 'wishlist-grid';
+
+      for (const p of data) {
+        const img = pickPrimaryImage(p.product_images);
+        const card = document.createElement('div');
+        card.className = 'wl-card';
+        card.innerHTML = `
+          <button type="button" class="wl-card__remove"
+                  data-remove="${escapeHtml(p.id)}"
+                  aria-label="Remove from wishlist">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+                 stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="5" x2="19" y2="19"></line>
+              <line x1="19" y1="5" x2="5" y2="19"></line>
+            </svg>
+          </button>
+          <a href="/product.html?id=${encodeURIComponent(p.id)}">
+            <div class="wl-card__image">
+              ${img
+                ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(p.name)}" loading="lazy" />`
+                : ''}
+            </div>
+            <div class="wl-card__body">
+              <h3 class="wl-card__name">${escapeHtml(p.name)}</h3>
+              <p class="wl-card__price">${formatPrice(p.base_price)}</p>
+            </div>
+          </a>
+        `;
+        grid.appendChild(card);
+      }
+
+      content.innerHTML = '';
+      content.appendChild(grid);
+
+      // Delegated remove handler
+      grid.addEventListener('click', async (e) => {
+        const btn = e.target.closest('[data-remove]');
+        if (!btn) return;
+        e.preventDefault();
+        const id = btn.getAttribute('data-remove');
+        await removeFromWishlist(id);
+        const card = btn.closest('.wl-card');
+        card?.remove();
+
+        const remaining = grid.querySelectorAll('.wl-card').length;
+        if (remaining === 0) renderEmpty();
+        else countEl.textContent = `${remaining} ${remaining === 1 ? 'piece' : 'pieces'} saved`;
+      });
+    }
+
+    load();
+  </script>
+
+</body>
+</html>

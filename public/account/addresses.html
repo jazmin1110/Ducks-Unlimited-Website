@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shipping Addresses — Ducks Unlimited</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    .addr-back {
+      display: inline-block;
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      text-decoration: none;
+      margin-bottom: var(--space-md);
+    }
+    .addr-back:hover { color: var(--color-primary); }
+
+    .addr-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space);
+      max-width: 800px;
+      margin: 0 auto var(--space-lg);
+    }
+
+    .addr-card {
+      background: var(--color-white);
+      border: 1px solid var(--color-border-light);
+      padding: var(--space-md);
+      position: relative;
+    }
+
+    .addr-card--default { border-color: var(--color-primary); }
+
+    .addr-card__label {
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 0.4rem;
+    }
+
+    .addr-card__name {
+      font-family: var(--font-heading);
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      margin-bottom: 0.3rem;
+    }
+
+    .addr-card__lines {
+      color: var(--color-text);
+      font-size: 0.92rem;
+      line-height: 1.55;
+      margin-bottom: var(--space);
+    }
+
+    .addr-card__phone {
+      color: var(--color-text-muted);
+      font-size: 0.85rem;
+      margin-bottom: var(--space);
+    }
+
+    .addr-card__actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--color-border-light);
+    }
+
+    .addr-card__btn {
+      background: none;
+      border: none;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      padding: 0.4rem 0;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      font-family: var(--font-body);
+    }
+
+    .addr-card__btn:hover { color: var(--color-primary); }
+    .addr-card__btn--danger:hover { color: var(--color-error); }
+
+    .addr-default-badge {
+      position: absolute;
+      top: var(--space-md);
+      right: var(--space-md);
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-primary);
+      border: 1px solid var(--color-primary);
+      padding: 0.25rem 0.55rem;
+      border-radius: var(--radius-pill);
+    }
+
+    .addr-empty {
+      text-align: center;
+      padding: var(--space-xl) var(--space-md);
+      max-width: 480px;
+      margin: 0 auto;
+      color: var(--color-text-muted);
+    }
+
+    /* Add / Edit form */
+    .addr-form {
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--color-white);
+      padding: var(--space-lg);
+      border: 1px solid var(--color-border-light);
+    }
+
+    .addr-form h2 {
+      font-family: var(--font-heading);
+      font-size: 1.4rem;
+      color: var(--color-primary);
+      margin-bottom: var(--space);
+    }
+
+    .addr-form .row { display: grid; gap: var(--space); grid-template-columns: 1fr; }
+
+    .addr-form .actions {
+      display: flex;
+      gap: var(--space-sm);
+      justify-content: flex-end;
+      margin-top: var(--space);
+    }
+
+    .add-btn-wrap { text-align: center; margin-bottom: var(--space-md); }
+
+    @media (min-width: 768px) {
+      .addr-grid { grid-template-columns: repeat(2, 1fr); }
+      .addr-form .row.cols-2 { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div data-component="nav"></div>
+
+  <main class="container account-shell">
+
+    <a href="/account/" class="addr-back">← Back to account</a>
+
+    <div class="account-header">
+      <p class="eyebrow">Shipping</p>
+      <h1>Saved Addresses</h1>
+      <p class="account-header__sub" id="addrSub">Loading…</p>
+    </div>
+
+    <div class="add-btn-wrap">
+      <button type="button" class="btn btn-outline-dark" id="addBtn">+ Add New Address</button>
+    </div>
+
+    <div class="addr-grid" id="addrGrid"></div>
+
+    <!-- Add/Edit form (hidden until "Add" or "Edit" is clicked) -->
+    <form class="addr-form" id="addrForm" hidden>
+      <h2 id="formTitle">New Address</h2>
+      <input type="hidden" name="id" id="addrId" />
+
+      <div class="row">
+        <div class="field">
+          <label class="field-label" for="label">Label (e.g. Home, Office)</label>
+          <input class="input" type="text" id="label" name="label" />
+        </div>
+      </div>
+
+      <div class="row cols-2">
+        <div class="field">
+          <label class="field-label" for="recipient_name">Recipient Name *</label>
+          <input class="input" type="text" id="recipient_name" name="recipient_name" required />
+        </div>
+        <div class="field">
+          <label class="field-label" for="phone">Phone *</label>
+          <input class="input" type="tel" id="phone" name="phone" required />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label class="field-label" for="line1">Address Line 1 *</label>
+          <input class="input" type="text" id="line1" name="line1" required />
+        </div>
+        <div class="field">
+          <label class="field-label" for="line2">Address Line 2</label>
+          <input class="input" type="text" id="line2" name="line2" />
+        </div>
+      </div>
+
+      <div class="row cols-2">
+        <div class="field">
+          <label class="field-label" for="barangay">Barangay</label>
+          <input class="input" type="text" id="barangay" name="barangay" />
+        </div>
+        <div class="field">
+          <label class="field-label" for="city">City *</label>
+          <input class="input" type="text" id="city" name="city" required />
+        </div>
+      </div>
+
+      <div class="row cols-2">
+        <div class="field">
+          <label class="field-label" for="province">Province *</label>
+          <input class="input" type="text" id="province" name="province" required />
+        </div>
+        <div class="field">
+          <label class="field-label" for="postal_code">Postal Code</label>
+          <input class="input" type="text" id="postal_code" name="postal_code" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="filter-check" style="cursor:pointer; display:inline-flex; align-items:center; gap:0.5rem;">
+          <input type="checkbox" id="is_default" name="is_default" />
+          <span>Set as default shipping address</span>
+        </label>
+      </div>
+
+      <div class="auth-error" id="addrError" hidden></div>
+
+      <div class="actions">
+        <button type="button" class="btn btn-ghost" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="saveBtn">Save</button>
+      </div>
+    </form>
+
+  </main>
+
+  <div data-component="footer"></div>
+
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+  <script type="module" src="/js/wishlist.js"></script>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+    import { requireSignIn } from '/js/auth.js';
+
+    const user = await requireSignIn();
+    if (!user) return;
+
+    const grid       = document.getElementById('addrGrid');
+    const sub        = document.getElementById('addrSub');
+    const form       = document.getElementById('addrForm');
+    const formTitle  = document.getElementById('formTitle');
+    const addBtn     = document.getElementById('addBtn');
+    const cancelBtn  = document.getElementById('cancelBtn');
+    const errorBox   = document.getElementById('addrError');
+    const saveBtn    = document.getElementById('saveBtn');
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function showError(msg) { errorBox.textContent = msg; errorBox.hidden = false; }
+    function clearError()   { errorBox.hidden = true; }
+
+    function resetForm() {
+      form.reset();
+      document.getElementById('addrId').value = '';
+      formTitle.textContent = 'New Address';
+      clearError();
+    }
+
+    function showForm() { form.hidden = false; addBtn.hidden = true; form.scrollIntoView({ behavior: 'smooth' }); }
+    function hideForm() { form.hidden = true;  addBtn.hidden = false; resetForm(); }
+
+    function renderAddresses(rows) {
+      if (!rows || rows.length === 0) {
+        sub.textContent = '';
+        grid.innerHTML = `
+          <div class="addr-empty">
+            No saved addresses yet. Add one to speed up checkout.
+          </div>
+        `;
+        return;
+      }
+
+      sub.textContent = `${rows.length} ${rows.length === 1 ? 'address' : 'addresses'}`;
+
+      grid.innerHTML = rows.map(a => `
+        <div class="addr-card${a.is_default ? ' addr-card--default' : ''}" data-id="${escapeHtml(a.id)}">
+          ${a.is_default ? '<span class="addr-default-badge">Default</span>' : ''}
+          ${a.label ? `<div class="addr-card__label">${escapeHtml(a.label)}</div>` : ''}
+          <div class="addr-card__name">${escapeHtml(a.recipient_name)}</div>
+          <div class="addr-card__lines">
+            ${escapeHtml(a.line1)}${a.line2 ? '<br />' + escapeHtml(a.line2) : ''}<br />
+            ${a.barangay ? escapeHtml(a.barangay) + ', ' : ''}${escapeHtml(a.city)}, ${escapeHtml(a.province)}${a.postal_code ? ' ' + escapeHtml(a.postal_code) : ''}
+          </div>
+          <div class="addr-card__phone">${escapeHtml(a.phone)}</div>
+          <div class="addr-card__actions">
+            <button type="button" class="addr-card__btn" data-edit="${escapeHtml(a.id)}">Edit</button>
+            ${!a.is_default
+              ? `<button type="button" class="addr-card__btn" data-default="${escapeHtml(a.id)}">Make Default</button>`
+              : ''}
+            <button type="button" class="addr-card__btn addr-card__btn--danger" data-delete="${escapeHtml(a.id)}">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    let addresses = [];
+
+    async function load() {
+      const { data, error } = await supabase
+        .from('customer_addresses')
+        .select('*')
+        .order('is_default', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error(error);
+        grid.innerHTML = '<div class="addr-empty">Could not load addresses.</div>';
+        return;
+      }
+      addresses = data ?? [];
+      renderAddresses(addresses);
+    }
+
+    addBtn.addEventListener('click', () => { resetForm(); showForm(); });
+    cancelBtn.addEventListener('click', hideForm);
+
+    // Edit / delete / make default — delegated
+    grid.addEventListener('click', async (e) => {
+      const editBtn    = e.target.closest('[data-edit]');
+      const deleteBtn  = e.target.closest('[data-delete]');
+      const defaultBtn = e.target.closest('[data-default]');
+
+      if (editBtn) {
+        const id = editBtn.getAttribute('data-edit');
+        const a  = addresses.find(x => x.id === id);
+        if (!a) return;
+        document.getElementById('addrId').value = a.id;
+        for (const f of ['label','recipient_name','phone','line1','line2','barangay','city','province','postal_code']) {
+          form[f].value = a[f] ?? '';
+        }
+        form.is_default.checked = !!a.is_default;
+        formTitle.textContent = 'Edit Address';
+        clearError();
+        showForm();
+        return;
+      }
+
+      if (deleteBtn) {
+        if (!confirm('Delete this address?')) return;
+        const id = deleteBtn.getAttribute('data-delete');
+        const { error } = await supabase.from('customer_addresses').delete().eq('id', id);
+        if (error) { alert('Could not delete address.'); console.error(error); return; }
+        await load();
+        return;
+      }
+
+      if (defaultBtn) {
+        const id = defaultBtn.getAttribute('data-default');
+        // Clear the current default first to keep the unique-default index happy
+        await supabase.from('customer_addresses').update({ is_default: false }).eq('is_default', true);
+        const { error } = await supabase.from('customer_addresses').update({ is_default: true }).eq('id', id);
+        if (error) { alert('Could not update default.'); console.error(error); return; }
+        await load();
+      }
+    });
+
+    // Save (insert or update)
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearError();
+
+      const id = document.getElementById('addrId').value;
+      const payload = {
+        label:          form.label.value.trim() || null,
+        recipient_name: form.recipient_name.value.trim(),
+        phone:          form.phone.value.trim(),
+        line1:          form.line1.value.trim(),
+        line2:          form.line2.value.trim() || null,
+        barangay:       form.barangay.value.trim() || null,
+        city:           form.city.value.trim(),
+        province:       form.province.value.trim(),
+        postal_code:    form.postal_code.value.trim() || null,
+        is_default:     form.is_default.checked,
+      };
+
+      if (!payload.recipient_name || !payload.phone || !payload.line1 || !payload.city || !payload.province) {
+        showError('Please fill in all required fields.');
+        return;
+      }
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving…';
+
+      // If this row is being marked default, clear any existing default first
+      if (payload.is_default) {
+        await supabase.from('customer_addresses')
+          .update({ is_default: false })
+          .eq('is_default', true)
+          .neq('id', id || '00000000-0000-0000-0000-000000000000');
+      }
+
+      let error;
+      if (id) {
+        ({ error } = await supabase.from('customer_addresses').update(payload).eq('id', id));
+      } else {
+        ({ error } = await supabase.from('customer_addresses').insert({ ...payload, user_id: user.id }));
+      }
+
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save';
+
+      if (error) { showError(error.message || 'Could not save address.'); return; }
+
+      hideForm();
+      await load();
+    });
+
+    load();
+  </script>
+
+</body>
+</html>

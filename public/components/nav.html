@@ -29,7 +29,7 @@
 
       <!-- Right side: account + wishlist + bag -->
       <ul class="site-nav__utility-right">
-        <li><a href="/auth/sign-in.html">Sign In</a></li>
+        <li><a href="/auth/sign-in.html" data-auth-link>Sign In</a></li>
         <li>
           <a href="/account/wishlist.html" class="site-nav__utility-icon" aria-label="Wishlist">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
@@ -191,7 +191,7 @@
 
         <!-- Mobile-only links from the utility bar -->
         <li class="site-nav__item site-nav__item--mobile-only">
-          <a href="/auth/sign-in.html">Sign In</a>
+          <a href="/auth/sign-in.html" data-auth-link>Sign In</a>
         </li>
         <li class="site-nav__item site-nav__item--mobile-only">
           <a href="/account/wishlist.html">Wishlist</a>
@@ -283,6 +283,26 @@
       if (e.key === 'Escape') closePanel();
     });
   })();
+</script>
+
+<script type="module">
+  // Swap "Sign In" → "My Account" once the user has a session. Uses the
+  // auth.js helper so all auth state changes flow through one place.
+  import { onAuthChange } from '/js/auth.js';
+
+  function paintAuthLinks(user) {
+    document.querySelectorAll('[data-auth-link]').forEach((el) => {
+      if (user) {
+        el.textContent = 'My Account';
+        el.setAttribute('href', '/account/');
+      } else {
+        el.textContent = 'Sign In';
+        el.setAttribute('href', '/auth/sign-in.html');
+      }
+    });
+  }
+
+  onAuthChange(paintAuthLinks);
 </script>
 
 

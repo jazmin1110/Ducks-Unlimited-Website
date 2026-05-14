@@ -1456,8 +1456,8 @@
         wishlistBtn.setAttribute('aria-label', active ? 'Remove from wishlist' : 'Add to wishlist');
       };
       setWishlistVisual(isInWishlist(productId));
-      wishlistBtn.addEventListener('click', () => {
-        const nowActive = toggleWishlist(productId);
+      wishlistBtn.addEventListener('click', async () => {
+        const nowActive = await toggleWishlist(productId);
         setWishlistVisual(nowActive);
         showToast(nowActive ? 'Added to wishlist' : 'Removed from wishlist');
       });

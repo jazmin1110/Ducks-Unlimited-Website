@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — Ducks Unlimited</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <div data-component="nav"></div>
+
+  <main class="auth-shell">
+    <div class="auth-card">
+
+      <p class="eyebrow">Welcome back</p>
+      <h1>Sign In</h1>
+      <p class="auth-card__sub">
+        Sign in to view your wishlist, track orders, and save your shipping details.
+      </p>
+
+      <form class="auth-form" id="signInForm" novalidate>
+
+        <div class="auth-error" id="formError" hidden></div>
+
+        <div class="field">
+          <label class="field-label" for="email">Email</label>
+          <input class="input" type="email" id="email" name="email"
+                 autocomplete="email" required />
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="password">Password</label>
+          <input class="input" type="password" id="password" name="password"
+                 autocomplete="current-password" required minlength="6" />
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+          Sign In
+        </button>
+      </form>
+
+      <div class="auth-card__alt">
+        New to Ducks Unlimited? <a href="/auth/sign-up.html" id="signUpLink">Create an account</a>
+      </div>
+
+    </div>
+  </main>
+
+  <div data-component="footer"></div>
+
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+  <script type="module" src="/js/wishlist.js"></script>
+
+  <script type="module">
+    import { signIn, getCurrentUser } from '/js/auth.js';
+
+    // If already signed in, bounce to the account dashboard (or ?next= URL)
+    const params = new URLSearchParams(window.location.search);
+    const nextUrl = params.get('next') || '/account/';
+
+    (async () => {
+      const user = await getCurrentUser();
+      if (user) window.location.href = nextUrl;
+    })();
+
+    // Preserve `?next=` on the sign-up link so users keep their target page
+    const signUpLink = document.getElementById('signUpLink');
+    if (params.get('next')) {
+      signUpLink.href = `/auth/sign-up.html?next=${encodeURIComponent(params.get('next'))}`;
+    }
+
+    const form        = document.getElementById('signInForm');
+    const errorBox    = document.getElementById('formError');
+    const submitBtn   = document.getElementById('submitBtn');
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.hidden = false;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBox.hidden = true;
+
+      const email    = form.email.value.trim();
+      const password = form.password.value;
+
+      if (!email || !password) {
+        showError('Please enter your email and password.');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Signing in…';
+
+      const { user, error } = await signIn({ email, password });
+
+      if (error) {
+        showError(error.message || 'Sign in failed. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Sign In';
+        return;
+      }
+
+      // Success — go to next URL
+      window.location.href = nextUrl;
+    });
+  </script>
+
+</body>
+</html>

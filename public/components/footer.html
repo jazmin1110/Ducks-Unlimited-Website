@@ -164,14 +164,44 @@
     if (el) el.textContent = new Date().getFullYear();
   })();
 
-  // Newsletter form — placeholder behavior until Supabase newsletter_subscribers
-  // table is wired up in Phase 3.
-  (function () {
+  // Newsletter form — writes the email to Supabase's newsletter_subscribers
+  // table (Phase 3 migration). RLS allows anonymous inserts but not selects,
+  // so the public list stays private.
+  (async function () {
     var form = document.querySelector('[data-newsletter]');
     if (!form) return;
-    form.addEventListener('submit', function () {
+
+    var supabaseModule;
+    try {
+      supabaseModule = await import('/lib/supabase.js');
+    } catch (err) {
+      console.warn('[newsletter] Supabase client unavailable:', err);
+    }
+
+    form.addEventListener('submit', async function () {
       var input = form.querySelector('input[name="email"]');
+      var btn   = form.querySelector('button[type="submit"]');
       if (!input || !input.value) return;
+
+      var email = input.value.trim();
+      if (btn) { btn.disabled = true; btn.textContent = 'Subscribing…'; }
+
+      if (supabaseModule?.supabase) {
+        var { error } = await supabaseModule.supabase
+          .from('newsletter_subscribers')
+          .insert({ email: email, source: 'footer' });
+
+        // Duplicate email (unique violation) is still a "success" from the
+        // visitor's POV — they're already on the list.
+        if (error && error.code !== '23505') {
+          console.error('[newsletter] insert failed:', error);
+          if (btn) { btn.disabled = false; btn.textContent = 'Subscribe'; }
+          input.setCustomValidity('Could not subscribe. Please try again.');
+          input.reportValidity();
+          return;
+        }
+      }
+
       form.innerHTML = '<p class="site-newsletter__thanks">Thank you. Welcome to the family.</p>';
     });
   })();

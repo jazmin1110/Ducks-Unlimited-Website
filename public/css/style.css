@@ -486,6 +486,164 @@ p:last-child { margin-bottom: 0; }
 
 
 /* =============================================================================
+   AUTH + ACCOUNT — shared layout used by /auth/* and /account/* pages
+   ============================================================================= */
+
+/* Centered narrow card for sign in / sign up forms */
+.auth-shell {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl) var(--space-md);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--color-white);
+  padding: var(--space-2xl) var(--space-lg);
+  text-align: center;
+}
+
+.auth-card h1 {
+  font-family: var(--font-heading);
+  font-size: var(--type-display-sm);
+  font-weight: 400;
+  color: var(--color-primary);
+  letter-spacing: var(--ls-tight);
+  margin-bottom: 0.5rem;
+}
+
+.auth-card__sub {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  margin-bottom: var(--space-xl);
+}
+
+.auth-form { text-align: left; }
+
+.auth-form .field-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  color: var(--color-text);
+}
+
+.auth-form .input { border-radius: 0; padding: 0.85rem 1rem; }
+.auth-form .btn-block { border-radius: 0; letter-spacing: 0.16em; text-transform: uppercase; font-size: 0.8rem; padding: 1rem; }
+
+.auth-card__alt {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-light);
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+}
+
+.auth-card__alt a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.auth-error {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  font-size: 0.85rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: var(--space);
+  border-left: 3px solid var(--color-error);
+}
+
+.auth-success {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  font-size: 0.9rem;
+  padding: 1rem;
+  margin-bottom: var(--space);
+  border-left: 3px solid var(--color-success);
+  text-align: left;
+}
+
+/* ── Account dashboard layout ───────────────────────────────────────────── */
+
+.account-shell {
+  padding-block: var(--space-2xl);
+}
+
+.account-header {
+  text-align: center;
+  margin-bottom: var(--space-2xl);
+}
+
+.account-header h1 {
+  font-family: var(--font-heading);
+  font-size: var(--type-display-sm);
+  font-weight: 400;
+  color: var(--color-primary);
+  letter-spacing: var(--ls-tight);
+  margin-bottom: 0.25rem;
+}
+
+.account-header__sub {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space);
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.account-card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  background: var(--color-white);
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border-light);
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.account-card:hover {
+  border-color: var(--color-primary);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.account-card__label {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: 0.5rem;
+}
+
+.account-card h3 {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 0.4rem;
+}
+
+.account-card p {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .account-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-md); }
+}
+
+/* =============================================================================
    UTILITIES
    ============================================================================= */
 
