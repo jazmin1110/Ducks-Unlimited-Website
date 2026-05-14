@@ -64,8 +64,11 @@
   --ls-body:   0.01em;
   --ls-eyebrow: 0.18em;
 
-  /* Header heights — referenced by mega-nav + sticky offsets */
-  --nav-utility-h: 32px;
+  /* Header heights — referenced by mega-nav + sticky offsets.
+     The utility-bar var is kept at 0 for back-compat after the nav was
+     consolidated into a single row. --nav-total-h is the height other pages
+     should use when positioning sticky elements just below the header. */
+  --nav-utility-h: 0px;
   --nav-main-h:    72px;
   --nav-total-h:   calc(var(--nav-utility-h) + var(--nav-main-h));
 

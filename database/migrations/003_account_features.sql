@@ -227,3 +227,51 @@ create policy "Admins can read newsletter subscribers"
 create policy "Admins can update newsletter subscribers"
   on newsletter_subscribers for update
   using (public.is_admin());
+
+
+-- =============================================================================
+-- ORDERS — customer-visible policies
+-- =============================================================================
+-- The original schema policies for orders and order_items used
+--   "to authenticated using (true)"
+-- which lets any signed-in user read every order. Replace those with
+-- policies that show customers only their own rows (matched by email) and
+-- admins everything. Insert remains open so the storefront can place orders
+-- without forcing the customer to sign in.
+-- =============================================================================
+
+drop policy if exists "Admins can read all orders"      on orders;
+drop policy if exists "Admins can update orders"        on orders;
+drop policy if exists "Admins can read order items"     on order_items;
+
+-- ── orders ──────────────────────────────────────────────────────────────────
+
+create policy "Customers can read their own orders"
+  on orders for select
+  using (customer_email = auth.jwt() ->> 'email');
+
+create policy "Admins can read all orders"
+  on orders for select
+  using (public.is_admin());
+
+create policy "Admins can update orders"
+  on orders for update
+  using (public.is_admin());
+
+-- ── order_items ─────────────────────────────────────────────────────────────
+-- A customer can read items for orders they own. Joined via the orders table
+-- so we can reuse the email match.
+
+create policy "Customers can read items from their own orders"
+  on order_items for select
+  using (
+    exists (
+      select 1 from orders o
+      where o.id = order_items.order_id
+        and o.customer_email = auth.jwt() ->> 'email'
+    )
+  );
+
+create policy "Admins can read all order items"
+  on order_items for select
+  using (public.is_admin());

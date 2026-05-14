@@ -1,92 +1,41 @@
 <!-- =============================================================================
-     Ducks Unlimited — Site Navigation (Ralph Lauren style)
+     Ducks Unlimited — Site Navigation (single-row, RL-style)
      =============================================================================
-     Two-row header:
-       (1) Thin utility bar  : Stores | Help | Sign In | Wishlist | Bag
-       (2) Main row          : Logo (centered on desktop) + mega-nav links
+     Layout (desktop):
+       [Logo]   [Polos] [T-Shirts] [Bottoms] [Lookbook] [Journal] [Heritage]
+                                              [Search]  [Sign In/Account]  [♡]  [Bag]
 
-     Mega-nav: hovering a top-level link reveals a full-width panel with
-     category columns and a featured product image. Mobile collapses
-     everything into a hamburger drawer.
+     Mobile collapses everything into a hamburger drawer. Mega-nav dropdowns
+     open below each top-level link on hover (desktop) — no dimming backdrop.
+
+     Search opens a slim slide-down panel under the nav with a single input.
 
      Requirements:
        - /css/style.css must be loaded
        - /js/cart.js auto-updates the cart count badge
+       - /js/wishlist.js auto-updates the wishlist count badge
+       - /js/auth.js swaps the Sign In link to "My Account" when signed in
      ============================================================================= -->
 
 <header class="site-nav" data-site-nav>
 
-  <!-- ── Row 1: Utility bar ───────────────────────────────────────────── -->
-  <div class="site-nav__utility">
-    <div class="container site-nav__utility-row">
-
-      <!-- Left side: tiny brand-info links (hidden on small mobile) -->
-      <ul class="site-nav__utility-left">
-        <li><a href="/stores.html">Find a Store</a></li>
-        <li><a href="/customer-service/help.html">Help</a></li>
-        <li><a href="/customer-service/shipping.html">Shipping</a></li>
-      </ul>
-
-      <!-- Right side: account + wishlist + bag -->
-      <ul class="site-nav__utility-right">
-        <li><a href="/auth/sign-in.html" data-auth-link>Sign In</a></li>
-        <li>
-          <a href="/account/wishlist.html" class="site-nav__utility-icon" aria-label="Wishlist">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
-                 stroke="currentColor" stroke-width="1.6"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
-            </svg>
-            <span>Wishlist</span>
-            <span class="site-nav__cart-count" data-wishlist-count>0</span>
-          </a>
-        </li>
-        <li>
-          <a class="site-nav__utility-icon site-nav__bag" href="/cart.html" aria-label="View cart">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none"
-                 stroke="currentColor" stroke-width="1.6"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M6 7h12l-1 13H7L6 7z"></path>
-              <path d="M9 7a3 3 0 1 1 6 0"></path>
-            </svg>
-            <span>Bag</span>
-            <span class="site-nav__cart-count" data-cart-count>0</span>
-          </a>
-        </li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- ── Row 2: Main bar (logo + mega-nav) ────────────────────────────── -->
   <div class="container site-nav__main">
 
     <!-- Hamburger checkbox — drives the mobile drawer via :checked -->
     <input type="checkbox" id="navToggle" class="site-nav__toggle" aria-label="Toggle menu" />
 
-    <!-- Hamburger label (visible on mobile only) -->
+    <!-- Hamburger label (mobile only) -->
     <label for="navToggle" class="site-nav__hamburger" aria-hidden="true">
       <span></span><span></span><span></span>
     </label>
 
-    <!-- Logo — centered on desktop, left-leaning on mobile -->
+    <!-- Logo -->
     <a class="site-nav__brand" href="/">
       <span class="site-nav__logo">Ducks Unlimited</span>
       <span class="site-nav__tagline">est. 1995</span>
     </a>
 
-    <!-- Mobile cart shortcut (utility bag is hidden on mobile, so we
-         show a compact bag icon here on the right) -->
-    <a class="site-nav__bag-mobile" href="/cart.html" aria-label="View cart">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none"
-           stroke="currentColor" stroke-width="1.5"
-           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M6 7h12l-1 13H7L6 7z"></path>
-        <path d="M9 7a3 3 0 1 1 6 0"></path>
-      </svg>
-      <span class="site-nav__cart-count site-nav__cart-count--mobile" data-cart-count>0</span>
-    </a>
-
-    <!-- ── Primary menu ── -->
+    <!-- ── Primary menu (center on desktop, drawer on mobile) ── -->
     <nav class="site-nav__menu" aria-label="Primary">
       <ul class="site-nav__links">
 
@@ -177,51 +126,94 @@
           </div>
         </li>
 
-        <li class="site-nav__item">
-          <a href="/lookbooks">Lookbook</a>
-        </li>
+        <li class="site-nav__item"><a href="/lookbooks">Lookbook</a></li>
+        <li class="site-nav__item"><a href="/journal">Journal</a></li>
+        <li class="site-nav__item"><a href="/#story">Heritage</a></li>
 
-        <li class="site-nav__item">
-          <a href="/journal">Journal</a>
+        <!-- Mobile-only links — utilities that appear inline in the drawer -->
+        <li class="site-nav__item site-nav__item--mobile-only">
+          <a href="/stores.html">Find a Store</a>
         </li>
-
-        <li class="site-nav__item">
-          <a href="/#story">Heritage</a>
-        </li>
-
-        <!-- Mobile-only links from the utility bar -->
         <li class="site-nav__item site-nav__item--mobile-only">
           <a href="/auth/sign-in.html" data-auth-link>Sign In</a>
         </li>
         <li class="site-nav__item site-nav__item--mobile-only">
           <a href="/account/wishlist.html">Wishlist</a>
         </li>
-        <li class="site-nav__item site-nav__item--mobile-only">
-          <a href="/stores.html">Find a Store</a>
-        </li>
       </ul>
     </nav>
 
+    <!-- ── Right-side utility icons (always in main row on desktop) ── -->
+    <div class="site-nav__utility">
+
+      <button type="button"
+              class="site-nav__icon-btn"
+              id="searchToggle"
+              aria-label="Search"
+              aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+             stroke="currentColor" stroke-width="1.7"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="20" y1="20" x2="16.65" y2="16.65"></line>
+        </svg>
+      </button>
+
+      <a href="/auth/sign-in.html" class="site-nav__util-link" data-auth-link>Sign In</a>
+
+      <a href="/account/wishlist.html" class="site-nav__icon-btn" aria-label="Wishlist">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+             stroke="currentColor" stroke-width="1.6"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+        </svg>
+        <span class="site-nav__count" data-wishlist-count>0</span>
+      </a>
+
+      <a href="/cart.html" class="site-nav__icon-btn" aria-label="Bag">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+             stroke="currentColor" stroke-width="1.6"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 7h12l-1 13H7L6 7z"></path>
+          <path d="M9 7a3 3 0 1 1 6 0"></path>
+        </svg>
+        <span class="site-nav__count" data-cart-count>0</span>
+      </a>
+
+    </div>
+
   </div>
 
-  <!-- Backdrop dimmer behind the mega-nav (clicking it closes the menu) -->
-  <div class="site-nav__backdrop" data-mega-backdrop hidden></div>
+  <!-- ── Search panel (slide-down under nav) ── -->
+  <div class="site-nav__search" id="searchPanel" hidden>
+    <div class="container site-nav__search-inner">
+      <form class="site-nav__search-form" action="/shop.html" method="get" role="search">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+             stroke="currentColor" stroke-width="1.5"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="20" y1="20" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="search"
+               name="q"
+               id="searchInput"
+               placeholder="Search the collection…"
+               autocomplete="off" />
+        <button type="button" class="site-nav__search-close" id="searchClose" aria-label="Close search">×</button>
+      </form>
+    </div>
+  </div>
+
 </header>
 
 
 <script>
-  // ── Mega-nav behavior ────────────────────────────────────────────────
-  // On desktop (>=768px), hovering a nav item with [data-mega] opens its
-  // matching panel. We use JS instead of pure :hover so we can:
-  //   - keep the panel open while moving from link to panel
-  //   - close on Escape / outside click
-  //   - skip the behavior on touch / mobile
+  // ── Mega-nav behavior (no backdrop now — just open/close panels) ────────
   (function () {
     var nav = document.querySelector('[data-site-nav]');
     if (!nav) return;
 
-    var items     = nav.querySelectorAll('.site-nav__item');
-    var backdrop  = nav.querySelector('[data-mega-backdrop]');
+    var items = nav.querySelectorAll('.site-nav__item');
     var openTimer = null;
     var closeTimer = null;
     var currentPanel = null;
@@ -234,14 +226,12 @@
       if (!panel) return;
       if (currentPanel && currentPanel !== panel) currentPanel.hidden = true;
       panel.hidden = false;
-      backdrop.hidden = false;
       currentPanel = panel;
       nav.classList.add('site-nav--mega-open');
     }
 
     function closePanel() {
       if (currentPanel) currentPanel.hidden = true;
-      backdrop.hidden = true;
       currentPanel = null;
       nav.classList.remove('site-nav--mega-open');
     }
@@ -263,7 +253,6 @@
         closeTimer = setTimeout(closePanel, 120);
       });
 
-      // Keyboard: open on focus, close when focus leaves the item
       trigger.addEventListener('focus', function () {
         if (!isDesktop()) return;
         openPanel(panel);
@@ -277,17 +266,51 @@
       closeTimer = setTimeout(closePanel, 120);
     });
 
-    // Backdrop click + Escape close
-    backdrop.addEventListener('click', closePanel);
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') closePanel();
     });
   })();
+
+
+  // ── Search panel toggle ─────────────────────────────────────────────────
+  (function () {
+    var toggle = document.getElementById('searchToggle');
+    var panel  = document.getElementById('searchPanel');
+    var input  = document.getElementById('searchInput');
+    var close  = document.getElementById('searchClose');
+    if (!toggle || !panel) return;
+
+    function open() {
+      panel.hidden = false;
+      toggle.setAttribute('aria-expanded', 'true');
+      // Wait a tick so the transition runs from hidden → visible
+      requestAnimationFrame(function () {
+        panel.classList.add('is-open');
+        input && input.focus();
+      });
+    }
+
+    function shut() {
+      panel.classList.remove('is-open');
+      toggle.setAttribute('aria-expanded', 'false');
+      // Hide after the transition so it isn't focusable while closed
+      setTimeout(function () { panel.hidden = true; }, 200);
+    }
+
+    toggle.addEventListener('click', function () {
+      if (panel.hidden) open(); else shut();
+    });
+    close && close.addEventListener('click', shut);
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !panel.hidden) shut();
+    });
+  })();
 </script>
 
+
 <script type="module">
-  // Swap "Sign In" → "My Account" once the user has a session. Uses the
-  // auth.js helper so all auth state changes flow through one place.
+  // Swap "Sign In" → "My Account" once the user has a session.
   import { onAuthChange } from '/js/auth.js';
 
   function paintAuthLinks(user) {
@@ -317,71 +340,6 @@
     z-index: 50;
   }
 
-  /* ── Utility bar (top thin row) ── */
-  .site-nav__utility {
-    display: none; /* hidden on mobile — see desktop block below */
-    background: var(--color-bg-warm);
-    border-bottom: 1px solid var(--color-border-light);
-    font-family: var(--font-body);
-  }
-
-  .site-nav__utility-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: var(--nav-utility-h);
-    padding-block: 0;
-  }
-
-  .site-nav__utility ul {
-    display: flex;
-    gap: 1.4rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .site-nav__utility a {
-    color: var(--color-text-muted);
-    text-decoration: none;
-    font-size: 0.7rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    transition: color 0.15s;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-  }
-
-  .site-nav__utility a:hover {
-    color: var(--color-primary);
-    text-decoration: none;
-  }
-
-  .site-nav__utility-icon {
-    position: relative;
-  }
-
-  /* Cart count badge */
-  .site-nav__cart-count {
-    display: none;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    margin-left: 0.25rem;
-    background: var(--color-accent);
-    color: var(--color-white) !important;
-    font-family: var(--font-body);
-    font-size: 0.6rem;
-    font-weight: 500;
-    letter-spacing: 0;
-    border-radius: var(--radius-pill);
-    line-height: 16px;
-    text-align: center;
-  }
-
-  .site-nav__cart-count.has-items { display: inline-block; }
-
   /* ── Main row ── */
   .site-nav__main {
     display: flex;
@@ -402,7 +360,7 @@
     height: 0;
   }
 
-  /* Hamburger label (mobile only) */
+  /* Hamburger (mobile only) */
   .site-nav__hamburger {
     display: flex;
     flex-direction: column;
@@ -426,7 +384,7 @@
   .site-nav__toggle:checked ~ .site-nav__hamburger span:nth-child(2) { opacity: 0; }
   .site-nav__toggle:checked ~ .site-nav__hamburger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-  /* Brand block */
+  /* Brand block — left-leaning */
   .site-nav__brand {
     display: flex;
     flex-direction: column;
@@ -458,22 +416,64 @@
     margin-top: 0.15rem;
   }
 
-  /* Mobile bag shortcut */
-  .site-nav__bag-mobile {
-    position: relative;
-    color: var(--color-text);
-    padding: 0.4rem;
+  /* Right-side utility icons */
+  .site-nav__utility {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
     order: 3;
   }
 
-  .site-nav__bag-mobile:hover { color: var(--color-primary); text-decoration: none; }
-
-  .site-nav__cart-count--mobile {
-    position: absolute;
-    top: 0;
-    right: 0;
-    margin-left: 0;
+  .site-nav__util-link {
+    display: none; /* hidden on mobile; appears on desktop */
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: color 0.15s;
   }
+
+  .site-nav__util-link:hover { color: var(--color-primary); text-decoration: none; }
+
+  .site-nav__icon-btn {
+    position: relative;
+    background: none;
+    border: none;
+    padding: 0.4rem;
+    color: var(--color-text);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .site-nav__icon-btn:hover { color: var(--color-primary); text-decoration: none; }
+
+  .site-nav__count {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: var(--color-accent);
+    color: var(--color-white);
+    font-family: var(--font-body);
+    font-size: 0.6rem;
+    font-weight: 500;
+    border-radius: var(--radius-pill);
+    line-height: 16px;
+    text-align: center;
+    display: none;
+  }
+
+  .site-nav__count.has-items { display: inline-block; }
+
+  /* Hide the dedicated search button on mobile — search lives in the drawer */
+  #searchToggle { display: none; }
 
   /* ── Mobile menu drawer ── */
   .site-nav__menu {
@@ -517,7 +517,6 @@
     letter-spacing: 0.04em;
   }
 
-  /* On mobile, mega-nav panels render inline as a nested list */
   .site-nav__mega {
     background: var(--color-bg-warm);
     padding: 0.5rem 1rem 1rem;
@@ -525,7 +524,6 @@
 
   .site-nav__mega[hidden] { display: none; }
 
-  /* Always show mega contents inline on mobile (no hover behavior) */
   @media (max-width: 767px) {
     .site-nav__mega { display: block !important; }
     .site-nav__mega[hidden] { display: block !important; }
@@ -565,57 +563,94 @@
 
   .site-nav__mega li a:hover { color: var(--color-primary); }
 
-  .site-nav__mega-feature {
-    display: none; /* hidden on mobile — too tall */
-  }
+  .site-nav__mega-feature { display: none; }
 
-  /* Backdrop */
-  .site-nav__backdrop {
-    position: fixed;
-    inset: var(--nav-main-h) 0 0 0;
-    background: rgba(0, 0, 0, 0.25);
-    z-index: 40;
+
+  /* ── Search panel ── */
+  .site-nav__search {
+    border-top: 1px solid var(--color-border-light);
+    background: var(--color-white);
+    transform: translateY(-8px);
     opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s;
+    transition: transform 0.2s ease, opacity 0.2s ease;
   }
 
-  .site-nav--mega-open .site-nav__backdrop {
+  .site-nav__search.is-open {
+    transform: translateY(0);
     opacity: 1;
-    pointer-events: auto;
   }
+
+  .site-nav__search-inner { padding-block: var(--space); }
+
+  .site-nav__search-form {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding-block: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+  }
+
+  .site-nav__search-form svg { flex-shrink: 0; }
+
+  .site-nav__search-form input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    color: var(--color-text);
+    letter-spacing: 0.01em;
+  }
+
+  .site-nav__search-form input::placeholder {
+    color: var(--color-text-light);
+    font-style: italic;
+  }
+
+  .site-nav__search-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 0 0.5rem;
+  }
+
+  .site-nav__search-close:hover { color: var(--color-primary); }
 
 
   /* ────────────────────────────────────────────────────────────────────
      DESKTOP (≥ 768px)
-     Two-row sticky header. Logo centered, mega-nav links below.
+     Logo on the left, nav center, utilities on the right — single row.
      ──────────────────────────────────────────────────────────────────── */
 
   @media (min-width: 768px) {
 
-    .site-nav__utility { display: block; }
-
     .site-nav__main {
       flex-wrap: nowrap;
       min-height: var(--nav-main-h);
-      justify-content: center;
+      gap: 2rem;
     }
 
-    .site-nav__hamburger,
-    .site-nav__bag-mobile { display: none; }
+    .site-nav__hamburger { display: none; }
 
     .site-nav__brand {
       order: 1;
       flex: 0 0 auto;
-      margin-inline: auto;
+      align-items: flex-start;
+      text-align: left;
     }
 
-    .site-nav__logo    { font-size: 1.55rem; letter-spacing: 0.14em; }
-    .site-nav__tagline { font-size: 0.65rem; }
+    .site-nav__logo    { font-size: 1.4rem; letter-spacing: 0.14em; }
+    .site-nav__tagline { font-size: 0.6rem; }
 
-    /* Menu becomes an inline row below the logo */
+    /* Menu is the flexible middle slot */
     .site-nav__menu {
-      flex-basis: 100%;
+      flex: 1;
+      flex-basis: auto;
       order: 2;
       max-height: none;
       overflow: visible;
@@ -632,7 +667,7 @@
 
     .site-nav__item {
       border-top: none;
-      position: static; /* mega panel anchors to header, not item */
+      position: static; /* mega panel anchors to header */
     }
 
     .site-nav__item--mobile-only { display: none; }
@@ -663,7 +698,12 @@
       left: 0; right: 0;
     }
 
-    /* ── Mega panel — full-width dropdown ── */
+    .site-nav__utility { order: 3; gap: 1.1rem; }
+    .site-nav__util-link { display: inline-block; }
+
+    #searchToggle { display: inline-flex; }
+
+    /* ── Mega panel (no backdrop dimming) ── */
     .site-nav__mega {
       position: absolute;
       top: 100%;
@@ -700,7 +740,6 @@
       transition: color 0.15s;
     }
 
-    /* Featured image card on the right side of each mega panel */
     .site-nav__mega-feature {
       display: block;
       position: relative;
