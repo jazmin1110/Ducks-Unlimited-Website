@@ -1,73 +1,336 @@
 <!-- =============================================================================
-     Ducks Unlimited — Site Navigation
+     Ducks Unlimited — Site Navigation (single-row, RL-style)
      =============================================================================
-     Reusable nav for customer-facing pages. Drop into any page either by:
-       (a) Pasting this markup directly into the page, OR
-       (b) Fetching this file and injecting into a placeholder element.
+     Layout (desktop):
+       [Logo]   [Polos] [T-Shirts] [Bottoms] [Lookbook] [Journal] [Heritage]
+                                              [Search]  [Sign In/Account]  [♡]  [Bag]
+
+     Mobile collapses everything into a hamburger drawer. Mega-nav dropdowns
+     open below each top-level link on hover (desktop) — no dimming backdrop.
+
+     Search opens a slim slide-down panel under the nav with a single input.
 
      Requirements:
-       - /css/style.css must be loaded (for CSS variables and fonts)
-       - /js/cart.js can be loaded to auto-update the cart count badge
-
-     The mobile hamburger uses the CSS checkbox-hack — works without JS.
+       - /css/style.css must be loaded
+       - /js/cart.js auto-updates the cart count badge
+       - /js/wishlist.js auto-updates the wishlist count badge
+       - /js/auth.js swaps the Sign In link to "My Account" when signed in
      ============================================================================= -->
 
-<header class="site-nav">
-  <div class="container site-nav__row">
+<header class="site-nav" data-site-nav>
 
-    <!-- ── Logo + tagline ── -->
+  <div class="container site-nav__main">
+
+    <!-- Hamburger checkbox — drives the mobile drawer via :checked -->
+    <input type="checkbox" id="navToggle" class="site-nav__toggle" aria-label="Toggle menu" />
+
+    <!-- Hamburger label (mobile only) -->
+    <label for="navToggle" class="site-nav__hamburger" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </label>
+
+    <!-- Logo -->
     <a class="site-nav__brand" href="/">
       <span class="site-nav__logo">Ducks Unlimited</span>
       <span class="site-nav__tagline">est. 1995</span>
     </a>
 
-    <!-- ── Hamburger checkbox (hidden, drives mobile menu via :checked) ── -->
-    <input
-      type="checkbox"
-      id="navToggle"
-      class="site-nav__toggle"
-      aria-label="Toggle menu"
-    />
-
-    <!-- ── Cart icon — always visible, even on mobile ── -->
-    <a class="site-nav__cart" href="/cart.html" aria-label="View cart">
-      <!-- Inline SVG cart icon — no external dependency -->
-      <svg viewBox="0 0 24 24" width="24" height="24" fill="none"
-           stroke="currentColor" stroke-width="1.6"
-           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="9"  cy="20" r="1.4"></circle>
-        <circle cx="18" cy="20" r="1.4"></circle>
-        <path d="M3 4h2l2.5 12h12L22 7H6"></path>
-      </svg>
-      <!-- Count is auto-updated by /js/cart.js — has-items class controls visibility -->
-      <span class="site-nav__cart-count" data-cart-count>0</span>
-    </a>
-
-    <!-- ── Hamburger label (the visible toggle button on mobile) ── -->
-    <label for="navToggle" class="site-nav__hamburger" aria-hidden="true">
-      <span></span>
-      <span></span>
-      <span></span>
-    </label>
-
-    <!-- ── Navigation links ── -->
-    <!-- "About" now lives as a section on the homepage — link to the
-         #story anchor so it scrolls there whether you're on the homepage
-         or any other page. -->
+    <!-- ── Primary menu (center on desktop, drawer on mobile) ── -->
     <nav class="site-nav__menu" aria-label="Primary">
       <ul class="site-nav__links">
-        <li><a href="/">Home</a></li>
-        <li><a href="/shop.html">Shop</a></li>
-        <li><a href="/#story">About</a></li>
+
+        <li class="site-nav__item">
+          <a href="/shop.html?category=polo" data-mega="polo">Polos</a>
+          <div class="site-nav__mega" id="mega-polo" hidden>
+            <div class="container site-nav__mega-inner">
+              <div class="site-nav__mega-col">
+                <h4>Shop Polos</h4>
+                <ul>
+                  <li><a href="/shop.html?category=polo">All Polos</a></li>
+                  <li><a href="/shop.html?category=polo&sort=newest">New Arrivals</a></li>
+                  <li><a href="/shop.html?category=polo&fit=classic">Classic Fit</a></li>
+                  <li><a href="/shop.html?category=polo&fit=slim">Slim Fit</a></li>
+                </ul>
+              </div>
+              <div class="site-nav__mega-col">
+                <h4>Featured Colors</h4>
+                <ul>
+                  <li><a href="/shop.html?category=polo&color=white">White</a></li>
+                  <li><a href="/shop.html?category=polo&color=navy">Navy</a></li>
+                  <li><a href="/shop.html?category=polo&color=forest">Forest Green</a></li>
+                  <li><a href="/shop.html?category=polo&color=stripes">Stripes</a></li>
+                </ul>
+              </div>
+              <a class="site-nav__mega-feature" href="/lookbooks">
+                <img src="https://picsum.photos/seed/du-polo-feature/400/500" alt="" />
+                <span class="site-nav__mega-feature-label">The Polo Lookbook</span>
+              </a>
+            </div>
+          </div>
+        </li>
+
+        <li class="site-nav__item">
+          <a href="/shop.html?category=t-shirt" data-mega="tshirt">T-Shirts</a>
+          <div class="site-nav__mega" id="mega-tshirt" hidden>
+            <div class="container site-nav__mega-inner">
+              <div class="site-nav__mega-col">
+                <h4>Shop T-Shirts</h4>
+                <ul>
+                  <li><a href="/shop.html?category=t-shirt">All T-Shirts</a></li>
+                  <li><a href="/shop.html?category=t-shirt&sort=newest">New Arrivals</a></li>
+                  <li><a href="/shop.html?category=t-shirt&style=crew">Crew Neck</a></li>
+                  <li><a href="/shop.html?category=t-shirt&style=v-neck">V-Neck</a></li>
+                </ul>
+              </div>
+              <div class="site-nav__mega-col">
+                <h4>Featured</h4>
+                <ul>
+                  <li><a href="/shop.html?category=t-shirt&color=white">Essentials</a></li>
+                  <li><a href="/shop.html?category=t-shirt&color=black">All Black</a></li>
+                  <li><a href="/shop.html?category=t-shirt&pack=3">3-Pack Bundle</a></li>
+                </ul>
+              </div>
+              <a class="site-nav__mega-feature" href="/lookbooks">
+                <img src="https://picsum.photos/seed/du-tshirt-feature/400/500" alt="" />
+                <span class="site-nav__mega-feature-label">Everyday Essentials</span>
+              </a>
+            </div>
+          </div>
+        </li>
+
+        <li class="site-nav__item">
+          <a href="/shop.html?category=bottoms" data-mega="bottoms">Bottoms</a>
+          <div class="site-nav__mega" id="mega-bottoms" hidden>
+            <div class="container site-nav__mega-inner">
+              <div class="site-nav__mega-col">
+                <h4>Shorts</h4>
+                <ul>
+                  <li><a href="/shop.html?category=shorts">All Shorts</a></li>
+                  <li><a href="/shop.html?category=shorts&style=chino">Chino Shorts</a></li>
+                  <li><a href="/shop.html?category=shorts&style=swim">Swim Shorts</a></li>
+                </ul>
+              </div>
+              <div class="site-nav__mega-col">
+                <h4>Pants</h4>
+                <ul>
+                  <li><a href="/shop.html?category=pants">All Pants</a></li>
+                  <li><a href="/shop.html?category=pants&style=chino">Chinos</a></li>
+                  <li><a href="/shop.html?category=pants&style=trouser">Trousers</a></li>
+                </ul>
+              </div>
+              <a class="site-nav__mega-feature" href="/lookbooks">
+                <img src="https://picsum.photos/seed/du-bottoms-feature/400/500" alt="" />
+                <span class="site-nav__mega-feature-label">The Tailored Edit</span>
+              </a>
+            </div>
+          </div>
+        </li>
+
+        <li class="site-nav__item"><a href="/lookbooks">Lookbook</a></li>
+        <li class="site-nav__item"><a href="/journal">Journal</a></li>
+        <li class="site-nav__item"><a href="/#story">Heritage</a></li>
+
+        <!-- Mobile-only links — utilities that appear inline in the drawer -->
+        <li class="site-nav__item site-nav__item--mobile-only">
+          <a href="/stores.html">Find a Store</a>
+        </li>
+        <li class="site-nav__item site-nav__item--mobile-only">
+          <a href="/auth/sign-in.html" data-auth-link>Sign In</a>
+        </li>
+        <li class="site-nav__item site-nav__item--mobile-only">
+          <a href="/account/wishlist.html">Wishlist</a>
+        </li>
       </ul>
     </nav>
 
+    <!-- ── Right-side utility icons (always in main row on desktop) ── -->
+    <div class="site-nav__utility">
+
+      <button type="button"
+              class="site-nav__icon-btn"
+              id="searchToggle"
+              aria-label="Search"
+              aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+             stroke="currentColor" stroke-width="1.7"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="20" y1="20" x2="16.65" y2="16.65"></line>
+        </svg>
+      </button>
+
+      <a href="/auth/sign-in.html" class="site-nav__util-link" data-auth-link>Sign In</a>
+
+      <a href="/account/wishlist.html" class="site-nav__icon-btn" aria-label="Wishlist">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+             stroke="currentColor" stroke-width="1.6"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+        </svg>
+        <span class="site-nav__count" data-wishlist-count>0</span>
+      </a>
+
+      <a href="/cart.html" class="site-nav__icon-btn" aria-label="Bag">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+             stroke="currentColor" stroke-width="1.6"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 7h12l-1 13H7L6 7z"></path>
+          <path d="M9 7a3 3 0 1 1 6 0"></path>
+        </svg>
+        <span class="site-nav__count" data-cart-count>0</span>
+      </a>
+
+    </div>
+
   </div>
+
+  <!-- ── Search panel (slide-down under nav) ── -->
+  <div class="site-nav__search" id="searchPanel" hidden>
+    <div class="container site-nav__search-inner">
+      <form class="site-nav__search-form" action="/shop.html" method="get" role="search">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+             stroke="currentColor" stroke-width="1.5"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="20" y1="20" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="search"
+               name="q"
+               id="searchInput"
+               placeholder="Search the collection…"
+               autocomplete="off" />
+        <button type="button" class="site-nav__search-close" id="searchClose" aria-label="Close search">×</button>
+      </form>
+    </div>
+  </div>
+
 </header>
 
 
+<script>
+  // ── Mega-nav behavior (no backdrop now — just open/close panels) ────────
+  (function () {
+    var nav = document.querySelector('[data-site-nav]');
+    if (!nav) return;
+
+    var items = nav.querySelectorAll('.site-nav__item');
+    var openTimer = null;
+    var closeTimer = null;
+    var currentPanel = null;
+
+    function isDesktop() {
+      return window.matchMedia('(min-width: 768px) and (hover: hover)').matches;
+    }
+
+    function openPanel(panel) {
+      if (!panel) return;
+      if (currentPanel && currentPanel !== panel) currentPanel.hidden = true;
+      panel.hidden = false;
+      currentPanel = panel;
+      nav.classList.add('site-nav--mega-open');
+    }
+
+    function closePanel() {
+      if (currentPanel) currentPanel.hidden = true;
+      currentPanel = null;
+      nav.classList.remove('site-nav--mega-open');
+    }
+
+    items.forEach(function (item) {
+      var trigger = item.querySelector('a[data-mega]');
+      var panel   = item.querySelector('.site-nav__mega');
+      if (!trigger || !panel) return;
+
+      item.addEventListener('mouseenter', function () {
+        if (!isDesktop()) return;
+        clearTimeout(closeTimer);
+        openTimer = setTimeout(function () { openPanel(panel); }, 80);
+      });
+
+      item.addEventListener('mouseleave', function () {
+        if (!isDesktop()) return;
+        clearTimeout(openTimer);
+        closeTimer = setTimeout(closePanel, 120);
+      });
+
+      trigger.addEventListener('focus', function () {
+        if (!isDesktop()) return;
+        openPanel(panel);
+      });
+    });
+
+    // Close when leaving the whole nav region
+    nav.addEventListener('mouseleave', function () {
+      if (!isDesktop()) return;
+      clearTimeout(openTimer);
+      closeTimer = setTimeout(closePanel, 120);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closePanel();
+    });
+  })();
+
+
+  // ── Search panel toggle ─────────────────────────────────────────────────
+  (function () {
+    var toggle = document.getElementById('searchToggle');
+    var panel  = document.getElementById('searchPanel');
+    var input  = document.getElementById('searchInput');
+    var close  = document.getElementById('searchClose');
+    if (!toggle || !panel) return;
+
+    function open() {
+      panel.hidden = false;
+      toggle.setAttribute('aria-expanded', 'true');
+      // Wait a tick so the transition runs from hidden → visible
+      requestAnimationFrame(function () {
+        panel.classList.add('is-open');
+        input && input.focus();
+      });
+    }
+
+    function shut() {
+      panel.classList.remove('is-open');
+      toggle.setAttribute('aria-expanded', 'false');
+      // Hide after the transition so it isn't focusable while closed
+      setTimeout(function () { panel.hidden = true; }, 200);
+    }
+
+    toggle.addEventListener('click', function () {
+      if (panel.hidden) open(); else shut();
+    });
+    close && close.addEventListener('click', shut);
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !panel.hidden) shut();
+    });
+  })();
+</script>
+
+
+<script type="module">
+  // Swap "Sign In" → "My Account" once the user has a session.
+  import { onAuthChange } from '/js/auth.js';
+
+  function paintAuthLinks(user) {
+    document.querySelectorAll('[data-auth-link]').forEach((el) => {
+      if (user) {
+        el.textContent = 'My Account';
+        el.setAttribute('href', '/account/');
+      } else {
+        el.textContent = 'Sign In';
+        el.setAttribute('href', '/auth/sign-in.html');
+      }
+    });
+  }
+
+  onAuthChange(paintAuthLinks);
+</script>
+
+
 <style>
-  /* All selectors prefixed with .site-nav__ to avoid collisions with page styles */
+  /* All selectors prefixed with .site-nav__ to avoid colliding with page styles */
 
   .site-nav {
     background: var(--color-white);
@@ -77,45 +340,18 @@
     z-index: 50;
   }
 
-  .site-nav__row {
+  /* ── Main row ── */
+  .site-nav__main {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    min-height: 64px;
+    min-height: var(--nav-main-h);
     padding-block: 0.75rem;
     gap: 0.5rem;
+    position: relative;
   }
 
-  /* ── Brand ── */
-  .site-nav__brand {
-    display: flex;
-    flex-direction: column;
-    text-decoration: none;
-    line-height: 1.1;
-    flex: 1; /* push everything else to the right on mobile */
-    order: 1;
-  }
-
-  .site-nav__brand:hover { text-decoration: none; }
-
-  .site-nav__logo {
-    font-family: var(--font-heading);
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--color-primary);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .site-nav__tagline {
-    font-size: 0.65rem;
-    font-style: italic;
-    color: var(--color-text-light);
-    letter-spacing: 0.12em;
-    margin-top: 0.1rem;
-  }
-
-  /* ── Hamburger checkbox (hidden — only the label is visible) ── */
+  /* Hidden checkbox driving the mobile drawer */
   .site-nav__toggle {
     position: absolute;
     opacity: 0;
@@ -124,57 +360,16 @@
     height: 0;
   }
 
-  /* Keyboard focus indicator on the label when the hidden checkbox is focused */
-  .site-nav__toggle:focus-visible + .site-nav__cart + .site-nav__hamburger {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-
-  /* ── Cart icon ── */
-  .site-nav__cart {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    color: var(--color-text);
-    text-decoration: none;
-    padding: 0.4rem;
-    order: 2;
-  }
-
-  .site-nav__cart:hover { color: var(--color-primary); text-decoration: none; }
-
-  .site-nav__cart-count {
-    position: absolute;
-    top: 0;
-    right: 0;
-    display: none; /* hidden until cart has items (.has-items class added by cart.js) */
-    align-items: center;
-    justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    background: var(--color-accent);
-    color: var(--color-white);
-    font-family: var(--font-body);
-    font-size: 0.68rem;
-    font-weight: 500;
-    border-radius: var(--radius-pill);
-    line-height: 1;
-  }
-
-  .site-nav__cart-count.has-items { display: inline-flex; }
-
-  /* ── Hamburger button ── */
+  /* Hamburger (mobile only) */
   .site-nav__hamburger {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    width: 28px;
-    height: 22px;
-    padding: 4px 0;
+    width: 26px;
+    height: 20px;
+    padding: 3px 0;
     cursor: pointer;
-    order: 3;
+    order: 1;
   }
 
   .site-nav__hamburger span {
@@ -183,72 +378,276 @@
     background: var(--color-primary);
     border-radius: 1px;
     transition: transform 0.2s, opacity 0.2s;
-    transform-origin: center;
   }
 
-  /* When checked, animate the three bars into an X */
-  .site-nav__toggle:checked ~ .site-nav__hamburger span:nth-child(1) {
-    transform: translateY(7px) rotate(45deg);
-  }
-  .site-nav__toggle:checked ~ .site-nav__hamburger span:nth-child(2) {
-    opacity: 0;
-  }
-  .site-nav__toggle:checked ~ .site-nav__hamburger span:nth-child(3) {
-    transform: translateY(-7px) rotate(-45deg);
+  .site-nav__toggle:checked ~ .site-nav__hamburger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .site-nav__toggle:checked ~ .site-nav__hamburger span:nth-child(2) { opacity: 0; }
+  .site-nav__toggle:checked ~ .site-nav__hamburger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* Brand block — left-leaning */
+  .site-nav__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    line-height: 1.1;
+    flex: 1;
+    order: 2;
+    text-align: center;
   }
 
-  /* ── Mobile menu — collapsed by default, expands when checkbox is :checked ── */
+  .site-nav__brand:hover { text-decoration: none; }
+
+  .site-nav__logo {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .site-nav__tagline {
+    font-size: 0.6rem;
+    font-style: italic;
+    color: var(--color-text-light);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-top: 0.15rem;
+  }
+
+  /* Right-side utility icons */
+  .site-nav__utility {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    order: 3;
+  }
+
+  .site-nav__util-link {
+    display: none; /* hidden on mobile; appears on desktop */
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .site-nav__util-link:hover { color: var(--color-primary); text-decoration: none; }
+
+  .site-nav__icon-btn {
+    position: relative;
+    background: none;
+    border: none;
+    padding: 0.4rem;
+    color: var(--color-text);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .site-nav__icon-btn:hover { color: var(--color-primary); text-decoration: none; }
+
+  .site-nav__count {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: var(--color-accent);
+    color: var(--color-white);
+    font-family: var(--font-body);
+    font-size: 0.6rem;
+    font-weight: 500;
+    border-radius: var(--radius-pill);
+    line-height: 16px;
+    text-align: center;
+    display: none;
+  }
+
+  .site-nav__count.has-items { display: inline-block; }
+
+  /* Hide the dedicated search button on mobile — search lives in the drawer */
+  #searchToggle { display: none; }
+
+  /* ── Mobile menu drawer ── */
   .site-nav__menu {
     flex-basis: 100%;
     order: 4;
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.25s ease, margin-top 0.25s ease;
+    transition: max-height 0.3s ease;
   }
 
   .site-nav__toggle:checked ~ .site-nav__menu {
-    max-height: 300px;
-    margin-top: 0.5rem;
+    max-height: 90vh;
+    overflow-y: auto;
+    margin-top: 0.75rem;
+    border-top: 1px solid var(--color-border-light);
+    padding-top: 0.5rem;
   }
 
   .site-nav__links {
     display: flex;
     flex-direction: column;
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
 
-  .site-nav__links li {
+  .site-nav__item {
     border-top: 1px solid var(--color-border-light);
   }
 
-  .site-nav__links a {
+  .site-nav__item:first-child { border-top: none; }
+
+  .site-nav__item > a {
     display: block;
-    padding: 0.85rem 0;
+    padding: 0.95rem 0.25rem;
     font-size: 0.95rem;
     color: var(--color-text);
+    text-decoration: none;
+    font-family: var(--font-heading);
+    font-weight: 600;
+    letter-spacing: 0.04em;
   }
 
-  .site-nav__links a:hover { color: var(--color-primary); text-decoration: none; }
+  .site-nav__mega {
+    background: var(--color-bg-warm);
+    padding: 0.5rem 1rem 1rem;
+  }
+
+  .site-nav__mega[hidden] { display: none; }
+
+  @media (max-width: 767px) {
+    .site-nav__mega { display: block !important; }
+    .site-nav__mega[hidden] { display: block !important; }
+  }
+
+  .site-nav__mega-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0;
+  }
+
+  .site-nav__mega h4 {
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--color-accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin: 0 0 0.5rem;
+  }
+
+  .site-nav__mega ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .site-nav__mega li a {
+    color: var(--color-text);
+    text-decoration: none;
+    font-size: 0.88rem;
+  }
+
+  .site-nav__mega li a:hover { color: var(--color-primary); }
+
+  .site-nav__mega-feature { display: none; }
 
 
-  /* ── Desktop layout (≥ 768px) ── */
+  /* ── Search panel ── */
+  .site-nav__search {
+    border-top: 1px solid var(--color-border-light);
+    background: var(--color-white);
+    transform: translateY(-8px);
+    opacity: 0;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .site-nav__search.is-open {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .site-nav__search-inner { padding-block: var(--space); }
+
+  .site-nav__search-form {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding-block: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+  }
+
+  .site-nav__search-form svg { flex-shrink: 0; }
+
+  .site-nav__search-form input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    color: var(--color-text);
+    letter-spacing: 0.01em;
+  }
+
+  .site-nav__search-form input::placeholder {
+    color: var(--color-text-light);
+    font-style: italic;
+  }
+
+  .site-nav__search-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 0 0.5rem;
+  }
+
+  .site-nav__search-close:hover { color: var(--color-primary); }
+
+
+  /* ────────────────────────────────────────────────────────────────────
+     DESKTOP (≥ 768px)
+     Logo on the left, nav center, utilities on the right — single row.
+     ──────────────────────────────────────────────────────────────────── */
+
   @media (min-width: 768px) {
 
-    .site-nav__row {
+    .site-nav__main {
       flex-wrap: nowrap;
-      min-height: 72px;
-      gap: 1rem;
+      min-height: var(--nav-main-h);
+      gap: 2rem;
     }
 
-    .site-nav__brand {
-      flex: 0 0 auto;
-    }
-
-    .site-nav__logo { font-size: 1.35rem; }
-
-    /* Hamburger is hidden on desktop */
     .site-nav__hamburger { display: none; }
 
-    /* Menu becomes inline between brand and cart */
+    .site-nav__brand {
+      order: 1;
+      flex: 0 0 auto;
+      align-items: flex-start;
+      text-align: left;
+    }
+
+    .site-nav__logo    { font-size: 1.4rem; letter-spacing: 0.14em; }
+    .site-nav__tagline { font-size: 0.6rem; }
+
+    /* Menu is the flexible middle slot */
     .site-nav__menu {
       flex: 1;
       flex-basis: auto;
@@ -256,46 +655,125 @@
       max-height: none;
       overflow: visible;
       margin-top: 0;
-    }
-
-    .site-nav__cart {
-      order: 3;
-      padding-inline: 0.5rem;
+      border-top: none;
+      padding-top: 0;
     }
 
     .site-nav__links {
       flex-direction: row;
       justify-content: center;
-      gap: 2rem;
+      gap: 2.5rem;
     }
 
-    .site-nav__links li {
+    .site-nav__item {
       border-top: none;
+      position: static; /* mega panel anchors to header */
     }
 
-    .site-nav__links a {
-      padding: 0.5rem 0;
-      font-size: 0.85rem;
+    .site-nav__item--mobile-only { display: none; }
+
+    .site-nav__item > a {
+      font-family: var(--font-body);
       font-weight: 500;
-      letter-spacing: 0.08em;
+      font-size: 0.78rem;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
       color: var(--color-text);
+      padding: 0.5rem 0;
       position: relative;
     }
 
-    /* Underline animation on hover */
-    .site-nav__links a::after {
+    .site-nav__item > a::after {
       content: '';
       position: absolute;
-      left: 0;
-      right: 0;
+      left: 50%; right: 50%;
       bottom: -2px;
       height: 2px;
       background: var(--color-primary);
-      transform: scaleX(0);
-      transition: transform 0.2s;
+      transition: left 0.2s, right 0.2s;
     }
 
-    .site-nav__links a:hover::after { transform: scaleX(1); }
+    .site-nav__item:hover > a::after,
+    .site-nav__item:focus-within > a::after {
+      left: 0; right: 0;
+    }
+
+    .site-nav__utility { order: 3; gap: 1.1rem; }
+    .site-nav__util-link { display: inline-block; }
+
+    #searchToggle { display: inline-flex; }
+
+    /* ── Mega panel (no backdrop dimming) ── */
+    .site-nav__mega {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--color-white);
+      border-top: 1px solid var(--color-border-light);
+      border-bottom: 1px solid var(--color-border-light);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      padding: 2.5rem 0 3rem;
+      z-index: 60;
+    }
+
+    .site-nav__mega[hidden] { display: none; }
+
+    .site-nav__mega-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 3rem;
+      padding-inline: var(--space-md);
+    }
+
+    .site-nav__mega h4 {
+      font-size: 0.7rem;
+      margin-bottom: 1rem;
+      color: var(--color-primary);
+    }
+
+    .site-nav__mega ul { gap: 0.65rem; }
+
+    .site-nav__mega li a {
+      font-size: 0.9rem;
+      color: var(--color-text);
+      transition: color 0.15s;
+    }
+
+    .site-nav__mega-feature {
+      display: block;
+      position: relative;
+      overflow: hidden;
+      text-decoration: none;
+      grid-column: 3;
+      aspect-ratio: 4 / 5;
+      max-height: 320px;
+    }
+
+    .site-nav__mega-feature img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    .site-nav__mega-feature:hover img { transform: scale(1.05); }
+
+    .site-nav__mega-feature-label {
+      position: absolute;
+      left: 1.25rem;
+      bottom: 1.25rem;
+      color: var(--color-white);
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      letter-spacing: 0.02em;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+  }
+
+
+  @media (min-width: 1024px) {
+    .site-nav__links { gap: 3rem; }
+    .site-nav__mega-inner { grid-template-columns: 1fr 1fr 1.2fr; gap: 4rem; }
   }
 </style>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gift Cards — Admin · Ducks Unlimited</title>
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    body { background: var(--color-bg-warm); }
+
+    nav.admin-nav { background: var(--color-primary); color: var(--color-white); padding: 0.85rem var(--space-md); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
+    .admin-nav a, .admin-nav button { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; }
+    .admin-nav a:hover, .admin-nav a.active { color: var(--color-accent); }
+    .admin-nav__brand { font-family: var(--font-heading); color: var(--color-white); font-size: 1rem; letter-spacing: 0.14em; }
+    .admin-nav__links { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; list-style: none; padding: 0; margin: 0; }
+    .admin-nav__logout { background: none; border: 1px solid rgba(255,255,255,0.3); padding: 0.35rem 0.8rem; cursor: pointer; }
+    .admin-nav__logout:hover { border-color: var(--color-accent); color: var(--color-accent); }
+
+    main.admin-main { padding: var(--space-md); max-width: 1200px; margin: 0 auto; }
+    .admin-h1 { font-family: var(--font-heading); color: var(--color-primary); font-size: 2rem; margin-bottom: 0.5rem; }
+    .admin-sub { color: var(--color-text-muted); margin-bottom: var(--space-md); }
+
+    .admin-panel { background: var(--color-white); padding: var(--space-md); margin-bottom: var(--space-md); border: 1px solid var(--color-border-light); }
+    .admin-panel h2 { font-family: var(--font-heading); font-size: 1.3rem; color: var(--color-primary); margin-bottom: var(--space); }
+
+    .admin-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); margin-bottom: var(--space); }
+    @media (min-width: 768px) { .admin-stats { grid-template-columns: repeat(4, 1fr); } }
+    .stat { background: var(--color-bg); padding: var(--space-sm); }
+    .stat__label { font-size: 0.65rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 0.25rem; }
+    .stat__value { font-family: var(--font-heading); font-size: 1.6rem; color: var(--color-primary); }
+
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th, .admin-table td { text-align: left; padding: 0.55rem 0.5rem; border-bottom: 1px solid var(--color-border-light); font-size: 0.88rem; }
+    .admin-table th { font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted); font-weight: 500; }
+    .admin-table td code { background: var(--color-bg); padding: 0.1rem 0.35rem; font-size: 0.82rem; }
+
+    .badge { padding: 0.2rem 0.5rem; font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; border-radius: var(--radius-pill); }
+    .badge-pending   { background: var(--color-warning-bg); color: var(--color-warning); }
+    .badge-active    { background: var(--color-success-bg); color: var(--color-success); }
+    .badge-spent     { background: var(--color-bg-warm);    color: var(--color-text-muted); }
+    .badge-cancelled { background: var(--color-error-bg);   color: var(--color-error); }
+
+    .row-actions button {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .row-actions button:hover { color: var(--color-primary); }
+    .row-actions .danger:hover { color: var(--color-error); }
+
+    .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: var(--space); }
+    .filter-pill {
+      background: none;
+      border: 1px solid var(--color-border);
+      padding: 0.4rem 0.85rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      cursor: pointer;
+    }
+    .filter-pill.is-active { background: var(--color-primary); color: var(--color-white); border-color: var(--color-primary); }
+  </style>
+</head>
+<body>
+
+  <nav class="admin-nav">
+    <a class="admin-nav__brand" href="/admin/dashboard.html">DU Admin</a>
+    <ul class="admin-nav__links">
+      <li><a href="/admin/dashboard.html">Dashboard</a></li>
+      <li><a href="/admin/products.html">Products</a></li>
+      <li><a href="/admin/inventory.html">Inventory</a></li>
+      <li><a href="/admin/orders.html">Orders</a></li>
+      <li><a href="/admin/lookbooks.html">Lookbooks</a></li>
+      <li><a href="/admin/journal.html">Journal</a></li>
+      <li><a href="/admin/gift-cards.html" class="active">Gift Cards</a></li>
+      <li><a href="/admin/stores.html">Stores</a></li>
+      <li><button class="admin-nav__logout" id="logoutBtn">Log Out</button></li>
+    </ul>
+  </nav>
+
+  <main class="admin-main">
+    <h1 class="admin-h1">Gift Cards</h1>
+    <p class="admin-sub">Issued gift card codes. Activate "pending" cards once payment is confirmed.</p>
+
+    <section class="admin-panel">
+      <h2>Overview</h2>
+      <div class="admin-stats" id="statsRow">
+        <div class="stat"><div class="stat__label">Pending</div><div class="stat__value" id="statPending">—</div></div>
+        <div class="stat"><div class="stat__label">Active</div><div class="stat__value" id="statActive">—</div></div>
+        <div class="stat"><div class="stat__label">Active value</div><div class="stat__value" id="statActiveValue">—</div></div>
+        <div class="stat"><div class="stat__label">Spent</div><div class="stat__value" id="statSpent">—</div></div>
+      </div>
+    </section>
+
+    <section class="admin-panel">
+      <h2>All Cards</h2>
+
+      <div class="filters" id="filters">
+        <button type="button" class="filter-pill is-active" data-status="">All</button>
+        <button type="button" class="filter-pill" data-status="pending">Pending</button>
+        <button type="button" class="filter-pill" data-status="active">Active</button>
+        <button type="button" class="filter-pill" data-status="spent">Spent</button>
+        <button type="button" class="filter-pill" data-status="cancelled">Cancelled</button>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Code</th><th>Amount</th><th>Balance</th><th>Status</th>
+              <th>Recipient</th><th>Purchaser</th><th>Created</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="cardTable"><tr><td colspan="8">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { window.location.href = '/admin/index.html'; }
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.href = '/admin/index.html';
+    });
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function formatPHP(n) {
+      return '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function formatDate(iso) {
+      return new Date(iso).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    let currentFilter = '';
+
+    document.querySelectorAll('#filters .filter-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#filters .filter-pill').forEach(b => b.classList.toggle('is-active', b === btn));
+        currentFilter = btn.dataset.status;
+        load();
+      });
+    });
+
+    async function loadStats() {
+      const { data, error } = await supabase
+        .from('gift_cards')
+        .select('status, amount, balance');
+      if (error) { console.error(error); return; }
+      const stats = { pending: 0, active: 0, spent: 0, activeValue: 0 };
+      for (const row of data ?? []) {
+        if (row.status === 'pending') stats.pending++;
+        if (row.status === 'active')  { stats.active++; stats.activeValue += Number(row.balance); }
+        if (row.status === 'spent')   stats.spent++;
+      }
+      document.getElementById('statPending').textContent = stats.pending;
+      document.getElementById('statActive').textContent  = stats.active;
+      document.getElementById('statActiveValue').textContent = formatPHP(stats.activeValue);
+      document.getElementById('statSpent').textContent   = stats.spent;
+    }
+
+    async function load() {
+      let query = supabase
+        .from('gift_cards')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (currentFilter) query = query.eq('status', currentFilter);
+
+      const { data, error } = await query;
+      const tbody = document.getElementById('cardTable');
+      if (error) { tbody.innerHTML = '<tr><td colspan="8">Error loading.</td></tr>'; console.error(error); return; }
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="color:#999;">No cards.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.map(c => `
+        <tr>
+          <td><code>${escapeHtml(c.code)}</code></td>
+          <td>${formatPHP(c.amount)}</td>
+          <td>${formatPHP(c.balance)}</td>
+          <td><span class="badge badge-${escapeHtml(c.status)}">${escapeHtml(c.status)}</span></td>
+          <td>${escapeHtml(c.recipient_name ?? '—')}<br /><small style="color:#999;">${escapeHtml(c.recipient_email ?? '')}</small></td>
+          <td>${escapeHtml(c.purchaser_email ?? '—')}</td>
+          <td>${escapeHtml(formatDate(c.created_at))}</td>
+          <td class="row-actions">
+            ${c.status === 'pending'
+              ? `<button data-activate="${escapeHtml(c.id)}">Activate</button>`
+              : ''}
+            ${c.status !== 'cancelled' && c.status !== 'spent'
+              ? `<button data-cancel="${escapeHtml(c.id)}" class="danger">Cancel</button>`
+              : ''}
+          </td>
+        </tr>
+      `).join('');
+
+      tbody.querySelectorAll('[data-activate]').forEach(b =>
+        b.addEventListener('click', () => activate(b.dataset.activate)));
+      tbody.querySelectorAll('[data-cancel]').forEach(b =>
+        b.addEventListener('click', () => cancel(b.dataset.cancel)));
+    }
+
+    async function activate(id) {
+      if (!confirm('Activate this gift card? It will become redeemable.')) return;
+      const { error } = await supabase.from('gift_cards')
+        .update({ status: 'active', updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) { alert('Update failed: ' + error.message); return; }
+      load(); loadStats();
+    }
+
+    async function cancel(id) {
+      if (!confirm('Cancel this gift card? The balance will no longer be redeemable.')) return;
+      const { error } = await supabase.from('gift_cards')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) { alert('Update failed: ' + error.message); return; }
+      load(); loadStats();
+    }
+
+    loadStats();
+    load();
+  </script>
+</body>
+</html>

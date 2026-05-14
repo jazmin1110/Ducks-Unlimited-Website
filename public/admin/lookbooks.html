@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lookbooks — Admin · Ducks Unlimited</title>
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    /* Match the existing admin shell — minimal, dense, content-first */
+    body { background: var(--color-bg-warm); }
+
+    nav.admin-nav {
+      background: var(--color-primary);
+      color: var(--color-white);
+      padding: 0.85rem var(--space-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .admin-nav a, .admin-nav button {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .admin-nav a:hover, .admin-nav a.active { color: var(--color-accent); }
+
+    .admin-nav__brand {
+      font-family: var(--font-heading);
+      color: var(--color-white);
+      font-size: 1rem;
+      letter-spacing: 0.14em;
+    }
+
+    .admin-nav__links { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; list-style: none; padding: 0; margin: 0; }
+    .admin-nav__logout {
+      background: none; border: 1px solid rgba(255,255,255,0.3);
+      padding: 0.35rem 0.8rem; cursor: pointer;
+    }
+    .admin-nav__logout:hover { border-color: var(--color-accent); color: var(--color-accent); }
+
+    main.admin-main { padding: var(--space-md); max-width: 1200px; margin: 0 auto; }
+
+    .admin-h1 { font-family: var(--font-heading); color: var(--color-primary); font-size: 2rem; margin-bottom: 0.5rem; }
+    .admin-sub { color: var(--color-text-muted); margin-bottom: var(--space-md); }
+
+    .admin-panel {
+      background: var(--color-white);
+      padding: var(--space-md);
+      margin-bottom: var(--space-md);
+      border: 1px solid var(--color-border-light);
+    }
+
+    .admin-panel h2 {
+      font-family: var(--font-heading);
+      font-size: 1.3rem;
+      color: var(--color-primary);
+      margin-bottom: var(--space);
+    }
+
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th, .admin-table td {
+      text-align: left;
+      padding: 0.6rem 0.5rem;
+      border-bottom: 1px solid var(--color-border-light);
+      font-size: 0.9rem;
+    }
+    .admin-table th {
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    .badge-draft { background: var(--color-warning-bg); color: var(--color-warning); padding: 0.15rem 0.5rem; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; }
+    .badge-published { background: var(--color-success-bg); color: var(--color-success); padding: 0.15rem 0.5rem; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; }
+
+    .row-actions a, .row-actions button {
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .row-actions a:hover, .row-actions button:hover { color: var(--color-primary); }
+    .row-actions .danger:hover { color: var(--color-error); }
+
+    /* Editor / scenes UI */
+    .scene-block {
+      border: 1px solid var(--color-border-light);
+      margin-bottom: var(--space);
+      padding: var(--space-sm);
+      background: var(--color-bg);
+    }
+
+    .scene-image-wrap {
+      position: relative;
+      max-width: 100%;
+      display: block;
+      cursor: crosshair;
+      background: var(--color-bg-warm);
+    }
+
+    .scene-image-wrap img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .scene-hotspot {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      color: var(--color-white);
+      font-size: 0.7rem;
+      line-height: 22px;
+      text-align: center;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      border: 2px solid var(--color-white);
+    }
+
+    .scene-hotspot:hover { background: var(--color-primary); }
+
+    .form-row { display: grid; gap: var(--space-sm); grid-template-columns: 1fr; margin-bottom: var(--space-sm); }
+    @media (min-width: 768px) {
+      .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+      .form-row.cols-3 { grid-template-columns: 2fr 1fr 1fr; }
+    }
+
+    .actions-row { display: flex; gap: var(--space-sm); margin-top: var(--space); flex-wrap: wrap; }
+
+    .help-text { font-size: 0.78rem; color: var(--color-text-muted); margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+
+  <nav class="admin-nav">
+    <a class="admin-nav__brand" href="/admin/dashboard.html">DU Admin</a>
+    <ul class="admin-nav__links">
+      <li><a href="/admin/dashboard.html">Dashboard</a></li>
+      <li><a href="/admin/products.html">Products</a></li>
+      <li><a href="/admin/inventory.html">Inventory</a></li>
+      <li><a href="/admin/orders.html">Orders</a></li>
+      <li><a href="/admin/lookbooks.html" class="active">Lookbooks</a></li>
+      <li><a href="/admin/journal.html">Journal</a></li>
+      <li><a href="/admin/gift-cards.html">Gift Cards</a></li>
+      <li><a href="/admin/stores.html">Stores</a></li>
+      <li><button class="admin-nav__logout" id="logoutBtn">Log Out</button></li>
+    </ul>
+  </nav>
+
+  <main class="admin-main">
+    <h1 class="admin-h1">Lookbooks</h1>
+    <p class="admin-sub">Editorial collections shown on /lookbooks/. Add scenes + click-to-place hotspots.</p>
+
+    <!-- LIST + CREATE -->
+    <section class="admin-panel" id="listPanel">
+      <h2>All Lookbooks</h2>
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Title</th><th>Slug</th><th>Status</th><th>Scenes</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="lookbookTable"><tr><td colspan="5">Loading…</td></tr></tbody>
+      </table>
+
+      <h2 style="margin-top: var(--space-lg);">New Lookbook</h2>
+      <form id="newLookbookForm">
+        <div class="form-row cols-2">
+          <div class="field"><label class="field-label" for="title">Title *</label><input class="input" id="title" name="title" required></div>
+          <div class="field"><label class="field-label" for="slug">Slug *</label><input class="input" id="slug" name="slug" required placeholder="holiday-2026"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label class="field-label" for="subtitle">Subtitle</label><input class="input" id="subtitle" name="subtitle"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label class="field-label" for="hero_image">Hero Image URL *</label><input class="input" id="hero_image" name="hero_image" required></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label class="field-label" for="intro">Intro paragraph</label><textarea class="textarea" id="intro" name="intro" rows="3"></textarea></div>
+        </div>
+        <p class="help-text">After creating, click "Edit" in the table above to add scenes + hotspots, then mark as published.</p>
+        <div class="actions-row">
+          <button type="submit" class="btn btn-primary">Create Draft</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- EDITOR (hidden until "Edit" clicked) -->
+    <section class="admin-panel" id="editorPanel" hidden>
+      <h2 id="editorTitle">Edit Lookbook</h2>
+
+      <form id="metaForm">
+        <input type="hidden" id="editorId">
+        <div class="form-row cols-2">
+          <div class="field"><label class="field-label" for="e_title">Title *</label><input class="input" id="e_title" required></div>
+          <div class="field"><label class="field-label" for="e_slug">Slug *</label><input class="input" id="e_slug" required></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label class="field-label" for="e_subtitle">Subtitle</label><input class="input" id="e_subtitle"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label class="field-label" for="e_hero">Hero Image URL *</label><input class="input" id="e_hero" required></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label class="field-label" for="e_intro">Intro paragraph</label><textarea class="textarea" id="e_intro" rows="3"></textarea></div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="field">
+            <label class="field-label" for="e_published">Status</label>
+            <select class="select" id="e_published">
+              <option value="">Draft</option>
+              <option value="now">Publish</option>
+            </select>
+          </div>
+        </div>
+        <div class="actions-row">
+          <button type="submit" class="btn btn-primary">Save Lookbook</button>
+          <button type="button" class="btn btn-ghost" id="closeEditorBtn">Back to list</button>
+        </div>
+      </form>
+
+      <h2 style="margin-top: var(--space-lg);">Scenes</h2>
+      <p class="help-text">
+        Each scene is a full-bleed photo. After adding a scene, click anywhere on the photo to place a hotspot, then pick which product it links to.
+      </p>
+
+      <div id="scenesContainer"></div>
+
+      <h3 style="margin-top: var(--space); font-size: 1rem;">Add New Scene</h3>
+      <form id="newSceneForm">
+        <div class="form-row cols-3">
+          <div class="field"><label class="field-label" for="s_image">Image URL *</label><input class="input" id="s_image" required></div>
+          <div class="field"><label class="field-label" for="s_caption">Caption</label><input class="input" id="s_caption"></div>
+          <div class="field"><label class="field-label" for="s_order">Order</label><input class="input" id="s_order" type="number" value="0"></div>
+        </div>
+        <div class="actions-row">
+          <button type="submit" class="btn btn-primary">Add Scene</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- HOTSPOT MODAL: pick product after clicking on a scene image -->
+    <dialog id="hotspotDialog" style="border: none; padding: 0; max-width: 480px; width: 90%;">
+      <form id="hotspotForm" style="padding: var(--space-md); background: var(--color-white);">
+        <h3 style="font-family: var(--font-heading); color: var(--color-primary); margin-bottom: var(--space);">Add Hotspot</h3>
+        <p class="help-text" id="hotspotCoords"></p>
+        <input type="hidden" id="hs_scene_id">
+        <input type="hidden" id="hs_x">
+        <input type="hidden" id="hs_y">
+
+        <div class="field">
+          <label class="field-label" for="hs_product">Product *</label>
+          <select class="select" id="hs_product" required></select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="hs_label">Custom label (optional)</label>
+          <input class="input" id="hs_label" placeholder="Falls back to the product name">
+        </div>
+
+        <div class="actions-row">
+          <button type="submit" class="btn btn-primary">Add Hotspot</button>
+          <button type="button" class="btn btn-ghost" id="hotspotCancel">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+  </main>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+
+    // Require admin sign-in (admin/index.html already gates the section)
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { window.location.href = '/admin/index.html'; }
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.href = '/admin/index.html';
+    });
+
+    // ── Helpers ─────────────────────────────────────────────────────────
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function slugify(s) {
+      return s.toLowerCase().trim()
+        .replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-');
+    }
+
+    // Auto-fill slug from title in the create form
+    const titleInput = document.getElementById('title');
+    const slugInput  = document.getElementById('slug');
+    titleInput.addEventListener('blur', () => {
+      if (!slugInput.value) slugInput.value = slugify(titleInput.value);
+    });
+
+    // Products list — used by the hotspot picker
+    let productOptions = [];
+    async function loadProducts() {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, category')
+        .eq('is_active', true)
+        .order('name');
+      if (error) { console.error(error); return; }
+      productOptions = data ?? [];
+    }
+
+    // ── List + create ────────────────────────────────────────────────────
+    async function loadList() {
+      const { data, error } = await supabase
+        .from('lookbooks')
+        .select('id, slug, title, published_at, lookbook_scenes(id)')
+        .order('created_at', { ascending: false });
+
+      const tbody = document.getElementById('lookbookTable');
+      if (error) { console.error(error); tbody.innerHTML = '<tr><td colspan="5">Error loading lookbooks.</td></tr>'; return; }
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="color:#999;">No lookbooks yet. Create one below.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.map(lb => `
+        <tr>
+          <td>${escapeHtml(lb.title)}</td>
+          <td><code>${escapeHtml(lb.slug)}</code></td>
+          <td>${lb.published_at
+            ? '<span class="badge-published">Published</span>'
+            : '<span class="badge-draft">Draft</span>'}</td>
+          <td>${(lb.lookbook_scenes ?? []).length}</td>
+          <td class="row-actions">
+            <button data-edit="${escapeHtml(lb.id)}">Edit</button>
+            <a href="/lookbooks/view.html?slug=${encodeURIComponent(lb.slug)}" target="_blank">Preview</a>
+            <button data-delete="${escapeHtml(lb.id)}" class="danger">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+
+      tbody.querySelectorAll('[data-edit]').forEach(b =>
+        b.addEventListener('click', () => openEditor(b.dataset.edit)));
+      tbody.querySelectorAll('[data-delete]').forEach(b =>
+        b.addEventListener('click', () => deleteLookbook(b.dataset.delete)));
+    }
+
+    document.getElementById('newLookbookForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const payload = {
+        title:      f.title.value.trim(),
+        slug:       f.slug.value.trim() || slugify(f.title.value),
+        subtitle:   f.subtitle.value.trim() || null,
+        hero_image: f.hero_image.value.trim(),
+        intro:      f.intro.value.trim() || null,
+      };
+      const { data, error } = await supabase.from('lookbooks').insert(payload).select().single();
+      if (error) { alert('Could not create: ' + error.message); return; }
+      f.reset();
+      await loadList();
+      openEditor(data.id);
+    });
+
+    async function deleteLookbook(id) {
+      if (!confirm('Delete this lookbook? Scenes + hotspots will be removed too.')) return;
+      const { error } = await supabase.from('lookbooks').delete().eq('id', id);
+      if (error) { alert('Delete failed: ' + error.message); return; }
+      loadList();
+    }
+
+    // ── Editor ───────────────────────────────────────────────────────────
+    const listPanel   = document.getElementById('listPanel');
+    const editorPanel = document.getElementById('editorPanel');
+    const editorTitle = document.getElementById('editorTitle');
+
+    document.getElementById('closeEditorBtn').addEventListener('click', () => {
+      editorPanel.hidden = true;
+      listPanel.hidden = false;
+      loadList();
+    });
+
+    async function openEditor(id) {
+      const { data, error } = await supabase
+        .from('lookbooks')
+        .select(`
+          id, slug, title, subtitle, hero_image, intro, published_at,
+          lookbook_scenes (
+            id, image_url, caption, display_order,
+            lookbook_hotspots ( id, x_percent, y_percent, label, product_id,
+              products ( name ) )
+          )
+        `)
+        .eq('id', id).single();
+
+      if (error || !data) { alert('Could not load lookbook.'); return; }
+
+      document.getElementById('editorId').value = data.id;
+      document.getElementById('e_title').value    = data.title;
+      document.getElementById('e_slug').value     = data.slug;
+      document.getElementById('e_subtitle').value = data.subtitle ?? '';
+      document.getElementById('e_hero').value     = data.hero_image;
+      document.getElementById('e_intro').value    = data.intro ?? '';
+      document.getElementById('e_published').value = data.published_at ? 'now' : '';
+
+      editorTitle.textContent = `Edit: ${data.title}`;
+
+      renderScenes(data.lookbook_scenes ?? []);
+
+      listPanel.hidden = true;
+      editorPanel.hidden = false;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.getElementById('metaForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('editorId').value;
+      const payload = {
+        title:      document.getElementById('e_title').value.trim(),
+        slug:       document.getElementById('e_slug').value.trim(),
+        subtitle:   document.getElementById('e_subtitle').value.trim() || null,
+        hero_image: document.getElementById('e_hero').value.trim(),
+        intro:      document.getElementById('e_intro').value.trim() || null,
+        published_at: document.getElementById('e_published').value === 'now' ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = await supabase.from('lookbooks').update(payload).eq('id', id);
+      if (error) { alert('Save failed: ' + error.message); return; }
+      alert('Saved.');
+      openEditor(id);
+    });
+
+    // ── Scenes + hotspot picker ─────────────────────────────────────────
+    function renderScenes(scenes) {
+      const container = document.getElementById('scenesContainer');
+      const sorted = [...scenes].sort((a,b) => a.display_order - b.display_order);
+
+      if (sorted.length === 0) {
+        container.innerHTML = '<p style="color:#999; padding:var(--space-sm);">No scenes yet — add one below.</p>';
+        return;
+      }
+
+      container.innerHTML = sorted.map(s => `
+        <div class="scene-block" data-scene="${escapeHtml(s.id)}">
+          <div style="display:flex; justify-content:space-between; gap:0.5rem; align-items:center; margin-bottom: 0.5rem;">
+            <strong style="font-size:0.85rem;">#${s.display_order}${s.caption ? ' — ' + escapeHtml(s.caption) : ''}</strong>
+            <div class="row-actions">
+              <button data-scene-delete="${escapeHtml(s.id)}" class="danger">Delete scene</button>
+            </div>
+          </div>
+          <div class="scene-image-wrap" data-scene-image="${escapeHtml(s.id)}">
+            <img src="${escapeHtml(s.image_url)}" alt="" />
+            ${(s.lookbook_hotspots ?? []).map((h, i) => `
+              <span class="scene-hotspot"
+                    title="${escapeHtml(h.label ?? h.products?.name ?? 'Product')} — click to remove"
+                    style="left:${Number(h.x_percent)}%; top:${Number(h.y_percent)}%;"
+                    data-hotspot-delete="${escapeHtml(h.id)}">${i + 1}</span>
+            `).join('')}
+          </div>
+          <p class="help-text">Click anywhere on the image to add a hotspot. Click an existing dot to remove it.</p>
+        </div>
+      `).join('');
+
+      // Wire click-to-place hotspot
+      container.querySelectorAll('[data-scene-image]').forEach(el => {
+        el.addEventListener('click', (e) => {
+          // Remove if click landed on an existing hotspot
+          const existing = e.target.closest('[data-hotspot-delete]');
+          if (existing) {
+            if (!confirm('Remove this hotspot?')) return;
+            removeHotspot(existing.getAttribute('data-hotspot-delete'));
+            return;
+          }
+          const rect = el.getBoundingClientRect();
+          const xPct = ((e.clientX - rect.left) / rect.width) * 100;
+          const yPct = ((e.clientY - rect.top)  / rect.height) * 100;
+          openHotspotDialog(el.getAttribute('data-scene-image'), xPct, yPct);
+        });
+      });
+
+      container.querySelectorAll('[data-scene-delete]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Delete this scene? Its hotspots will be removed too.')) return;
+          const { error } = await supabase.from('lookbook_scenes').delete().eq('id', btn.dataset.sceneDelete);
+          if (error) { alert('Delete failed: ' + error.message); return; }
+          openEditor(document.getElementById('editorId').value);
+        });
+      });
+    }
+
+    async function removeHotspot(id) {
+      const { error } = await supabase.from('lookbook_hotspots').delete().eq('id', id);
+      if (error) { alert('Delete failed: ' + error.message); return; }
+      openEditor(document.getElementById('editorId').value);
+    }
+
+    // New scene
+    document.getElementById('newSceneForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const lookbookId = document.getElementById('editorId').value;
+      const payload = {
+        lookbook_id:   lookbookId,
+        image_url:     document.getElementById('s_image').value.trim(),
+        caption:       document.getElementById('s_caption').value.trim() || null,
+        display_order: Number(document.getElementById('s_order').value) || 0,
+      };
+      const { error } = await supabase.from('lookbook_scenes').insert(payload);
+      if (error) { alert('Add scene failed: ' + error.message); return; }
+      e.target.reset();
+      document.getElementById('s_order').value = '0';
+      openEditor(lookbookId);
+    });
+
+    // Hotspot dialog
+    const dlg = document.getElementById('hotspotDialog');
+    function openHotspotDialog(sceneId, x, y) {
+      document.getElementById('hs_scene_id').value = sceneId;
+      document.getElementById('hs_x').value = x.toFixed(2);
+      document.getElementById('hs_y').value = y.toFixed(2);
+      document.getElementById('hotspotCoords').textContent =
+        `Placing hotspot at ${x.toFixed(1)}%, ${y.toFixed(1)}%`;
+
+      const sel = document.getElementById('hs_product');
+      sel.innerHTML = '<option value="">— Pick a product —</option>' +
+        productOptions.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
+
+      document.getElementById('hs_label').value = '';
+      if (typeof dlg.showModal === 'function') dlg.showModal();
+      else dlg.setAttribute('open', '');
+    }
+
+    document.getElementById('hotspotCancel').addEventListener('click', () => dlg.close());
+
+    document.getElementById('hotspotForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        scene_id:   document.getElementById('hs_scene_id').value,
+        x_percent:  Number(document.getElementById('hs_x').value),
+        y_percent:  Number(document.getElementById('hs_y').value),
+        product_id: document.getElementById('hs_product').value,
+        label:      document.getElementById('hs_label').value.trim() || null,
+      };
+      if (!payload.product_id) { alert('Please pick a product.'); return; }
+      const { error } = await supabase.from('lookbook_hotspots').insert(payload);
+      if (error) { alert('Add failed: ' + error.message); return; }
+      dlg.close();
+      openEditor(document.getElementById('editorId').value);
+    });
+
+    // ── Init ────────────────────────────────────────────────────────────
+    await loadProducts();
+    loadList();
+  </script>
+</body>
+</html>

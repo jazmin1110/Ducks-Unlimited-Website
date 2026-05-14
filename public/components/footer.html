@@ -1,76 +1,123 @@
 <!-- =============================================================================
-     Ducks Unlimited — Site Footer
+     Ducks Unlimited — Site Footer (Ralph Lauren style)
      =============================================================================
-     Reusable footer for customer-facing pages. Drop into any page either by:
-       (a) Pasting this markup directly into the page, OR
-       (b) Fetching this file and injecting into a placeholder element.
+     Sections, top to bottom:
+       (1) Newsletter signup band (cream background, full width)
+       (2) Five-column link grid (forest-green background)
+       (3) Social row + locale + payment marks
+       (4) Bottom bar — copyright + legal links
 
-     Requires /css/style.css to be loaded (for CSS variables and fonts).
-
-     TODO before launch: replace placeholder contact + social URLs with the
-     real values from the Ducks Unlimited Facebook page.
+     Requires /css/style.css for variables and fonts.
      ============================================================================= -->
 
+<!-- ── Newsletter band ────────────────────────────────────────────────── -->
+<section class="site-newsletter">
+  <div class="container site-newsletter__inner">
+    <p class="eyebrow">Stay in Touch</p>
+    <h2 class="display-sm">Join the Ducks Unlimited family</h2>
+    <p class="site-newsletter__sub">
+      Be first to hear about new arrivals, lookbooks, and stories from our
+      workshop in Greenhills. No spam — just thoughtfully made garments.
+    </p>
+
+    <form class="site-newsletter__form" data-newsletter onsubmit="return false;">
+      <input
+        type="email"
+        class="site-newsletter__input"
+        name="email"
+        placeholder="Enter your email"
+        aria-label="Email address"
+        required
+      />
+      <button type="submit" class="btn btn-primary site-newsletter__btn">Subscribe</button>
+    </form>
+
+    <p class="site-newsletter__fine">
+      By subscribing you agree to our
+      <a href="/customer-service/privacy.html">privacy policy</a>.
+    </p>
+  </div>
+</section>
+
+
+<!-- ── Main footer ────────────────────────────────────────────────────── -->
 <footer class="site-footer">
   <div class="container site-footer__container">
 
-    <!-- ── Top section: 4 columns on desktop, stacked on mobile ── -->
+    <!-- Five-column link grid -->
     <div class="site-footer__grid">
 
-      <!-- Brand block -->
+      <!-- 1. Brand block -->
       <div class="site-footer__col site-footer__brand-col">
         <div class="site-footer__logo">Ducks Unlimited</div>
         <div class="site-footer__est">est. 1995</div>
-        <p class="site-footer__tagline">Filipino-made since 1995</p>
+        <p class="site-footer__tagline">
+          Filipino-made garments crafted in Greenhills since 1995.
+          Affordable luxury, hand-finished, one piece at a time.
+        </p>
       </div>
 
-      <!-- Quick links -->
+      <!-- 2. Shop -->
       <div class="site-footer__col">
         <h4 class="site-footer__heading">Shop</h4>
         <ul class="site-footer__links">
           <li><a href="/shop.html">Shop All</a></li>
-          <li><a href="/#story">About Us</a></li>
-          <li><a href="/size-guide.html">Size Guide</a></li>
-          <li><a href="/contact.html">Contact</a></li>
+          <li><a href="/shop.html?category=polo">Polos</a></li>
+          <li><a href="/shop.html?category=t-shirt">T-Shirts</a></li>
+          <li><a href="/shop.html?category=shorts">Shorts</a></li>
+          <li><a href="/shop.html?category=pants">Pants</a></li>
+          <li><a href="/gift-cards.html">Gift Cards</a></li>
         </ul>
       </div>
 
-      <!-- Contact info -->
+      <!-- 3. The World of DU -->
+      <div class="site-footer__col">
+        <h4 class="site-footer__heading">The World of DU</h4>
+        <ul class="site-footer__links">
+          <li><a href="/lookbooks">Lookbooks</a></li>
+          <li><a href="/journal">Journal</a></li>
+          <li><a href="/#story">Our Heritage</a></li>
+          <li><a href="/stores.html">Find a Store</a></li>
+        </ul>
+      </div>
+
+      <!-- 4. Customer service -->
+      <div class="site-footer__col">
+        <h4 class="site-footer__heading">Customer Service</h4>
+        <ul class="site-footer__links">
+          <li><a href="/customer-service/help.html">Help &amp; FAQ</a></li>
+          <li><a href="/customer-service/shipping.html">Shipping</a></li>
+          <li><a href="/customer-service/returns.html">Returns</a></li>
+          <li><a href="/size-guide.html">Size Guide</a></li>
+          <li><a href="/account/orders.html">Track Order</a></li>
+          <li><a href="/account">My Account</a></li>
+        </ul>
+      </div>
+
+      <!-- 5. Contact + socials -->
       <div class="site-footer__col">
         <h4 class="site-footer__heading">Get in Touch</h4>
         <ul class="site-footer__links">
-          <!-- TODO: replace with real phone from the FB page -->
-          <li>
-            <a href="tel:+639XXXXXXXXX">+63 9XX XXX XXXX</a>
-          </li>
-          <!-- TODO: replace with real email from the FB page -->
-          <li>
-            <a href="mailto:hello@ducksunlimited.ph">hello@ducksunlimited.ph</a>
-          </li>
+          <!-- TODO: replace with real phone -->
+          <li><a href="tel:+639XXXXXXXXX">+63 9XX XXX XXXX</a></li>
+          <!-- TODO: replace with real email -->
+          <li><a href="mailto:hello@ducksunlimited.ph">hello@ducksunlimited.ph</a></li>
           <li class="site-footer__address">
             Greenhills Shopping Center<br />
             San Juan, Metro Manila
           </li>
         </ul>
-      </div>
 
-      <!-- Social links -->
-      <div class="site-footer__col">
-        <h4 class="site-footer__heading">Follow Us</h4>
         <ul class="site-footer__socials">
-          <!-- TODO: replace href values with real URLs -->
           <li>
-            <a href="https://facebook.com/ducksunlimitedph"
-               target="_blank" rel="noopener" aria-label="Facebook">
+            <a href="https://facebook.com/ducksunlimitedph" target="_blank" rel="noopener" aria-label="Facebook">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
                 <path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.5 2.9h-2.3v7A10 10 0 0 0 22 12z"/>
               </svg>
-              <span>Facebook</span>
             </a>
           </li>
           <li>
-            <a href="https://instagram.com/ducksunlimitedph"
-               target="_blank" rel="noopener" aria-label="Instagram">
+            <a href="https://instagram.com/ducksunlimitedph" target="_blank" rel="noopener" aria-label="Instagram">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
                    stroke="currentColor" stroke-width="1.8"
                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -78,21 +125,16 @@
                 <circle cx="12" cy="12" r="4"/>
                 <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
               </svg>
-              <span>Instagram</span>
             </a>
           </li>
           <li>
-            <a href="https://shopee.ph/ducksunlimited"
-               target="_blank" rel="noopener" aria-label="Shopee">
+            <a href="https://shopee.ph/ducksunlimited" target="_blank" rel="noopener" aria-label="Shopee">
               <span class="site-footer__social-mono">S</span>
-              <span>Shopee</span>
             </a>
           </li>
           <li>
-            <a href="https://lazada.com.ph/shop/ducksunlimited"
-               target="_blank" rel="noopener" aria-label="Lazada">
+            <a href="https://lazada.com.ph/shop/ducksunlimited" target="_blank" rel="noopener" aria-label="Lazada">
               <span class="site-footer__social-mono">L</span>
-              <span>Lazada</span>
             </a>
           </li>
         </ul>
@@ -103,53 +145,167 @@
     <!-- ── Bottom bar ── -->
     <div class="site-footer__bottom">
       <p>&copy; <span id="footerYear">2025</span> Ducks Unlimited. All rights reserved.</p>
-      <p class="site-footer__credit">Filipino-made since 1995 · Crafted in Greenhills</p>
+      <ul class="site-footer__legal">
+        <li><a href="/customer-service/privacy.html">Privacy Policy</a></li>
+        <li><a href="/customer-service/terms.html">Terms of Use</a></li>
+        <li><a href="/customer-service/accessibility.html">Accessibility</a></li>
+        <li><span class="site-footer__locale">🇵🇭 Philippines (PHP)</span></li>
+      </ul>
     </div>
 
   </div>
 </footer>
 
-<!-- Tiny script to keep the copyright year fresh without manual edits -->
+
 <script>
+  // Auto-update copyright year
   (function () {
     var el = document.getElementById('footerYear');
     if (el) el.textContent = new Date().getFullYear();
+  })();
+
+  // Newsletter form — writes the email to Supabase's newsletter_subscribers
+  // table (Phase 3 migration). RLS allows anonymous inserts but not selects,
+  // so the public list stays private.
+  (async function () {
+    var form = document.querySelector('[data-newsletter]');
+    if (!form) return;
+
+    var supabaseModule;
+    try {
+      supabaseModule = await import('/lib/supabase.js');
+    } catch (err) {
+      console.warn('[newsletter] Supabase client unavailable:', err);
+    }
+
+    form.addEventListener('submit', async function () {
+      var input = form.querySelector('input[name="email"]');
+      var btn   = form.querySelector('button[type="submit"]');
+      if (!input || !input.value) return;
+
+      var email = input.value.trim();
+      if (btn) { btn.disabled = true; btn.textContent = 'Subscribing…'; }
+
+      if (supabaseModule?.supabase) {
+        var { error } = await supabaseModule.supabase
+          .from('newsletter_subscribers')
+          .insert({ email: email, source: 'footer' });
+
+        // Duplicate email (unique violation) is still a "success" from the
+        // visitor's POV — they're already on the list.
+        if (error && error.code !== '23505') {
+          console.error('[newsletter] insert failed:', error);
+          if (btn) { btn.disabled = false; btn.textContent = 'Subscribe'; }
+          input.setCustomValidity('Could not subscribe. Please try again.');
+          input.reportValidity();
+          return;
+        }
+      }
+
+      form.innerHTML = '<p class="site-newsletter__thanks">Thank you. Welcome to the family.</p>';
+    });
   })();
 </script>
 
 
 <style>
-  /* All selectors prefixed with .site-footer__ to avoid colliding with page styles */
+  /* ── Newsletter band ────────────────────────────────────────────────── */
+  .site-newsletter {
+    background: var(--color-bg-warm);
+    padding-block: var(--space-2xl);
+    text-align: center;
+    border-top: 1px solid var(--color-border);
+  }
 
+  .site-newsletter__inner {
+    max-width: 620px;
+  }
+
+  .site-newsletter__sub {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    margin-block: var(--space) var(--space-md);
+  }
+
+  .site-newsletter__form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 460px;
+    margin: 0 auto;
+  }
+
+  .site-newsletter__input {
+    width: 100%;
+    padding: 0.95rem 1.1rem;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    background: var(--color-white);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    border-radius: 2px;
+  }
+
+  .site-newsletter__input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+
+  .site-newsletter__btn {
+    border-radius: 2px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    padding: 0.95rem 2rem;
+  }
+
+  .site-newsletter__fine {
+    margin-top: 1rem;
+    font-size: 0.72rem;
+    color: var(--color-text-light);
+    letter-spacing: 0.04em;
+  }
+
+  .site-newsletter__fine a {
+    color: var(--color-text-muted);
+    text-decoration: underline;
+  }
+
+  .site-newsletter__thanks {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    color: var(--color-primary);
+    margin: 0;
+  }
+
+  @media (min-width: 640px) {
+    .site-newsletter__form { flex-direction: row; }
+    .site-newsletter__btn { flex-shrink: 0; }
+  }
+
+  /* ── Main footer ────────────────────────────────────────────────────── */
   .site-footer {
     background-color: var(--color-primary);
     color: rgba(255, 255, 255, 0.85);
-    padding-block: 2.5rem 1.5rem;
-    margin-top: 3rem;
+    padding-block: 3rem 1.5rem;
     font-size: 0.9rem;
   }
 
-  .site-footer__container { /* uses .container utility from style.css */ }
-
-  /* ── Top grid — single column on mobile, 4 columns on desktop ── */
   .site-footer__grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: 2rem;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
   }
 
-  .site-footer__col {
-    /* nothing per-column on mobile */
-  }
-
-  /* ── Brand block ── */
+  /* Brand block */
   .site-footer__logo {
     font-family: var(--font-heading);
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: var(--color-white);
-    letter-spacing: 0.06em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     line-height: 1.1;
   }
@@ -158,72 +314,83 @@
     font-size: 0.7rem;
     font-style: italic;
     color: var(--color-accent);
-    letter-spacing: 0.14em;
-    margin-top: 0.25rem;
+    letter-spacing: 0.16em;
+    margin-top: 0.3rem;
   }
 
   .site-footer__tagline {
-    margin-top: 0.85rem;
+    margin-top: 1rem;
     font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.7);
-    line-height: 1.5;
+    line-height: 1.6;
+    max-width: 280px;
   }
 
-  /* ── Column heading ── */
+  /* Column heading */
   .site-footer__heading {
     font-family: var(--font-body);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 500;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--color-accent);
-    margin-bottom: 1rem;
+    margin-bottom: 1.1rem;
   }
 
-  /* ── Lists of links ── */
-  .site-footer__links,
-  .site-footer__socials {
+  /* Links */
+  .site-footer__links {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.55rem;
+    gap: 0.6rem;
   }
 
-  .site-footer__links a,
-  .site-footer__socials a {
-    color: rgba(255, 255, 255, 0.85);
+  .site-footer__links a {
+    color: rgba(255, 255, 255, 0.8);
     text-decoration: none;
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     transition: color 0.15s;
   }
 
-  .site-footer__links a:hover,
-  .site-footer__socials a:hover {
+  .site-footer__links a:hover {
     color: var(--color-accent);
     text-decoration: none;
   }
 
   .site-footer__address {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.82rem;
     line-height: 1.5;
   }
 
-  /* ── Social links — icon + text inline ── */
+  /* Socials — icon row instead of vertical list */
+  .site-footer__socials {
+    list-style: none;
+    margin: 1.25rem 0 0;
+    padding: 0;
+    display: flex;
+    gap: 0.85rem;
+  }
+
   .site-footer__socials a {
     display: inline-flex;
     align-items: center;
-    gap: 0.6rem;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.85);
+    border-radius: 50%;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
   }
 
-  .site-footer__socials svg {
+  .site-footer__socials a:hover {
+    border-color: var(--color-accent);
     color: var(--color-accent);
-    flex-shrink: 0;
   }
 
-  /* Square monogram badge used for Shopee/Lazada (no real icons here) */
   .site-footer__social-mono {
     display: inline-flex;
     align-items: center;
@@ -234,11 +401,19 @@
     font-size: 0.7rem;
     font-weight: 700;
     color: var(--color-primary);
-    background: var(--color-accent);
-    border-radius: 3px;
+    background: currentColor;
+    border-radius: 2px;
   }
 
-  /* ── Bottom bar ── */
+  .site-footer__socials a .site-footer__social-mono {
+    color: inherit;
+  }
+
+  .site-footer__socials a:hover .site-footer__social-mono {
+    color: var(--color-accent);
+  }
+
+  /* Bottom bar */
   .site-footer__bottom {
     padding-top: 1.5rem;
     border-top: 1px solid rgba(255, 255, 255, 0.15);
@@ -246,37 +421,55 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 0.5rem;
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.6);
+    gap: 1rem;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.55);
   }
 
   .site-footer__bottom p { margin: 0; }
 
-  .site-footer__credit {
-    font-style: italic;
+  .site-footer__legal {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.25rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+  }
+
+  .site-footer__legal a {
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: none;
+  }
+
+  .site-footer__legal a:hover {
     color: var(--color-accent);
   }
 
-  /* ── Desktop layout (≥ 768px) ── */
+  .site-footer__locale {
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  /* ── Desktop (≥ 768px) ── */
   @media (min-width: 768px) {
+    .site-footer { padding-block: 4rem 1.5rem; }
 
-    .site-footer { padding-block: 3.5rem 1.5rem; }
-
-    /* 4 columns side-by-side */
+    /* Five columns: brand is wider than the others */
     .site-footer__grid {
-      grid-template-columns: 1.4fr 1fr 1.2fr 1fr;
-      gap: 3rem;
+      grid-template-columns: 1.4fr 1fr 1fr 1fr 1.1fr;
+      gap: 2.5rem;
       margin-bottom: 3rem;
     }
 
-    .site-footer__logo { font-size: 1.55rem; }
-
-    /* Bottom bar becomes inline on desktop */
     .site-footer__bottom {
       flex-direction: row;
       justify-content: space-between;
       text-align: left;
     }
+
+    .site-footer__legal { justify-content: flex-end; }
   }
 </style>

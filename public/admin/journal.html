@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Journal — Admin · Ducks Unlimited</title>
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    body { background: var(--color-bg-warm); }
+
+    nav.admin-nav {
+      background: var(--color-primary);
+      color: var(--color-white);
+      padding: 0.85rem var(--space-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .admin-nav a, .admin-nav button {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .admin-nav a:hover, .admin-nav a.active { color: var(--color-accent); }
+    .admin-nav__brand { font-family: var(--font-heading); color: var(--color-white); font-size: 1rem; letter-spacing: 0.14em; }
+    .admin-nav__links { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; list-style: none; padding: 0; margin: 0; }
+    .admin-nav__logout {
+      background: none; border: 1px solid rgba(255,255,255,0.3);
+      padding: 0.35rem 0.8rem; cursor: pointer;
+    }
+    .admin-nav__logout:hover { border-color: var(--color-accent); color: var(--color-accent); }
+
+    main.admin-main { padding: var(--space-md); max-width: 1200px; margin: 0 auto; }
+
+    .admin-h1 { font-family: var(--font-heading); color: var(--color-primary); font-size: 2rem; margin-bottom: 0.5rem; }
+    .admin-sub { color: var(--color-text-muted); margin-bottom: var(--space-md); }
+
+    .admin-panel { background: var(--color-white); padding: var(--space-md); margin-bottom: var(--space-md); border: 1px solid var(--color-border-light); }
+    .admin-panel h2 { font-family: var(--font-heading); font-size: 1.3rem; color: var(--color-primary); margin-bottom: var(--space); }
+
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th, .admin-table td { text-align: left; padding: 0.6rem 0.5rem; border-bottom: 1px solid var(--color-border-light); font-size: 0.9rem; }
+    .admin-table th { font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted); font-weight: 500; }
+
+    .badge-draft { background: var(--color-warning-bg); color: var(--color-warning); padding: 0.15rem 0.5rem; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; }
+    .badge-published { background: var(--color-success-bg); color: var(--color-success); padding: 0.15rem 0.5rem; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; }
+
+    .row-actions a, .row-actions button {
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .row-actions a:hover, .row-actions button:hover { color: var(--color-primary); }
+    .row-actions .danger:hover { color: var(--color-error); }
+
+    .form-row { display: grid; gap: var(--space-sm); grid-template-columns: 1fr; margin-bottom: var(--space-sm); }
+    @media (min-width: 768px) {
+      .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+    }
+
+    .actions-row { display: flex; gap: var(--space-sm); margin-top: var(--space); flex-wrap: wrap; }
+    .help-text { font-size: 0.78rem; color: var(--color-text-muted); margin-top: 0.5rem; }
+
+    .body-textarea {
+      width: 100%;
+      min-height: 360px;
+      padding: var(--space-sm);
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      border: 1px solid var(--color-border);
+      background: var(--color-white);
+    }
+
+    .preview {
+      background: var(--color-bg);
+      border: 1px solid var(--color-border-light);
+      padding: var(--space);
+      max-width: 680px;
+      margin: 0 auto;
+      font-family: var(--font-body);
+      line-height: 1.85;
+    }
+
+    .preview h2 { font-family: var(--font-heading); color: var(--color-primary); font-size: 1.6rem; margin: var(--space) 0 0.5rem; }
+    .preview h3 { font-family: var(--font-heading); color: var(--color-primary); font-size: 1.2rem; margin: var(--space) 0 0.5rem; }
+    .preview blockquote {
+      border-left: 2px solid var(--color-accent);
+      padding-left: var(--space);
+      margin: var(--space) 0;
+      font-style: italic;
+      color: var(--color-primary);
+      font-family: var(--font-heading);
+      font-size: 1.2rem;
+    }
+    .preview img { max-width: 100%; height: auto; margin: var(--space) 0; }
+    .preview p { margin-bottom: 0.85rem; }
+  </style>
+</head>
+<body>
+
+  <nav class="admin-nav">
+    <a class="admin-nav__brand" href="/admin/dashboard.html">DU Admin</a>
+    <ul class="admin-nav__links">
+      <li><a href="/admin/dashboard.html">Dashboard</a></li>
+      <li><a href="/admin/products.html">Products</a></li>
+      <li><a href="/admin/inventory.html">Inventory</a></li>
+      <li><a href="/admin/orders.html">Orders</a></li>
+      <li><a href="/admin/lookbooks.html">Lookbooks</a></li>
+      <li><a href="/admin/journal.html" class="active">Journal</a></li>
+      <li><a href="/admin/gift-cards.html">Gift Cards</a></li>
+      <li><a href="/admin/stores.html">Stores</a></li>
+      <li><button class="admin-nav__logout" id="logoutBtn">Log Out</button></li>
+    </ul>
+  </nav>
+
+  <main class="admin-main">
+    <h1 class="admin-h1">Journal</h1>
+    <p class="admin-sub">Long-form editorial posts shown on /journal/. Body is HTML — keep it simple.</p>
+
+    <section class="admin-panel" id="listPanel">
+      <h2>All Posts</h2>
+      <table class="admin-table">
+        <thead>
+          <tr><th>Title</th><th>Slug</th><th>Status</th><th>Author</th><th></th></tr>
+        </thead>
+        <tbody id="postTable"><tr><td colspan="5">Loading…</td></tr></tbody>
+      </table>
+
+      <h2 style="margin-top: var(--space-lg);">New Post</h2>
+      <p class="help-text">Create a draft, then click Edit to write the body.</p>
+      <form id="newPostForm">
+        <div class="form-row cols-2">
+          <div class="field"><label class="field-label" for="title">Title *</label><input class="input" id="title" required></div>
+          <div class="field"><label class="field-label" for="slug">Slug *</label><input class="input" id="slug" required placeholder="why-egyptian-cotton-matters"></div>
+        </div>
+        <div class="actions-row">
+          <button type="submit" class="btn btn-primary">Create Draft</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="admin-panel" id="editorPanel" hidden>
+      <h2 id="editorTitle">Edit Post</h2>
+
+      <form id="postForm">
+        <input type="hidden" id="editorId">
+
+        <div class="form-row cols-2">
+          <div class="field"><label class="field-label" for="e_title">Title *</label><input class="input" id="e_title" required></div>
+          <div class="field"><label class="field-label" for="e_slug">Slug *</label><input class="input" id="e_slug" required></div>
+        </div>
+
+        <div class="form-row cols-2">
+          <div class="field"><label class="field-label" for="e_author">Author</label><input class="input" id="e_author"></div>
+          <div class="field">
+            <label class="field-label" for="e_published">Status</label>
+            <select class="select" id="e_published">
+              <option value="">Draft</option>
+              <option value="now">Publish</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="field">
+            <label class="field-label" for="e_hero">Hero Image URL</label>
+            <input class="input" id="e_hero" placeholder="https://...">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="field">
+            <label class="field-label" for="e_excerpt">Excerpt (shown on listing)</label>
+            <textarea class="textarea" id="e_excerpt" rows="3"></textarea>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="field">
+            <label class="field-label" for="e_body">Body (HTML) *</label>
+            <textarea class="body-textarea" id="e_body" required placeholder="<p>Long-staple Egyptian cotton starts...</p>
+<h2>Why it matters</h2>
+<p>The longer the fiber...</p>
+<blockquote>Made to last decades.</blockquote>
+<img src='...' alt='...' />"></textarea>
+            <p class="help-text">
+              Use simple HTML: <code>&lt;p&gt;</code>, <code>&lt;h2&gt;</code>, <code>&lt;h3&gt;</code>,
+              <code>&lt;blockquote&gt;</code>, <code>&lt;ul&gt;</code>, <code>&lt;img&gt;</code>, <code>&lt;a&gt;</code>.
+              Only paste HTML you trust — it's rendered as-is.
+            </p>
+          </div>
+        </div>
+
+        <div class="actions-row">
+          <button type="submit" class="btn btn-primary">Save Post</button>
+          <button type="button" class="btn btn-ghost" id="previewBtn">Toggle Preview</button>
+          <button type="button" class="btn btn-ghost" id="closeEditorBtn">Back to list</button>
+        </div>
+      </form>
+
+      <div id="previewWrap" hidden style="margin-top: var(--space);">
+        <h3 style="font-size: 0.85rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 0.5rem;">Preview</h3>
+        <div class="preview" id="previewBody"></div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { window.location.href = '/admin/index.html'; }
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.href = '/admin/index.html';
+    });
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function slugify(s) {
+      return s.toLowerCase().trim()
+        .replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-');
+    }
+
+    const titleInput = document.getElementById('title');
+    const slugInput  = document.getElementById('slug');
+    titleInput.addEventListener('blur', () => {
+      if (!slugInput.value) slugInput.value = slugify(titleInput.value);
+    });
+
+    // List
+    async function loadList() {
+      const { data, error } = await supabase
+        .from('journal_posts')
+        .select('id, slug, title, author, published_at')
+        .order('created_at', { ascending: false });
+
+      const tbody = document.getElementById('postTable');
+      if (error) { console.error(error); tbody.innerHTML = '<tr><td colspan="5">Error loading.</td></tr>'; return; }
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="color:#999;">No posts yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.map(p => `
+        <tr>
+          <td>${escapeHtml(p.title)}</td>
+          <td><code>${escapeHtml(p.slug)}</code></td>
+          <td>${p.published_at
+            ? '<span class="badge-published">Published</span>'
+            : '<span class="badge-draft">Draft</span>'}</td>
+          <td>${escapeHtml(p.author ?? '')}</td>
+          <td class="row-actions">
+            <button data-edit="${escapeHtml(p.id)}">Edit</button>
+            ${p.published_at
+              ? `<a href="/journal/post.html?slug=${encodeURIComponent(p.slug)}" target="_blank">Preview</a>`
+              : ''}
+            <button data-delete="${escapeHtml(p.id)}" class="danger">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+
+      tbody.querySelectorAll('[data-edit]').forEach(b =>
+        b.addEventListener('click', () => openEditor(b.dataset.edit)));
+      tbody.querySelectorAll('[data-delete]').forEach(b =>
+        b.addEventListener('click', () => deletePost(b.dataset.delete)));
+    }
+
+    document.getElementById('newPostForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const payload = {
+        title:     f.title.value.trim(),
+        slug:      f.slug.value.trim() || slugify(f.title.value),
+        body_html: '<p>Start writing…</p>',
+      };
+      const { data, error } = await supabase.from('journal_posts').insert(payload).select().single();
+      if (error) { alert('Could not create: ' + error.message); return; }
+      f.reset();
+      await loadList();
+      openEditor(data.id);
+    });
+
+    async function deletePost(id) {
+      if (!confirm('Delete this post?')) return;
+      const { error } = await supabase.from('journal_posts').delete().eq('id', id);
+      if (error) { alert('Delete failed: ' + error.message); return; }
+      loadList();
+    }
+
+    // Editor
+    const listPanel   = document.getElementById('listPanel');
+    const editorPanel = document.getElementById('editorPanel');
+
+    document.getElementById('closeEditorBtn').addEventListener('click', () => {
+      editorPanel.hidden = true;
+      listPanel.hidden = false;
+      loadList();
+    });
+
+    async function openEditor(id) {
+      const { data, error } = await supabase
+        .from('journal_posts')
+        .select('*')
+        .eq('id', id).single();
+      if (error || !data) { alert('Could not load.'); return; }
+
+      document.getElementById('editorId').value     = data.id;
+      document.getElementById('e_title').value      = data.title;
+      document.getElementById('e_slug').value       = data.slug;
+      document.getElementById('e_author').value     = data.author ?? '';
+      document.getElementById('e_hero').value       = data.hero_image ?? '';
+      document.getElementById('e_excerpt').value    = data.excerpt ?? '';
+      document.getElementById('e_body').value       = data.body_html ?? '';
+      document.getElementById('e_published').value  = data.published_at ? 'now' : '';
+
+      document.getElementById('editorTitle').textContent = `Edit: ${data.title}`;
+      document.getElementById('previewWrap').hidden = true;
+
+      listPanel.hidden = true;
+      editorPanel.hidden = false;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.getElementById('postForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('editorId').value;
+      const payload = {
+        title:        document.getElementById('e_title').value.trim(),
+        slug:         document.getElementById('e_slug').value.trim(),
+        author:       document.getElementById('e_author').value.trim() || null,
+        hero_image:   document.getElementById('e_hero').value.trim() || null,
+        excerpt:      document.getElementById('e_excerpt').value.trim() || null,
+        body_html:    document.getElementById('e_body').value,
+        published_at: document.getElementById('e_published').value === 'now' ? new Date().toISOString() : null,
+        updated_at:   new Date().toISOString(),
+      };
+      const { error } = await supabase.from('journal_posts').update(payload).eq('id', id);
+      if (error) { alert('Save failed: ' + error.message); return; }
+      alert('Saved.');
+    });
+
+    // Preview
+    const previewWrap = document.getElementById('previewWrap');
+    const previewBody = document.getElementById('previewBody');
+    document.getElementById('previewBtn').addEventListener('click', () => {
+      if (previewWrap.hidden) {
+        previewBody.innerHTML = document.getElementById('e_body').value;
+        previewWrap.hidden = false;
+      } else {
+        previewWrap.hidden = true;
+      }
+    });
+
+    loadList();
+  </script>
+</body>
+</html>

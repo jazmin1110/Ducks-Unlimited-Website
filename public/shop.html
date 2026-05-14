@@ -17,23 +17,39 @@
        only the layout for the shop's grid + filter sidebar.
        ============================================================ */
 
-    /* ── Page header ───────────────────────────────────────────── */
+    /* ── Page header — editorial title block ───────────────────── */
 
     .shop-header {
-      background: var(--color-bg);
-      padding: 2rem 0 1rem;
-      border-bottom: 1px solid var(--color-border);
+      background: var(--color-white);
+      padding: var(--space-2xl) 0 var(--space-lg);
+      text-align: center;
+    }
+
+    .shop-header__eyebrow {
+      font-size: var(--type-eyebrow);
+      font-weight: 500;
+      letter-spacing: var(--ls-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 0.75rem;
     }
 
     .shop-header h1 {
-      text-align: center;
-      margin-bottom: 0.25rem;
+      font-family: var(--font-heading);
+      font-size: var(--type-display-sm);
+      font-weight: 400;
+      color: var(--color-primary);
+      letter-spacing: var(--ls-tight);
+      line-height: 1.05;
+      margin-bottom: 0.75rem;
     }
 
     .shop-header__sub {
-      text-align: center;
       color: var(--color-text-muted);
-      font-size: 0.9rem;
+      font-size: 0.95rem;
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.6;
     }
 
     /* ── Two-column layout (sidebar + grid) ─────────────────────── */
@@ -359,12 +375,12 @@
       font-weight: 500;
     }
 
-    /* ── Product grid ──────────────────────────────────────────── */
+    /* ── Product grid (editorial — borderless, larger imagery) ── */
 
     .products-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 0.85rem;
+      gap: 1rem 0.85rem;
     }
 
     .product-card {
@@ -372,21 +388,24 @@
       display: block;
       text-decoration: none;
       color: inherit;
-      background: var(--color-white);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      box-shadow: var(--shadow-sm);
-      transition: transform 0.15s, box-shadow 0.15s;
+      background: transparent;
+      overflow: visible;
     }
 
-    .product-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow);
+    .product-card:hover { text-decoration: none; }
+
+    .product-card__link,
+    .product-card__body {
+      display: block;
       text-decoration: none;
+      color: inherit;
     }
+
+    .product-card__link:hover,
+    .product-card__body:hover { text-decoration: none; }
 
     .product-card__image {
-      aspect-ratio: 1 / 1.2;
+      aspect-ratio: 4 / 5;
       background: var(--color-bg-warm);
       position: relative;
       overflow: hidden;
@@ -397,7 +416,260 @@
       height: 100%;
       object-fit: cover;
       display: block;
+      transition: opacity 0.4s ease, transform 0.6s ease;
     }
+
+    /* Secondary image — fades in on hover when a product has 2+ photos */
+    .product-card__image-alt {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .product-card:hover .product-card__image-alt { opacity: 1; }
+
+    /* Subtle zoom on the primary image when no secondary exists */
+    .product-card--single:hover .product-card__image img { transform: scale(1.04); }
+
+    /* ── Wishlist heart on the product card (top-right) ── */
+    .product-card__wishlist {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      width: 34px;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(2px);
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      color: var(--color-text);
+      transition: background 0.15s, color 0.15s, transform 0.15s;
+      z-index: 2;
+      opacity: 0;
+    }
+
+    .product-card:hover .product-card__wishlist,
+    .product-card__wishlist.is-active {
+      opacity: 1;
+    }
+
+    .product-card__wishlist:hover { transform: scale(1.08); }
+
+    .product-card__wishlist.is-active {
+      color: var(--color-primary);
+      background: var(--color-white);
+    }
+
+    .product-card__wishlist svg { transition: fill 0.15s; }
+    .product-card__wishlist.is-active svg { fill: var(--color-primary); }
+
+    /* Quick View — sits inside the image overlay, fades in on hover.
+       No transform-based slide so the cursor never re-triggers a flicker.
+       Clicking opens the side drawer (#quickViewDrawer) with product details. */
+    .product-card__quick {
+      position: absolute;
+      left: 1rem;
+      right: 1rem;
+      bottom: 1rem;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .product-card:hover .product-card__quick {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .product-card__quick-btn {
+      display: block;
+      width: 100%;
+      padding: 0.7rem;
+      background: var(--color-white);
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .product-card__quick-btn:hover { background: var(--color-text); color: var(--color-white); }
+
+    /* On touch devices, hover doesn't apply — hide the button so users tap
+       the card itself to navigate. Wishlist heart stays visible. */
+    @media (hover: none) {
+      .product-card__quick { display: none; }
+      .product-card__wishlist { opacity: 1; }
+    }
+
+    /* ── Quick View side drawer ───────────────────────────────────── */
+
+    .qv-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .qv-backdrop.is-open { opacity: 1; pointer-events: auto; }
+
+    .qv-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      max-width: 460px;
+      height: 100vh;
+      background: var(--color-white);
+      z-index: 301;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: -8px 0 24px rgba(0,0,0,0.1);
+    }
+
+    .qv-drawer.is-open { transform: translateX(0); }
+
+    .qv-drawer__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md);
+      border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .qv-drawer__title {
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+    }
+
+    .qv-drawer__close {
+      background: none;
+      border: none;
+      font-size: 1.6rem;
+      line-height: 1;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .qv-drawer__close:hover { color: var(--color-primary); }
+
+    .qv-drawer__body {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-md);
+    }
+
+    .qv-image {
+      aspect-ratio: 4 / 5;
+      background: var(--color-bg-warm);
+      overflow: hidden;
+      margin-bottom: var(--space-md);
+    }
+
+    .qv-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .qv-category {
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .qv-name {
+      font-family: var(--font-heading);
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      letter-spacing: 0.01em;
+      line-height: 1.15;
+      margin-bottom: 0.5rem;
+    }
+
+    .qv-price {
+      font-size: 1rem;
+      color: var(--color-text);
+      letter-spacing: 0.04em;
+      margin-bottom: var(--space-md);
+    }
+
+    .qv-block { margin-bottom: var(--space-md); }
+
+    .qv-block__label {
+      display: block;
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 0.55rem;
+    }
+
+    .qv-swatches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+    }
+
+    .qv-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.1);
+      box-shadow: inset 0 0 0 2px var(--color-white);
+    }
+
+    .qv-sizes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .qv-size {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 42px;
+      padding: 0.45rem 0.75rem;
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      color: var(--color-text);
+      background: var(--color-white);
+      border: 1px solid var(--color-border);
+    }
+
+    .qv-desc {
+      color: var(--color-text);
+      font-size: 0.9rem;
+      line-height: 1.7;
+    }
+
+    .qv-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: var(--space-md);
+      border-top: 1px solid var(--color-border-light);
+      background: var(--color-bg-warm);
+    }
+
+    .qv-actions .btn { border-radius: 0; letter-spacing: 0.14em; text-transform: uppercase; font-size: 0.8rem; padding: 0.95rem; }
 
     /* Branded placeholder when no image — duck silhouette + brand name */
     .product-card__placeholder {
@@ -453,22 +725,27 @@
       border-radius: var(--radius-pill);
     }
 
-    .product-card__body { padding: 0.85rem 1rem 1.1rem; }
+    .product-card__body {
+      padding: 0.9rem 0.25rem 0.25rem;
+      text-align: center;
+    }
 
     .product-card__name {
       font-family: var(--font-heading);
-      font-size: 1rem;
+      font-size: 1.05rem;
       font-weight: 600;
       color: var(--color-text);
-      margin: 0 0 0.3rem;
+      margin: 0 0 0.35rem;
       line-height: 1.25;
+      letter-spacing: 0.01em;
     }
 
     .product-card__price {
-      font-size: 0.9rem;
-      color: var(--color-primary);
-      font-weight: 500;
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+      font-weight: 400;
       margin: 0;
+      letter-spacing: 0.04em;
     }
 
     .product-card__price small {
@@ -484,8 +761,9 @@
     .product-card__colors {
       display: flex;
       gap: 0.3rem;
-      margin-top: 0.6rem;
+      margin-top: 0.65rem;
       flex-wrap: wrap;
+      justify-content: center;
     }
 
     .color-dot {
@@ -596,22 +874,26 @@
     @media (min-width: 768px) {
       .products-grid {
         grid-template-columns: repeat(3, 1fr);
-        gap: 1.25rem;
+        gap: 2rem 1.5rem;
       }
-      .product-card__name  { font-size: 1.05rem; }
+      .product-card__name  { font-size: 1.1rem; }
+      .product-card__body  { padding-top: 1rem; }
     }
 
     @media (min-width: 1024px) {
       .shop {
-        grid-template-columns: 260px 1fr;
-        gap: 2.5rem;
+        grid-template-columns: 240px 1fr;
+        gap: 3rem;
         padding-block: 2rem 4rem;
         align-items: start;
       }
 
       .filter-sidebar {
         position: sticky;
-        top: 80px; /* below the sticky nav */
+        top: calc(var(--nav-total-h) + 12px);
+        background: transparent;
+        box-shadow: none;
+        padding: 0;
       }
 
       /* Hide the mobile-only controls */
@@ -621,6 +903,13 @@
         display: none !important;
       }
 
+      .products-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2.5rem 1.75rem;
+      }
+    }
+
+    @media (min-width: 1280px) {
       .products-grid { grid-template-columns: repeat(4, 1fr); }
     }
   </style>
@@ -630,11 +919,15 @@
   <!-- ── Nav (mounted by /js/components.js) ── -->
   <div data-component="nav"></div>
 
-  <!-- ── Page header ── -->
+  <!-- ── Page header — editorial title block ── -->
   <header class="shop-header">
     <div class="container">
-      <h1>Shop</h1>
-      <p class="shop-header__sub">Every piece is hand-finished in our Greenhills workshop.</p>
+      <p class="shop-header__eyebrow">The Collection</p>
+      <h1>Shop All</h1>
+      <p class="shop-header__sub">
+        Every piece is hand-finished in our Greenhills workshop —
+        Egyptian cotton, made to last.
+      </p>
     </div>
   </header>
 
@@ -729,6 +1022,21 @@
 
   </main>
 
+  <!-- ── Quick View side drawer + backdrop ── -->
+  <div class="qv-backdrop" id="qvBackdrop"></div>
+  <aside class="qv-drawer" id="qvDrawer" aria-label="Quick view" hidden>
+    <header class="qv-drawer__head">
+      <span class="qv-drawer__title">Quick View</span>
+      <button type="button" class="qv-drawer__close" id="qvClose" aria-label="Close">×</button>
+    </header>
+    <div class="qv-drawer__body" id="qvBody">
+      <!-- Filled by JS when a Quick View button is clicked -->
+    </div>
+    <div class="qv-actions" id="qvActions" hidden>
+      <a class="btn btn-primary" id="qvViewLink" href="#">View Full Details</a>
+    </div>
+  </aside>
+
   <!-- ── Footer (mounted by /js/components.js) ── -->
   <div data-component="footer"></div>
 
@@ -736,9 +1044,11 @@
   <!-- Scripts -->
   <script type="module" src="/js/components.js"></script>
   <script type="module" src="/js/cart.js"></script>
+  <script type="module" src="/js/wishlist.js"></script>
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { toggleWishlist, isInWishlist } from '/js/wishlist.js';
 
     // ─────────────────────────────────────────────────────────────────
     // CONSTANTS
@@ -864,6 +1174,17 @@
       return sorted[0].image_url;
     }
 
+    // Pick a secondary image for the hover-swap effect.
+    // Returns the next image after the primary one, or null if only one exists.
+    function pickSecondaryImage(images) {
+      if (!images || images.length < 2) return null;
+      const sorted = [...images].sort((a, b) => {
+        if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+        return a.display_order - b.display_order;
+      });
+      return sorted[1].image_url;
+    }
+
     // ─────────────────────────────────────────────────────────────────
     // LOAD + ENRICH PRODUCTS
     // ─────────────────────────────────────────────────────────────────
@@ -920,6 +1241,7 @@
         onlineStock,
         outOfStock:  onlineStock === 0,
         imageUrl:    pickPrimaryImage(p.product_images),
+        imageAltUrl: pickSecondaryImage(p.product_images),
       };
     }
 
@@ -1082,14 +1404,13 @@
       grid.innerHTML = '';
 
       for (const p of products) {
-        const card = document.createElement('a');
-        card.className = 'product-card';
-        card.href = `/product.html?id=${encodeURIComponent(p.id)}`;
+        const wrapper = document.createElement('div');
+        wrapper.className = `product-card${p.imageAltUrl ? '' : ' product-card--single'}`;
 
         // Price label — "From ₱X" when variants differ, "₱X" when they don't
         const priceHtml = p.minPrice === p.maxPrice
           ? `<p class="product-card__price">₱${formatPrice(p.minPrice)}</p>`
-          : `<p class="product-card__price"><small>From</small>₱${formatPrice(p.minPrice)}</p>`;
+          : `<p class="product-card__price"><small>From</small> ₱${formatPrice(p.minPrice)}</p>`;
 
         // Color dots — show up to 5, then a "+N" pill for the rest
         const colorsToShow = p.colors.slice(0, 5);
@@ -1105,26 +1426,60 @@
           `
           : '';
 
-        card.innerHTML = `
-          <div class="product-card__image">
-            ${p.imageUrl
-              ? `<img src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" loading="lazy" />`
-              : `<div class="product-card__placeholder">
-                   ${DUCK_SVG}
-                   <span class="product-card__placeholder-mark">Ducks Unlimited</span>
-                   <span class="product-card__placeholder-sub">est. 1995</span>
-                 </div>`}
-            ${p.outOfStock ? `<div class="product-card__oos"><span>Out of Stock</span></div>` : ''}
-          </div>
-          <div class="product-card__body">
+        const productHref = `/product.html?id=${encodeURIComponent(p.id)}`;
+        const inWishlist = isInWishlist(p.id);
+
+        // Heart icon (filled outline)
+        const heartSvg = `
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+               stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+          </svg>
+        `;
+
+        wrapper.innerHTML = `
+          <a class="product-card__link" href="${productHref}" aria-label="${escapeHtml(p.name)}">
+            <div class="product-card__image">
+              ${p.imageUrl
+                ? `<img src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" loading="lazy" />`
+                : `<div class="product-card__placeholder">
+                     ${DUCK_SVG}
+                     <span class="product-card__placeholder-mark">Ducks Unlimited</span>
+                     <span class="product-card__placeholder-sub">est. 1995</span>
+                   </div>`}
+              ${p.imageAltUrl
+                ? `<img class="product-card__image-alt" src="${escapeHtml(p.imageAltUrl)}" alt="" loading="lazy" />`
+                : ''}
+              ${p.outOfStock ? `<div class="product-card__oos"><span>Out of Stock</span></div>` : ''}
+            </div>
+          </a>
+          <button type="button"
+                  class="product-card__wishlist${inWishlist ? ' is-active' : ''}"
+                  data-wishlist-toggle="${escapeHtml(p.id)}"
+                  aria-label="Add to wishlist"
+                  aria-pressed="${inWishlist ? 'true' : 'false'}">
+            ${heartSvg}
+          </button>
+          ${!p.outOfStock ? `
+            <div class="product-card__quick">
+              <button type="button" class="product-card__quick-btn"
+                      data-quick-view="${escapeHtml(p.id)}">
+                Quick View
+              </button>
+            </div>
+          ` : ''}
+          <a class="product-card__body" href="${productHref}">
             <h3 class="product-card__name">${escapeHtml(p.name)}</h3>
             ${priceHtml}
             ${colorsHtml}
-          </div>
+          </a>
         `;
 
-        grid.appendChild(card);
+        grid.appendChild(wrapper);
       }
+
+      // Wire wishlist hearts (delegated handler below also catches future cards)
     }
 
     function renderCount(visible, total) {
@@ -1289,6 +1644,103 @@
     sortSelect.addEventListener('change', () => {
       state.sort = sortSelect.value;
       update();
+    });
+
+    // Wishlist hearts — delegated so it works for cards added later too
+    grid.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-wishlist-toggle]');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const id = btn.getAttribute('data-wishlist-toggle');
+      const nowActive = await toggleWishlist(id);
+      btn.classList.toggle('is-active', nowActive);
+      btn.setAttribute('aria-pressed', nowActive ? 'true' : 'false');
+    });
+
+    // ─── Quick View side drawer ───────────────────────────────────────
+    const qvBackdrop = document.getElementById('qvBackdrop');
+    const qvDrawer   = document.getElementById('qvDrawer');
+    const qvBody     = document.getElementById('qvBody');
+    const qvActions  = document.getElementById('qvActions');
+    const qvViewLink = document.getElementById('qvViewLink');
+    const qvClose    = document.getElementById('qvClose');
+
+    function openQuickView(productId) {
+      const p = state.products.find(x => x.id === productId);
+      if (!p) return;
+
+      const category = CATEGORY_LABELS[p.category] ?? p.category;
+      const priceText = p.minPrice === p.maxPrice
+        ? `₱${formatPrice(p.minPrice)}`
+        : `From ₱${formatPrice(p.minPrice)}`;
+
+      // Distinct sizes/colors for the at-a-glance summary
+      const colorChips = p.colors.length
+        ? `<div class="qv-block">
+             <span class="qv-block__label">Colors · ${p.colors.length}</span>
+             <div class="qv-swatches">
+               ${p.colors.map(c => `<span class="qv-swatch"
+                 style="background:${colorToHex(c)}"
+                 title="${escapeHtml(c)}"></span>`).join('')}
+             </div>
+           </div>`
+        : '';
+
+      const sizeChips = p.sizes.length
+        ? `<div class="qv-block">
+             <span class="qv-block__label">Sizes</span>
+             <div class="qv-sizes">
+               ${p.sizes
+                 .sort((a, b) => (SIZE_ORDER[a] ?? 99) - (SIZE_ORDER[b] ?? 99))
+                 .map(s => `<span class="qv-size">${escapeHtml(s)}</span>`).join('')}
+             </div>
+           </div>`
+        : '';
+
+      qvBody.innerHTML = `
+        <div class="qv-image">
+          ${p.imageUrl
+            ? `<img src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" />`
+            : ''}
+        </div>
+        <p class="qv-category">${escapeHtml(category)}</p>
+        <h2 class="qv-name">${escapeHtml(p.name)}</h2>
+        <p class="qv-price">${priceText}</p>
+        ${colorChips}
+        ${sizeChips}
+      `;
+
+      qvViewLink.href = `/product.html?id=${encodeURIComponent(p.id)}`;
+      qvActions.hidden = false;
+
+      qvDrawer.hidden = false;
+      requestAnimationFrame(() => {
+        qvDrawer.classList.add('is-open');
+        qvBackdrop.classList.add('is-open');
+      });
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeQuickView() {
+      qvDrawer.classList.remove('is-open');
+      qvBackdrop.classList.remove('is-open');
+      document.body.style.overflow = '';
+      setTimeout(() => { qvDrawer.hidden = true; }, 300);
+    }
+
+    grid.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-quick-view]');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      openQuickView(btn.getAttribute('data-quick-view'));
+    });
+
+    qvClose.addEventListener('click', closeQuickView);
+    qvBackdrop.addEventListener('click', closeQuickView);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !qvDrawer.hidden) closeQuickView();
     });
 
     // Clear all filters

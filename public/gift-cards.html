@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gift Cards — Ducks Unlimited</title>
+  <meta name="description" content="Give the gift of Filipino-made Egyptian cotton. Ducks Unlimited gift cards in any denomination." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    .gc-hero {
+      background: var(--color-primary);
+      color: var(--color-white);
+      padding: var(--space-2xl) var(--space-md);
+      text-align: center;
+    }
+
+    .gc-hero h1 {
+      font-family: var(--font-heading);
+      font-size: var(--type-display);
+      font-weight: 400;
+      letter-spacing: var(--ls-tight);
+      line-height: 1.05;
+      margin: 0.5rem 0 0.75rem;
+      color: var(--color-white);
+    }
+
+    .gc-hero .eyebrow { color: var(--color-accent); }
+    .gc-hero__sub {
+      max-width: 540px;
+      margin: 0 auto;
+      line-height: 1.7;
+      opacity: 0.9;
+    }
+
+    /* The "card" preview floats above the form */
+    .gc-preview {
+      max-width: 480px;
+      margin: -3rem auto var(--space-xl);
+      background: linear-gradient(135deg, #1B4D2E 0%, #163d24 100%);
+      color: var(--color-white);
+      padding: var(--space-2xl) var(--space-lg);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    }
+
+    .gc-preview::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(201, 168, 76, 0.15), transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(201, 168, 76, 0.1), transparent 50%);
+      pointer-events: none;
+    }
+
+    .gc-preview__brand {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 0.2rem;
+      position: relative;
+    }
+
+    .gc-preview__est {
+      font-size: 0.7rem;
+      font-style: italic;
+      color: var(--color-accent);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: var(--space-xl);
+      position: relative;
+    }
+
+    .gc-preview__amount {
+      font-family: var(--font-heading);
+      font-size: 3.5rem;
+      letter-spacing: 0.01em;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+      position: relative;
+      color: var(--color-accent);
+    }
+
+    .gc-preview__label {
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: var(--space-lg);
+      position: relative;
+    }
+
+    .gc-preview__to {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      opacity: 0.92;
+      position: relative;
+      max-width: 280px;
+    }
+
+    /* Form */
+    .gc-form-wrap {
+      max-width: 560px;
+      margin: 0 auto var(--space-2xl);
+      padding: 0 var(--space-md);
+    }
+
+    .gc-form {
+      background: var(--color-white);
+      padding: var(--space-lg);
+      border: 1px solid var(--color-border-light);
+    }
+
+    .gc-amounts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .gc-amount-btn {
+      padding: 0.85rem 0.4rem;
+      background: var(--color-white);
+      border: 1.5px solid var(--color-border);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      letter-spacing: 0.04em;
+      color: var(--color-text);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+
+    .gc-amount-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+    .gc-amount-btn.is-active {
+      background: var(--color-primary);
+      color: var(--color-white);
+      border-color: var(--color-primary);
+    }
+
+    .gc-custom-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: var(--space-md);
+    }
+
+    .gc-custom-row label {
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+    }
+
+    .gc-custom-row .input { flex: 1; }
+
+    .gc-form .field { margin-bottom: var(--space); }
+    .gc-form .input, .gc-form .textarea {
+      border-radius: 0;
+      padding: 0.85rem 1rem;
+    }
+
+    .gc-actions { margin-top: var(--space); }
+    .gc-actions .btn {
+      width: 100%;
+      border-radius: 0;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      padding: 1rem;
+    }
+
+    .gc-fine {
+      margin-top: var(--space-md);
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      line-height: 1.6;
+    }
+
+    .gc-success {
+      background: var(--color-success-bg);
+      color: var(--color-success);
+      padding: var(--space-md);
+      border-left: 3px solid var(--color-success);
+      text-align: left;
+      margin-bottom: var(--space);
+    }
+
+    .gc-error {
+      background: var(--color-error-bg);
+      color: var(--color-error);
+      padding: 0.75rem 1rem;
+      border-left: 3px solid var(--color-error);
+      font-size: 0.88rem;
+      margin-bottom: var(--space);
+    }
+
+    /* Below the form — how it works */
+    .gc-howto {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: var(--space-2xl) var(--space-md);
+      display: grid;
+      gap: var(--space-xl);
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+
+    .gc-howto__item h3 {
+      font-family: var(--font-heading);
+      font-size: 1.2rem;
+      color: var(--color-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .gc-howto__item p { color: var(--color-text-muted); font-size: 0.92rem; line-height: 1.7; }
+
+    .gc-howto__num {
+      font-family: var(--font-heading);
+      font-size: 2.5rem;
+      color: var(--color-accent);
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .gc-howto { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <div data-component="nav"></div>
+
+  <main>
+
+    <section class="gc-hero">
+      <p class="eyebrow">A gift, made to last</p>
+      <h1>Ducks Unlimited Gift Cards</h1>
+      <p class="gc-hero__sub">
+        For the people who appreciate a polo that lasts a decade. Delivered
+        digitally — pick any amount.
+      </p>
+    </section>
+
+    <!-- Live preview that updates as the form changes -->
+    <div class="gc-preview" id="gcPreview">
+      <p class="gc-preview__brand">Ducks Unlimited</p>
+      <p class="gc-preview__est">Gift Card · est. 1995</p>
+      <p class="gc-preview__amount" id="previewAmount">₱1,000</p>
+      <p class="gc-preview__label">To redeem at ducksunlimited.ph</p>
+      <p class="gc-preview__to" id="previewTo">For someone who appreciates the craft.</p>
+    </div>
+
+    <div class="gc-form-wrap">
+      <form class="gc-form" id="gcForm" novalidate>
+
+        <div class="gc-error" id="gcError" hidden></div>
+        <div class="gc-success" id="gcSuccess" hidden></div>
+
+        <div class="field">
+          <label class="field-label">Amount *</label>
+          <div class="gc-amounts" id="gcAmounts">
+            <button type="button" class="gc-amount-btn" data-amt="500">₱500</button>
+            <button type="button" class="gc-amount-btn is-active" data-amt="1000">₱1,000</button>
+            <button type="button" class="gc-amount-btn" data-amt="2500">₱2,500</button>
+            <button type="button" class="gc-amount-btn" data-amt="5000">₱5,000</button>
+            <button type="button" class="gc-amount-btn" data-amt="10000">₱10,000</button>
+            <button type="button" class="gc-amount-btn" data-amt="custom">Custom</button>
+          </div>
+          <div class="gc-custom-row" id="gcCustomRow" hidden>
+            <label for="gcCustomAmount">₱</label>
+            <input class="input" type="number" id="gcCustomAmount" min="100" max="50000" step="50" placeholder="Any amount between ₱100 and ₱50,000" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="recipientName">Recipient Name *</label>
+          <input class="input" type="text" id="recipientName" required />
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="recipientEmail">Recipient Email *</label>
+          <input class="input" type="email" id="recipientEmail" required />
+          <span class="field-hint">We'll email the gift card directly to them.</span>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="senderName">From (Your Name) *</label>
+          <input class="input" type="text" id="senderName" required />
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="message">Personal Message</label>
+          <textarea class="textarea" id="message" rows="3" maxlength="280" placeholder="Optional. Up to 280 characters."></textarea>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="purchaserEmail">Your Email (for the receipt) *</label>
+          <input class="input" type="email" id="purchaserEmail" required />
+        </div>
+
+        <div class="gc-actions">
+          <button type="submit" class="btn btn-primary" id="purchaseBtn">Buy Gift Card</button>
+        </div>
+
+        <p class="gc-fine">
+          Gift cards never expire. They're delivered by email within an hour of payment
+          confirmation. <a href="/customer-service/terms.html">Terms apply</a>.
+        </p>
+      </form>
+    </div>
+
+    <section class="gc-howto">
+      <div class="gc-howto__item">
+        <div class="gc-howto__num">1</div>
+        <h3>Pick an amount</h3>
+        <p>Choose from preset values or enter any amount between ₱100 and ₱50,000.</p>
+      </div>
+      <div class="gc-howto__item">
+        <div class="gc-howto__num">2</div>
+        <h3>Add a message</h3>
+        <p>Personalize it with their name and a note. Optional but appreciated.</p>
+      </div>
+      <div class="gc-howto__item">
+        <div class="gc-howto__num">3</div>
+        <h3>They redeem online</h3>
+        <p>Recipients get a unique code by email. Apply at checkout, anytime.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <div data-component="footer"></div>
+
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+  <script type="module" src="/js/wishlist.js"></script>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+
+    // ── State ────────────────────────────────────────────────────────
+    let selectedAmount = 1000; // matches the default-active amount button
+
+    // ── Helpers ──────────────────────────────────────────────────────
+    function formatPHP(n) {
+      return '₱' + Number(n).toLocaleString('en-PH',
+        { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    // Generate a customer-shareable code like "DU-A4F2-9X7B".
+    // Uses Web Crypto for unbiased random characters from a friendly alphabet.
+    function generateCode() {
+      // Skip ambiguous chars (0/O, 1/I/L) so codes are easy to read aloud
+      const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+      const buf = new Uint8Array(8);
+      crypto.getRandomValues(buf);
+      let body = '';
+      for (let i = 0; i < buf.length; i++) {
+        body += alphabet[buf[i] % alphabet.length];
+        if (i === 3) body += '-';
+      }
+      return `DU-${body}`;
+    }
+
+    // ── Preview live-update ──────────────────────────────────────────
+    const previewAmount = document.getElementById('previewAmount');
+    const previewTo     = document.getElementById('previewTo');
+
+    function refreshPreview() {
+      previewAmount.textContent = formatPHP(selectedAmount);
+      const name = document.getElementById('recipientName').value.trim();
+      const from = document.getElementById('senderName').value.trim();
+      const msg  = document.getElementById('message').value.trim();
+      if (name && from) {
+        previewTo.textContent = `For ${name}${msg ? ' — ' + msg : ''}${from ? '. From ' + from + '.' : ''}`;
+      } else {
+        previewTo.textContent = 'For someone who appreciates the craft.';
+      }
+    }
+
+    // ── Amount selection ─────────────────────────────────────────────
+    const amounts   = document.getElementById('gcAmounts');
+    const customRow = document.getElementById('gcCustomRow');
+    const customAmt = document.getElementById('gcCustomAmount');
+
+    amounts.addEventListener('click', (e) => {
+      const btn = e.target.closest('.gc-amount-btn');
+      if (!btn) return;
+      amounts.querySelectorAll('.gc-amount-btn').forEach(b =>
+        b.classList.toggle('is-active', b === btn));
+
+      if (btn.dataset.amt === 'custom') {
+        customRow.hidden = false;
+        customAmt.focus();
+        selectedAmount = Number(customAmt.value) || 0;
+      } else {
+        customRow.hidden = true;
+        selectedAmount = Number(btn.dataset.amt);
+      }
+      refreshPreview();
+    });
+
+    customAmt.addEventListener('input', () => {
+      selectedAmount = Number(customAmt.value) || 0;
+      refreshPreview();
+    });
+
+    // Live refresh on the text inputs that show up on the preview
+    ['recipientName', 'senderName', 'message'].forEach(id =>
+      document.getElementById(id).addEventListener('input', refreshPreview));
+
+    // ── Submit ───────────────────────────────────────────────────────
+    const form    = document.getElementById('gcForm');
+    const errorEl = document.getElementById('gcError');
+    const okEl    = document.getElementById('gcSuccess');
+    const btn     = document.getElementById('purchaseBtn');
+
+    function showError(msg) { errorEl.textContent = msg; errorEl.hidden = false; okEl.hidden = true; }
+    function clearMessages() { errorEl.hidden = true; okEl.hidden = true; }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearMessages();
+
+      const recipientName  = document.getElementById('recipientName').value.trim();
+      const recipientEmail = document.getElementById('recipientEmail').value.trim();
+      const senderName     = document.getElementById('senderName').value.trim();
+      const purchaserEmail = document.getElementById('purchaserEmail').value.trim();
+      const message        = document.getElementById('message').value.trim();
+
+      if (!recipientName || !recipientEmail || !senderName || !purchaserEmail) {
+        showError('Please fill in all required fields.');
+        return;
+      }
+      if (!Number.isFinite(selectedAmount) || selectedAmount < 100) {
+        showError('Gift card amount must be at least ₱100.');
+        return;
+      }
+      if (selectedAmount > 50000) {
+        showError('Gift cards are capped at ₱50,000.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Processing…';
+
+      const code = generateCode();
+      const { error } = await supabase.from('gift_cards').insert({
+        code,
+        amount:          selectedAmount,
+        balance:         selectedAmount,
+        recipient_name:  recipientName,
+        recipient_email: recipientEmail,
+        sender_name:     senderName,
+        message:         message || null,
+        purchaser_email: purchaserEmail,
+        status:          'pending',
+      });
+
+      btn.disabled = false;
+      btn.textContent = 'Buy Gift Card';
+
+      if (error) {
+        // Unique-violation on code is astronomically unlikely but worth handling
+        if (error.code === '23505') {
+          showError('Hit a code collision — please try again.');
+        } else {
+          showError(error.message || 'Could not process the gift card.');
+        }
+        return;
+      }
+
+      // For Phase 5 we mark the card 'pending' and tell the customer it's
+      // reserved. Payment integration + automated email delivery comes next.
+      form.hidden = true;
+      okEl.innerHTML = `
+        <strong>Thank you!</strong> Your ${formatPHP(selectedAmount)} gift card has been
+        reserved with code <code style="background: var(--color-white); padding: 0.15rem 0.4rem; border-radius: 2px;">${code}</code>.
+        We'll send you a payment link at <strong>${purchaserEmail}</strong> shortly.
+        Once paid, the card will be emailed to <strong>${recipientEmail}</strong>.
+      `;
+      okEl.hidden = false;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Initial preview render
+    refreshPreview();
+  </script>
+
+</body>
+</html>

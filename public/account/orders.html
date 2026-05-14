@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order History — Ducks Unlimited</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    .orders-back {
+      display: inline-block;
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      text-decoration: none;
+      margin-bottom: var(--space-md);
+    }
+    .orders-back:hover { color: var(--color-primary); }
+
+    .order-card {
+      background: var(--color-white);
+      border: 1px solid var(--color-border-light);
+      padding: var(--space-md);
+      margin-bottom: var(--space);
+    }
+
+    .order-card__head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding-bottom: var(--space);
+      border-bottom: 1px solid var(--color-border-light);
+      margin-bottom: var(--space);
+    }
+
+    .order-meta { font-size: 0.85rem; color: var(--color-text-muted); }
+    .order-meta strong { color: var(--color-text); font-weight: 500; }
+    .order-meta-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-text-light);
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .order-status {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.3rem 0.7rem;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border-radius: var(--radius-pill);
+      align-self: flex-start;
+    }
+
+    .order-status--paid       { background: var(--color-success-bg); color: var(--color-success); }
+    .order-status--packed     { background: var(--color-bg-warm);    color: var(--color-text); }
+    .order-status--pending    { background: var(--color-warning-bg); color: var(--color-warning); }
+    .order-status--shipped    { background: #e6efff;                 color: #2a4a8b; }
+    .order-status--delivered  { background: var(--color-success-bg); color: var(--color-success); }
+    .order-status--cancelled,
+    .order-status--failed     { background: var(--color-error-bg);   color: var(--color-error); }
+
+    .order-items { display: flex; flex-direction: column; gap: 0.6rem; }
+
+    .order-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      color: var(--color-text);
+    }
+
+    .order-item__name { color: var(--color-text); }
+    .order-item__meta { color: var(--color-text-muted); font-size: 0.8rem; }
+
+    .order-card__foot {
+      display: flex;
+      justify-content: space-between;
+      padding-top: var(--space);
+      border-top: 1px solid var(--color-border-light);
+      margin-top: var(--space);
+      font-size: 0.95rem;
+    }
+
+    .order-card__foot strong {
+      font-family: var(--font-heading);
+      font-size: 1.1rem;
+      color: var(--color-primary);
+    }
+
+    .orders-empty {
+      text-align: center;
+      padding: var(--space-2xl) var(--space-md);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .orders-empty h2 {
+      font-family: var(--font-heading);
+      font-size: 1.75rem;
+      color: var(--color-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .orders-empty p { color: var(--color-text-muted); margin-bottom: var(--space-md); }
+
+    @media (min-width: 768px) {
+      .orders-list { max-width: 800px; margin: 0 auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <div data-component="nav"></div>
+
+  <main class="container account-shell">
+
+    <a href="/account/" class="orders-back">← Back to account</a>
+
+    <div class="account-header">
+      <p class="eyebrow">Order History</p>
+      <h1>My Orders</h1>
+      <p class="account-header__sub" id="ordersSub">Loading…</p>
+    </div>
+
+    <div class="orders-list" id="ordersList"></div>
+
+  </main>
+
+  <div data-component="footer"></div>
+
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+  <script type="module" src="/js/wishlist.js"></script>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+    import { requireSignIn } from '/js/auth.js';
+
+    const user = await requireSignIn();
+    if (!user) return;
+
+    const list = document.getElementById('ordersList');
+    const sub  = document.getElementById('ordersSub');
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function formatPrice(n) {
+      return '₱' + Number(n).toLocaleString('en-PH',
+        { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function formatDate(iso) {
+      return new Date(iso).toLocaleDateString('en-PH',
+        { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    function renderEmpty() {
+      sub.textContent = '';
+      list.innerHTML = `
+        <div class="orders-empty">
+          <h2>No orders yet</h2>
+          <p>When you place your first order, it'll show up here.</p>
+          <a href="/shop.html" class="btn btn-primary">Start Shopping</a>
+        </div>
+      `;
+    }
+
+    // Pick a sensible status badge from the two lifecycle columns.
+    //   - "failed" payments take priority (red)
+    //   - otherwise show the fulfillment stage if the order is paid
+    //   - else fall back to the payment status (e.g. "pending")
+    function deriveStatus(o) {
+      if (o.payment_status === 'failed')      return { key: 'failed',    label: 'Payment Failed' };
+      if (o.payment_status === 'pending')     return { key: 'pending',   label: 'Awaiting Payment' };
+      // Paid orders → show fulfillment progress
+      switch (o.fulfillment_status) {
+        case 'packed':    return { key: 'packed',    label: 'Packed' };
+        case 'shipped':   return { key: 'shipped',   label: 'Shipped' };
+        case 'delivered': return { key: 'delivered', label: 'Delivered' };
+        default:          return { key: 'paid',      label: 'Paid' };
+      }
+    }
+
+    async function load() {
+      // Orders are filtered by email (orders table doesn't have user_id yet
+      // — it's keyed by customer_email which we capture at checkout).
+      // order_items has only variant_id + price_at_purchase, so we join
+      // variants → products to get the human-readable name + color/size.
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          id, order_number, payment_status, fulfillment_status,
+          total_amount, created_at,
+          order_items (
+            quantity, price_at_purchase,
+            variants ( color, size, products ( name ) )
+          )
+        `)
+        .eq('customer_email', user.email)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error(error);
+        sub.textContent = '';
+        list.innerHTML = '<p style="text-align:center;color:#777;">Could not load orders. Please refresh.</p>';
+        return;
+      }
+
+      if (!data || data.length === 0) { renderEmpty(); return; }
+
+      sub.textContent = `${data.length} ${data.length === 1 ? 'order' : 'orders'}`;
+
+      list.innerHTML = data.map(o => {
+        const status = deriveStatus(o);
+        return `
+          <article class="order-card">
+            <header class="order-card__head">
+              <div>
+                <span class="order-meta-label">Order</span>
+                <div class="order-meta"><strong>#${escapeHtml(o.order_number ?? o.id.slice(0, 8))}</strong></div>
+              </div>
+              <div>
+                <span class="order-meta-label">Placed</span>
+                <div class="order-meta">${escapeHtml(formatDate(o.created_at))}</div>
+              </div>
+              <span class="order-status order-status--${escapeHtml(status.key)}">${escapeHtml(status.label)}</span>
+            </header>
+
+            <div class="order-items">
+              ${(o.order_items ?? []).map(item => {
+                const v = item.variants ?? {};
+                const productName = v.products?.name ?? 'Product';
+                const variantLabel = [v.color, v.size].filter(Boolean).join(' · ');
+                return `
+                  <div class="order-item">
+                    <div>
+                      <div class="order-item__name">${escapeHtml(productName)}</div>
+                      <div class="order-item__meta">
+                        ${variantLabel ? escapeHtml(variantLabel) + ' · ' : ''}Qty ${item.quantity}
+                      </div>
+                    </div>
+                    <div>${formatPrice(Number(item.price_at_purchase) * item.quantity)}</div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+
+            <div class="order-card__foot">
+              <span>Total</span>
+              <strong>${formatPrice(o.total_amount)}</strong>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    load();
+  </script>
+
+</body>
+</html>

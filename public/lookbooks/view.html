@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lookbook — Ducks Unlimited</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    /* ── Hero ──────────────────────────────────────────────────────── */
+    .lb-hero {
+      position: relative;
+      height: 80vh;
+      min-height: 480px;
+      overflow: hidden;
+      color: var(--color-white);
+      background: var(--color-primary);
+    }
+
+    .lb-hero img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .lb-hero__overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.55));
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: var(--space-2xl) var(--space-md);
+      text-align: center;
+    }
+
+    .lb-hero__date {
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 0.75rem;
+    }
+
+    .lb-hero__title {
+      font-family: var(--font-heading);
+      font-size: var(--type-display);
+      font-weight: 400;
+      letter-spacing: var(--ls-tight);
+      line-height: 1.02;
+      margin-bottom: 0.5rem;
+    }
+
+    .lb-hero__sub {
+      font-size: 1.1rem;
+      max-width: 640px;
+      margin: 0 auto;
+      line-height: 1.6;
+      opacity: 0.92;
+    }
+
+    /* ── Intro paragraph ───────────────────────────────────────────── */
+    .lb-intro {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: var(--space-2xl) var(--space-md);
+      text-align: center;
+      color: var(--color-text);
+      font-size: 1.1rem;
+      line-height: 1.85;
+    }
+
+    /* ── Scene (full-bleed photo with hotspots) ───────────────────── */
+    .lb-scene {
+      position: relative;
+      width: 100%;
+      max-width: 1440px;
+      margin: 0 auto var(--space-lg);
+    }
+
+    .lb-scene img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .lb-scene__caption {
+      text-align: center;
+      padding: 1rem var(--space-md) 0;
+      font-family: var(--font-heading);
+      font-size: 1.15rem;
+      color: var(--color-primary);
+      letter-spacing: 0.01em;
+      font-style: italic;
+    }
+
+    /* ── Hotspot dot ───────────────────────────────────────────────── */
+    .lb-hotspot {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
+      cursor: pointer;
+      transform: translate(-50%, -50%);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+      z-index: 2;
+    }
+
+    .lb-hotspot::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.6);
+      animation: lb-pulse 1.8s ease-out infinite;
+    }
+
+    .lb-hotspot::before {
+      content: '+';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-body);
+      color: var(--color-text);
+      font-size: 1.05rem;
+      line-height: 1;
+      font-weight: 300;
+    }
+
+    .lb-hotspot:hover {
+      transform: translate(-50%, -50%) scale(1.15);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+    }
+
+    @keyframes lb-pulse {
+      0%   { transform: scale(1);   opacity: 0.7; }
+      100% { transform: scale(2);   opacity: 0; }
+    }
+
+    /* ── Shop-the-Look drawer (right slide-out) ─────────────────── */
+    .stl-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .stl-backdrop.is-open { opacity: 1; pointer-events: auto; }
+
+    .stl-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      max-width: 440px;
+      height: 100vh;
+      background: var(--color-white);
+      z-index: 301;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: -8px 0 24px rgba(0,0,0,0.1);
+    }
+
+    .stl-drawer.is-open { transform: translateX(0); }
+
+    .stl-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md);
+      border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .stl-head__title {
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+    }
+
+    .stl-close {
+      background: none;
+      border: none;
+      font-size: 1.6rem;
+      line-height: 1;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+    }
+    .stl-close:hover { color: var(--color-primary); }
+
+    .stl-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-md);
+    }
+
+    .stl-image {
+      aspect-ratio: 4 / 5;
+      background: var(--color-bg-warm);
+      overflow: hidden;
+      margin-bottom: var(--space-md);
+    }
+    .stl-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .stl-category {
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .stl-name {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--color-primary);
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+    }
+
+    .stl-price {
+      font-size: 1rem;
+      color: var(--color-text);
+      letter-spacing: 0.04em;
+      margin-bottom: var(--space);
+    }
+
+    .stl-desc {
+      color: var(--color-text);
+      font-size: 0.9rem;
+      line-height: 1.7;
+      margin-bottom: var(--space-md);
+    }
+
+    .stl-actions {
+      padding: var(--space-md);
+      border-top: 1px solid var(--color-border-light);
+      background: var(--color-bg-warm);
+    }
+
+    .stl-actions .btn {
+      border-radius: 0;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      padding: 0.95rem;
+    }
+
+    /* ── Footer CTA (Shop the full collection) ────────────────────── */
+    .lb-cta {
+      padding: var(--space-2xl) var(--space-md);
+      text-align: center;
+      background: var(--color-primary);
+      color: var(--color-white);
+    }
+
+    .lb-cta h2 {
+      font-family: var(--font-heading);
+      font-size: var(--type-display-sm);
+      color: var(--color-white);
+      margin-bottom: 0.75rem;
+      font-weight: 400;
+      letter-spacing: var(--ls-tight);
+    }
+
+    .lb-cta p {
+      max-width: 480px;
+      margin: 0 auto var(--space-md);
+      opacity: 0.9;
+    }
+
+    .lb-error {
+      text-align: center;
+      padding: var(--space-2xl) var(--space-md);
+    }
+
+    .lb-error h2 {
+      font-family: var(--font-heading);
+      font-size: 1.75rem;
+      color: var(--color-primary);
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div data-component="nav"></div>
+
+  <main id="lookbookRoot">
+    <!-- Filled by script -->
+    <div class="lb-error" id="loadingState">
+      <p style="color: #777;">Loading lookbook…</p>
+    </div>
+  </main>
+
+  <!-- Shop the Look drawer -->
+  <div class="stl-backdrop" id="stlBackdrop"></div>
+  <aside class="stl-drawer" id="stlDrawer" aria-label="Shop the look" hidden>
+    <header class="stl-head">
+      <span class="stl-head__title">Shop the Look</span>
+      <button type="button" class="stl-close" id="stlClose" aria-label="Close">×</button>
+    </header>
+    <div class="stl-body" id="stlBody"></div>
+    <div class="stl-actions" id="stlActions" hidden>
+      <a class="btn btn-primary btn-block" id="stlViewLink" href="#">View Full Details</a>
+    </div>
+  </aside>
+
+  <div data-component="footer"></div>
+
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+  <script type="module" src="/js/wishlist.js"></script>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+
+    const root      = document.getElementById('lookbookRoot');
+    const stlBack   = document.getElementById('stlBackdrop');
+    const stlDraw   = document.getElementById('stlDrawer');
+    const stlBody   = document.getElementById('stlBody');
+    const stlActions= document.getElementById('stlActions');
+    const stlView   = document.getElementById('stlViewLink');
+    const stlClose  = document.getElementById('stlClose');
+
+    const CATEGORY_LABELS = {
+      polo: 'Polo Shirts', 't-shirt': 'T-Shirts',
+      shorts: 'Shorts', pants: 'Pants', others: 'Others',
+    };
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function formatPrice(n) {
+      return '₱' + Number(n).toLocaleString('en-PH',
+        { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function formatMonthYear(iso) {
+      if (!iso) return '';
+      return new Date(iso).toLocaleDateString('en-PH', { month: 'long', year: 'numeric' });
+    }
+
+    function showError(title, msg) {
+      root.innerHTML = `
+        <div class="lb-error">
+          <h2>${escapeHtml(title)}</h2>
+          <p style="color:#777;">${escapeHtml(msg)}</p>
+          <p><a href="/lookbooks/" class="btn btn-outline-dark" style="margin-top:1rem;">Back to Lookbooks</a></p>
+        </div>
+      `;
+    }
+
+    // ── Load lookbook + scenes + hotspots in nested queries ─────────────
+    async function loadLookbook(slug) {
+      const { data, error } = await supabase
+        .from('lookbooks')
+        .select(`
+          id, slug, title, subtitle, hero_image, intro, published_at,
+          lookbook_scenes (
+            id, image_url, caption, display_order,
+            lookbook_hotspots (
+              id, x_percent, y_percent, label,
+              products ( id, name, base_price, category, description,
+                product_images ( image_url, is_primary, display_order ) )
+            )
+          )
+        `)
+        .eq('slug', slug)
+        .single();
+
+      if (error || !data) { console.error(error); return null; }
+      return data;
+    }
+
+    function pickPrimaryImage(images) {
+      if (!images || images.length === 0) return null;
+      const primary = images.find(i => i.is_primary);
+      if (primary) return primary.image_url;
+      return [...images].sort((a,b) => a.display_order - b.display_order)[0].image_url;
+    }
+
+    // ── Render the lookbook page ─────────────────────────────────────────
+    function render(lb) {
+      const scenes = [...(lb.lookbook_scenes ?? [])]
+        .sort((a,b) => a.display_order - b.display_order);
+
+      root.innerHTML = `
+        <section class="lb-hero">
+          <img src="${escapeHtml(lb.hero_image)}" alt="${escapeHtml(lb.title)}" />
+          <div class="lb-hero__overlay">
+            ${lb.published_at ? `<span class="lb-hero__date">${escapeHtml(formatMonthYear(lb.published_at))}</span>` : ''}
+            <h1 class="lb-hero__title">${escapeHtml(lb.title)}</h1>
+            ${lb.subtitle ? `<p class="lb-hero__sub">${escapeHtml(lb.subtitle)}</p>` : ''}
+          </div>
+        </section>
+
+        ${lb.intro ? `<section class="lb-intro">${escapeHtml(lb.intro)}</section>` : ''}
+
+        <div>
+          ${scenes.map(scene => `
+            <figure class="lb-scene" data-scene="${escapeHtml(scene.id)}">
+              <img src="${escapeHtml(scene.image_url)}" alt="" loading="lazy" />
+              ${(scene.lookbook_hotspots ?? []).map(h => `
+                <button type="button"
+                        class="lb-hotspot"
+                        style="left: ${Number(h.x_percent)}%; top: ${Number(h.y_percent)}%;"
+                        data-hotspot="${escapeHtml(h.id)}"
+                        aria-label="Shop ${escapeHtml(h.label ?? h.products?.name ?? 'this piece')}"></button>
+              `).join('')}
+              ${scene.caption ? `<figcaption class="lb-scene__caption">${escapeHtml(scene.caption)}</figcaption>` : ''}
+            </figure>
+          `).join('')}
+        </div>
+
+        <section class="lb-cta">
+          <h2>Shop the full collection</h2>
+          <p>Every piece featured in this lookbook is part of our current season.</p>
+          <a href="/shop.html" class="btn btn-outline-light">Shop All</a>
+        </section>
+      `;
+
+      // Build a hotspot lookup so click handler can find the product fast
+      const hotspots = new Map();
+      for (const scene of scenes) {
+        for (const h of (scene.lookbook_hotspots ?? [])) {
+          hotspots.set(h.id, h);
+        }
+      }
+
+      root.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-hotspot]');
+        if (!btn) return;
+        const h = hotspots.get(btn.getAttribute('data-hotspot'));
+        if (!h || !h.products) return;
+        openDrawer(h);
+      });
+    }
+
+    // ── Drawer ───────────────────────────────────────────────────────────
+    function openDrawer(hotspot) {
+      const p = hotspot.products;
+      const img = pickPrimaryImage(p.product_images);
+      const category = CATEGORY_LABELS[p.category] ?? p.category;
+      const heading  = hotspot.label || p.name;
+
+      stlBody.innerHTML = `
+        <div class="stl-image">
+          ${img ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(p.name)}" />` : ''}
+        </div>
+        <p class="stl-category">${escapeHtml(category)}</p>
+        <h2 class="stl-name">${escapeHtml(heading)}</h2>
+        <p class="stl-price">${formatPrice(p.base_price)}</p>
+        ${p.description ? `<p class="stl-desc">${escapeHtml(p.description)}</p>` : ''}
+      `;
+
+      stlView.href = `/product.html?id=${encodeURIComponent(p.id)}`;
+      stlActions.hidden = false;
+
+      stlDraw.hidden = false;
+      requestAnimationFrame(() => {
+        stlDraw.classList.add('is-open');
+        stlBack.classList.add('is-open');
+      });
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeDrawer() {
+      stlDraw.classList.remove('is-open');
+      stlBack.classList.remove('is-open');
+      document.body.style.overflow = '';
+      setTimeout(() => { stlDraw.hidden = true; }, 300);
+    }
+
+    stlClose.addEventListener('click', closeDrawer);
+    stlBack.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !stlDraw.hidden) closeDrawer();
+    });
+
+    // ── Init ────────────────────────────────────────────────────────────
+    async function init() {
+      const slug = new URLSearchParams(window.location.search).get('slug');
+      if (!slug) {
+        showError('No lookbook selected', 'Please pick one from the lookbooks index.');
+        return;
+      }
+      const lb = await loadLookbook(slug);
+      if (!lb || !lb.published_at) {
+        showError('Lookbook not found', 'This lookbook may not be published yet.');
+        return;
+      }
+      document.title = `${lb.title} — Ducks Unlimited`;
+      render(lb);
+    }
+
+    init();
+  </script>
+
+</body>
+</html>
