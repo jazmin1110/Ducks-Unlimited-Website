@@ -178,10 +178,6 @@
     const btn      = document.getElementById('loginBtn');
     const errorMsg = document.getElementById('errorMsg');
 
-    // If admin is already logged in, skip the login page
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) window.location.href = '/admin/dashboard.html';
-
     function showError(message) {
       errorMsg.textContent = message;
       errorMsg.classList.add('visible');
@@ -190,6 +186,40 @@
     function clearError() {
       errorMsg.textContent = '';
       errorMsg.classList.remove('visible');
+    }
+
+    // Surface why we got bounced back here, if applicable
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('reason') === 'not-admin') {
+      showError('That account is not an admin. Please sign in with an admin account.');
+    } else if (params.get('reason') === 'error') {
+      showError('Could not verify admin access. Please try logging in again.');
+    }
+
+    // Check whether the current visitor is an admin (vs. a regular customer).
+    // We only auto-redirect to /admin/dashboard.html when they actually have
+    // an admin_users row — otherwise we sign them out and let them log in
+    // with the right account.
+    async function checkAdmin(userId) {
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+      if (error) return false;
+      return !!data;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      const isAdmin = await checkAdmin(session.user.id);
+      if (isAdmin) {
+        window.location.href = '/admin/dashboard.html';
+      } else {
+        // Customer account is signed in — sign them out so the login form
+        // works cleanly without bouncing them back to the customer site.
+        await supabase.auth.signOut();
+      }
     }
 
     form.addEventListener('submit', async (e) => {
@@ -204,21 +234,28 @@
         return;
       }
 
-      // Disable button while request is in flight
       btn.disabled = true;
       btn.textContent = 'Logging in…';
 
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
-        // Show a friendly message — don't expose raw Supabase error strings
         showError('Incorrect email or password. Please try again.');
         btn.disabled = false;
         btn.textContent = 'Log In';
         return;
       }
 
-      // Login succeeded — go to dashboard
+      // Signed in — but only let actual admins through.
+      const isAdmin = await checkAdmin(data.user.id);
+      if (!isAdmin) {
+        await supabase.auth.signOut();
+        showError('That account is not an admin. Please use an admin account.');
+        btn.disabled = false;
+        btn.textContent = 'Log In';
+        return;
+      }
+
       window.location.href = '/admin/dashboard.html';
     });
   </script>

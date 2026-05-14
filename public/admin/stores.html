@@ -153,14 +153,11 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { requireAdmin, adminSignOut } from '/admin/admin-guard.js';
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { window.location.href = '/admin/index.html'; }
+    await requireAdmin();
 
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      await supabase.auth.signOut();
-      window.location.href = '/admin/index.html';
-    });
+    document.getElementById('logoutBtn').addEventListener('click', adminSignOut);
 
     function escapeHtml(s) {
       return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
