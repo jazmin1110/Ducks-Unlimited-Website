@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stores — Admin · Ducks Unlimited</title>
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    body { background: var(--color-bg-warm); }
+
+    nav.admin-nav { background: var(--color-primary); color: var(--color-white); padding: 0.85rem var(--space-md); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
+    .admin-nav a, .admin-nav button { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; }
+    .admin-nav a:hover, .admin-nav a.active { color: var(--color-accent); }
+    .admin-nav__brand { font-family: var(--font-heading); color: var(--color-white); font-size: 1rem; letter-spacing: 0.14em; }
+    .admin-nav__links { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; list-style: none; padding: 0; margin: 0; }
+    .admin-nav__logout { background: none; border: 1px solid rgba(255,255,255,0.3); padding: 0.35rem 0.8rem; cursor: pointer; }
+    .admin-nav__logout:hover { border-color: var(--color-accent); color: var(--color-accent); }
+
+    main.admin-main { padding: var(--space-md); max-width: 1100px; margin: 0 auto; }
+    .admin-h1 { font-family: var(--font-heading); color: var(--color-primary); font-size: 2rem; margin-bottom: 0.5rem; }
+    .admin-sub { color: var(--color-text-muted); margin-bottom: var(--space-md); }
+    .admin-panel { background: var(--color-white); padding: var(--space-md); margin-bottom: var(--space-md); border: 1px solid var(--color-border-light); }
+    .admin-panel h2 { font-family: var(--font-heading); font-size: 1.3rem; color: var(--color-primary); margin-bottom: var(--space); }
+
+    .form-row { display: grid; gap: var(--space-sm); grid-template-columns: 1fr; margin-bottom: var(--space-sm); }
+    @media (min-width: 768px) {
+      .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+      .form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    }
+
+    .store-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space);
+      padding: var(--space) 0;
+      border-bottom: 1px solid var(--color-border-light);
+    }
+    @media (min-width: 768px) { .store-row { grid-template-columns: 1fr auto; } }
+    .store-row:last-child { border-bottom: none; }
+
+    .store-row h3 { font-family: var(--font-heading); font-size: 1.1rem; color: var(--color-primary); margin-bottom: 0.25rem; }
+    .store-row p  { color: var(--color-text-muted); font-size: 0.88rem; margin: 0; }
+
+    .store-row .actions { display: flex; gap: 0.5rem; align-self: start; }
+
+    .row-actions button {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      background: none;
+      border: 1px solid var(--color-border);
+      cursor: pointer;
+      padding: 0.4rem 0.75rem;
+    }
+    .row-actions button:hover { color: var(--color-primary); border-color: var(--color-primary); }
+    .row-actions .danger:hover { color: var(--color-error); border-color: var(--color-error); }
+
+    .hours-grid { display: grid; grid-template-columns: 80px 1fr; gap: 0.4rem; align-items: center; margin-bottom: 0.4rem; }
+    .hours-grid label { font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted); }
+
+    .help-text { font-size: 0.78rem; color: var(--color-text-muted); margin-top: 0.5rem; }
+    .actions-row { display: flex; gap: var(--space-sm); margin-top: var(--space); flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+
+  <nav class="admin-nav">
+    <a class="admin-nav__brand" href="/admin/dashboard.html">DU Admin</a>
+    <ul class="admin-nav__links">
+      <li><a href="/admin/dashboard.html">Dashboard</a></li>
+      <li><a href="/admin/products.html">Products</a></li>
+      <li><a href="/admin/inventory.html">Inventory</a></li>
+      <li><a href="/admin/orders.html">Orders</a></li>
+      <li><a href="/admin/lookbooks.html">Lookbooks</a></li>
+      <li><a href="/admin/journal.html">Journal</a></li>
+      <li><a href="/admin/gift-cards.html">Gift Cards</a></li>
+      <li><a href="/admin/stores.html" class="active">Stores</a></li>
+      <li><button class="admin-nav__logout" id="logoutBtn">Log Out</button></li>
+    </ul>
+  </nav>
+
+  <main class="admin-main">
+    <h1 class="admin-h1">Stores</h1>
+    <p class="admin-sub">Physical locations shown on /stores.html. Toggle is_active to hide a store without deleting it.</p>
+
+    <section class="admin-panel">
+      <h2 id="formTitle">Add New Store</h2>
+      <form id="storeForm">
+        <input type="hidden" id="storeId">
+
+        <div class="form-row cols-2">
+          <div class="field"><label class="field-label" for="name">Name *</label><input class="input" id="name" required></div>
+          <div class="field"><label class="field-label" for="display_order">Display order</label><input class="input" type="number" id="display_order" value="0"></div>
+        </div>
+
+        <div class="form-row">
+          <div class="field"><label class="field-label" for="address">Street Address *</label><input class="input" id="address" required></div>
+        </div>
+
+        <div class="form-row cols-3">
+          <div class="field"><label class="field-label" for="city">City *</label><input class="input" id="city" required></div>
+          <div class="field"><label class="field-label" for="province">Province</label><input class="input" id="province"></div>
+          <div class="field"><label class="field-label" for="postal_code">Postal Code</label><input class="input" id="postal_code"></div>
+        </div>
+
+        <div class="form-row cols-2">
+          <div class="field"><label class="field-label" for="phone">Phone</label><input class="input" id="phone"></div>
+          <div class="field"><label class="field-label" for="email">Email</label><input class="input" type="email" id="email"></div>
+        </div>
+
+        <div class="form-row cols-2">
+          <div class="field"><label class="field-label" for="lat">Latitude</label><input class="input" type="number" step="0.000001" id="lat" placeholder="14.6047"></div>
+          <div class="field"><label class="field-label" for="lng">Longitude</label><input class="input" type="number" step="0.000001" id="lng" placeholder="121.0411"></div>
+        </div>
+        <p class="help-text">Right-click on Google Maps → "What's here?" to grab precise lat/lng. Leave blank to fall back to address-based map search.</p>
+
+        <div class="form-row">
+          <div class="field"><label class="field-label" for="description">Description</label><textarea class="textarea" id="description" rows="3"></textarea></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label class="field-label" for="image_url">Hero Image URL</label><input class="input" id="image_url" placeholder="https://..."></div>
+        </div>
+
+        <label class="field-label" style="margin-top: var(--space);">Hours</label>
+        <p class="help-text" style="margin-top: 0;">Free-form per day (e.g. "10:00 – 20:00" or "Closed"). Leave blank to hide a row.</p>
+        <div id="hoursGrid">
+          <!-- 7 day inputs rendered by JS -->
+        </div>
+
+        <div class="form-row" style="margin-top: var(--space);">
+          <div class="field">
+            <label class="filter-check" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+              <input type="checkbox" id="is_active" checked>
+              <span>Active (shown on /stores.html)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="actions-row">
+          <button type="submit" class="btn btn-primary">Save Store</button>
+          <button type="button" class="btn btn-ghost" id="resetBtn">Reset form</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="admin-panel">
+      <h2>All Stores</h2>
+      <div id="storeList"><p style="color:#999;">Loading…</p></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { window.location.href = '/admin/index.html'; }
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.href = '/admin/index.html';
+    });
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const hoursGrid = document.getElementById('hoursGrid');
+    hoursGrid.innerHTML = DAYS.map(d => `
+      <div class="hours-grid">
+        <label for="hr_${d}">${d}</label>
+        <input class="input" id="hr_${d}" placeholder="10:00 – 20:00 or Closed">
+      </div>
+    `).join('');
+
+    function readHours() {
+      const out = {};
+      for (const d of DAYS) {
+        const v = document.getElementById(`hr_${d}`).value.trim();
+        if (v) out[d] = v;
+      }
+      return Object.keys(out).length ? out : null;
+    }
+
+    function writeHours(hours) {
+      const safe = hours && typeof hours === 'object' ? hours : {};
+      for (const d of DAYS) {
+        document.getElementById(`hr_${d}`).value = safe[d] ?? '';
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('storeForm').reset();
+      document.getElementById('storeId').value = '';
+      document.getElementById('formTitle').textContent = 'Add New Store';
+      document.getElementById('display_order').value = '0';
+      document.getElementById('is_active').checked = true;
+      writeHours(null);
+    }
+    document.getElementById('resetBtn').addEventListener('click', resetForm);
+
+    async function load() {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('*')
+        .order('display_order')
+        .order('name');
+
+      const list = document.getElementById('storeList');
+      if (error) { list.innerHTML = '<p style="color:red;">Error loading.</p>'; console.error(error); return; }
+      if (!data || data.length === 0) {
+        list.innerHTML = '<p style="color:#999;">No stores yet — add one above.</p>';
+        return;
+      }
+
+      list.innerHTML = data.map(s => `
+        <div class="store-row">
+          <div>
+            <h3>${escapeHtml(s.name)} ${s.is_active ? '' : '<small style="color:#999;font-weight:normal;">(hidden)</small>'}</h3>
+            <p>${escapeHtml(s.address)}, ${escapeHtml(s.city)}${s.province ? ', ' + escapeHtml(s.province) : ''}</p>
+            <p style="margin-top:0.25rem;">${escapeHtml(s.phone ?? '')}${s.email ? ' · ' + escapeHtml(s.email) : ''}</p>
+          </div>
+          <div class="actions row-actions">
+            <button data-edit="${escapeHtml(s.id)}">Edit</button>
+            <button data-delete="${escapeHtml(s.id)}" class="danger">Delete</button>
+          </div>
+        </div>
+      `).join('');
+
+      list.querySelectorAll('[data-edit]').forEach(b =>
+        b.addEventListener('click', () => edit(b.dataset.edit)));
+      list.querySelectorAll('[data-delete]').forEach(b =>
+        b.addEventListener('click', () => remove(b.dataset.delete)));
+    }
+
+    async function edit(id) {
+      const { data, error } = await supabase.from('stores').select('*').eq('id', id).single();
+      if (error || !data) { alert('Could not load store.'); return; }
+
+      document.getElementById('storeId').value     = data.id;
+      document.getElementById('name').value        = data.name ?? '';
+      document.getElementById('display_order').value = data.display_order ?? 0;
+      document.getElementById('address').value     = data.address ?? '';
+      document.getElementById('city').value        = data.city ?? '';
+      document.getElementById('province').value    = data.province ?? '';
+      document.getElementById('postal_code').value = data.postal_code ?? '';
+      document.getElementById('phone').value       = data.phone ?? '';
+      document.getElementById('email').value       = data.email ?? '';
+      document.getElementById('lat').value         = data.lat ?? '';
+      document.getElementById('lng').value         = data.lng ?? '';
+      document.getElementById('description').value = data.description ?? '';
+      document.getElementById('image_url').value   = data.image_url ?? '';
+      document.getElementById('is_active').checked = !!data.is_active;
+      writeHours(data.hours);
+
+      document.getElementById('formTitle').textContent = `Edit: ${data.name}`;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function remove(id) {
+      if (!confirm('Delete this store?')) return;
+      const { error } = await supabase.from('stores').delete().eq('id', id);
+      if (error) { alert('Delete failed: ' + error.message); return; }
+      load();
+    }
+
+    document.getElementById('storeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('storeId').value;
+      const payload = {
+        name:        document.getElementById('name').value.trim(),
+        display_order: Number(document.getElementById('display_order').value) || 0,
+        address:     document.getElementById('address').value.trim(),
+        city:        document.getElementById('city').value.trim(),
+        province:    document.getElementById('province').value.trim() || null,
+        postal_code: document.getElementById('postal_code').value.trim() || null,
+        phone:       document.getElementById('phone').value.trim() || null,
+        email:       document.getElementById('email').value.trim() || null,
+        lat:         document.getElementById('lat').value ? Number(document.getElementById('lat').value) : null,
+        lng:         document.getElementById('lng').value ? Number(document.getElementById('lng').value) : null,
+        description: document.getElementById('description').value.trim() || null,
+        image_url:   document.getElementById('image_url').value.trim() || null,
+        is_active:   document.getElementById('is_active').checked,
+        hours:       readHours(),
+        updated_at:  new Date().toISOString(),
+      };
+
+      let error;
+      if (id) {
+        ({ error } = await supabase.from('stores').update(payload).eq('id', id));
+      } else {
+        ({ error } = await supabase.from('stores').insert(payload));
+      }
+      if (error) { alert('Save failed: ' + error.message); return; }
+      alert('Saved.');
+      resetForm();
+      load();
+    });
+
+    load();
+  </script>
+</body>
+</html>
