@@ -32,23 +32,29 @@
     .breadcrumb__sep { margin: 0 0.4rem; color: var(--color-text-light); }
     .breadcrumb__current { color: var(--color-text); }
 
-    /* ── Two-column product layout ─────────────────────────────── */
+    /* ── Two-column product layout (RL-style editorial) ───────── */
 
     .product {
       display: grid;
       grid-template-columns: 1fr;
       gap: 1.5rem;
-      padding-block: 1rem 2.5rem;
+      padding-block: 1rem 3rem;
     }
 
-    /* ── Image gallery (left column) ───────────────────────────── */
+    /* ── Image gallery ─────────────────────────────────────────── */
+
+    .gallery {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
 
     .gallery__main {
-      aspect-ratio: 1 / 1.2;
+      aspect-ratio: 4 / 5;
       background: var(--color-bg-warm);
-      border-radius: var(--radius-lg);
       overflow: hidden;
       position: relative;
+      cursor: zoom-in;
     }
 
     .gallery__main img {
@@ -56,6 +62,12 @@
       height: 100%;
       object-fit: cover;
       display: block;
+      transition: transform 0.4s ease;
+    }
+
+    /* CSS-only zoom on hover (desktop only — disabled on touch) */
+    @media (hover: hover) {
+      .gallery__main:hover img { transform: scale(1.15); }
     }
 
     /* Branded placeholder when there are no images */
@@ -87,11 +99,10 @@
       letter-spacing: 0.16em;
     }
 
-    /* Thumbnail strip */
+    /* Thumbnail strip — horizontal on mobile, vertical on desktop */
     .gallery__thumbs {
       display: flex;
       gap: 0.5rem;
-      margin-top: 0.75rem;
       overflow-x: auto;
       scrollbar-width: none;
     }
@@ -100,14 +111,14 @@
     .gallery__thumb {
       flex-shrink: 0;
       width: 64px;
-      height: 64px;
-      border-radius: var(--radius);
-      border: 2px solid transparent;
+      height: 80px;
+      border: 1.5px solid transparent;
       overflow: hidden;
       cursor: pointer;
       padding: 0;
       background: var(--color-bg-warm);
-      transition: border-color 0.15s, transform 0.1s;
+      transition: border-color 0.15s, opacity 0.15s;
+      opacity: 0.7;
     }
 
     .gallery__thumb img {
@@ -117,36 +128,49 @@
       display: block;
     }
 
-    .gallery__thumb:hover { transform: scale(1.04); }
-    .gallery__thumb.is-active { border-color: var(--color-primary); }
+    .gallery__thumb:hover { opacity: 1; }
+    .gallery__thumb.is-active {
+      border-color: var(--color-primary);
+      opacity: 1;
+    }
 
     /* ── Product info (right column) ───────────────────────────── */
 
     .info__name {
       font-family: var(--font-heading);
-      font-size: 1.9rem;
-      font-weight: 600;
+      font-size: 2rem;
+      font-weight: 400;
       color: var(--color-primary);
-      line-height: 1.15;
-      margin-bottom: 0.5rem;
-      letter-spacing: 0.02em;
+      line-height: 1.1;
+      margin-bottom: 0.75rem;
+      letter-spacing: var(--ls-tight);
     }
 
     .info__category {
       display: inline-block;
       font-size: 0.7rem;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
       color: var(--color-text-muted);
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
     }
 
     .info__price {
-      font-family: var(--font-heading);
-      font-size: 1.5rem;
-      font-weight: 600;
+      font-family: var(--font-body);
+      font-size: 1.15rem;
+      font-weight: 500;
       color: var(--color-text);
+      letter-spacing: 0.04em;
       margin-bottom: 1.25rem;
+    }
+
+    .info__rule {
+      width: 48px;
+      height: 1px;
+      background: var(--color-accent);
+      margin: 0 0 1.25rem;
+      opacity: 0.7;
+      border: 0;
     }
 
     .info__short-desc {
@@ -396,14 +420,111 @@
       color: var(--color-text-light);
     }
 
-    /* ── Add to Cart button ────────────────────────────────────── */
+    /* ── Add to Cart + Wishlist row ───────────────────────────── */
+
+    .cta-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: stretch;
+    }
 
     .add-to-cart {
-      /* uses .btn .btn-primary .btn-lg .btn-block from style.css */
-      font-size: 1rem;
-      letter-spacing: 0.06em;
+      flex: 1;
+      font-size: 0.85rem;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
+      border-radius: 0;
     }
+
+    .wishlist-btn {
+      flex-shrink: 0;
+      width: 52px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--color-white);
+      border: 1.5px solid var(--color-border);
+      color: var(--color-text);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .wishlist-btn:hover {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .wishlist-btn.is-active {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    .wishlist-btn.is-active svg { fill: var(--color-primary); }
+
+    /* ── Product accordion (Details / Fit / Care) ─────────────── */
+
+    .accordion {
+      margin-top: 2rem;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .accordion__item {
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .accordion__header {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.1rem 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--color-text);
+      text-align: left;
+    }
+
+    .accordion__icon {
+      width: 12px;
+      height: 12px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .accordion__icon::before,
+    .accordion__icon::after {
+      content: '';
+      position: absolute;
+      background: var(--color-text);
+      transition: transform 0.2s;
+    }
+
+    .accordion__icon::before {
+      top: 50%; left: 0; right: 0; height: 1px; transform: translateY(-50%);
+    }
+
+    .accordion__icon::after {
+      top: 0; bottom: 0; left: 50%; width: 1px; transform: translateX(-50%);
+    }
+
+    .accordion__item.is-open .accordion__icon::after { transform: translateX(-50%) scaleY(0); }
+
+    .accordion__body {
+      padding-bottom: 1.25rem;
+      color: var(--color-text);
+      line-height: 1.75;
+      font-size: 0.9rem;
+      max-width: 60ch;
+      display: none;
+    }
+
+    .accordion__item.is-open .accordion__body { display: block; }
 
     /* ── Full description section ──────────────────────────────── */
 
@@ -426,40 +547,55 @@
     /* ── Related products ──────────────────────────────────────── */
 
     .related-section {
-      padding-block: 2.5rem;
+      padding-block: var(--space-2xl);
       border-top: 1px solid var(--color-border);
+      text-align: center;
     }
 
     .related-section h2 {
-      margin-bottom: 1.25rem;
-      text-align: center;
+      font-family: var(--font-heading);
+      font-size: var(--type-display-sm);
+      font-weight: 400;
+      color: var(--color-primary);
+      letter-spacing: var(--ls-tight);
+      margin: 0 auto 0.5rem;
+    }
+
+    .related-section__eyebrow {
+      font-size: var(--type-eyebrow);
+      letter-spacing: var(--ls-eyebrow);
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .related-section__rule {
+      width: 48px;
+      height: 1px;
+      background: var(--color-accent);
+      margin: 0.75rem auto 2.5rem;
+      opacity: 0.7;
+      border: 0;
     }
 
     .related-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 0.85rem;
+      gap: 1.5rem 1rem;
+      text-align: left;
     }
 
     .related-card {
       display: block;
       text-decoration: none;
       color: inherit;
-      background: var(--color-white);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      box-shadow: var(--shadow-sm);
-      transition: transform 0.15s, box-shadow 0.15s;
+      background: transparent;
     }
 
-    .related-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow);
-      text-decoration: none;
-    }
+    .related-card:hover { text-decoration: none; }
 
     .related-card__image {
-      aspect-ratio: 1 / 1.2;
+      aspect-ratio: 4 / 5;
       background: var(--color-bg-warm);
       overflow: hidden;
     }
@@ -469,23 +605,30 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: transform 0.5s ease;
     }
 
-    .related-card__body { padding: 0.75rem 0.9rem 1rem; }
+    .related-card:hover .related-card__image img { transform: scale(1.04); }
+
+    .related-card__body {
+      padding: 0.9rem 0.25rem 0;
+      text-align: center;
+    }
 
     .related-card__name {
       font-family: var(--font-heading);
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-weight: 600;
       color: var(--color-text);
-      margin: 0 0 0.2rem;
+      margin: 0 0 0.3rem;
       line-height: 1.25;
+      letter-spacing: 0.01em;
     }
 
     .related-card__price {
       font-size: 0.85rem;
-      color: var(--color-primary);
-      font-weight: 500;
+      color: var(--color-text-muted);
+      letter-spacing: 0.04em;
     }
 
     /* ── Skeleton state while data loads ───────────────────────── */
@@ -558,19 +701,54 @@
     /* ── Desktop layout (≥ 768px) ──────────────────────────────── */
 
     @media (min-width: 768px) {
+      /* Two-column layout: gallery (wider) on left, sticky info on right */
       .product {
-        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
         gap: 3rem;
         padding-block: 1.5rem 4rem;
+        align-items: start;
       }
 
-      .info__name { font-size: 2.4rem; }
-      .info__price { font-size: 1.75rem; }
+      /* Vertical thumbnail rail to the left of the main image */
+      .gallery {
+        display: grid;
+        grid-template-columns: 72px 1fr;
+        grid-template-rows: auto;
+        gap: 1rem;
+        align-items: start;
+      }
 
-      .gallery__thumbs { gap: 0.6rem; }
-      .gallery__thumb { width: 80px; height: 80px; }
+      .gallery__thumbs {
+        grid-column: 1;
+        grid-row: 1;
+        flex-direction: column;
+        gap: 0.6rem;
+        overflow-x: visible;
+        overflow-y: auto;
+        max-height: 720px;
+      }
 
-      .related-grid { grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+      .gallery__main {
+        grid-column: 2;
+        grid-row: 1;
+      }
+
+      .gallery__thumb {
+        width: 72px;
+        height: 90px;
+      }
+
+      .gallery__main { aspect-ratio: 4 / 5; }
+
+      /* Sticky info panel — scrolls with the page until it hits its own bottom */
+      .info {
+        position: sticky;
+        top: calc(var(--nav-total-h) + 16px);
+      }
+
+      .info__name { font-size: 2.5rem; }
+
+      .related-grid { grid-template-columns: repeat(4, 1fr); gap: 1.75rem; }
 
       .toast {
         left: auto;
@@ -583,7 +761,9 @@
     }
 
     @media (min-width: 1024px) {
-      .info__name { font-size: 2.8rem; }
+      .info__name { font-size: 3rem; }
+      .gallery { grid-template-columns: 88px 1fr; }
+      .gallery__thumb { width: 88px; height: 110px; }
     }
   </style>
 </head>
@@ -632,7 +812,9 @@
     </section>
 
     <section class="related-section" id="relatedSection" hidden>
-      <h2>You might also like</h2>
+      <p class="related-section__eyebrow">More from the Collection</p>
+      <h2>You May Also Like</h2>
+      <hr class="related-section__rule" />
       <div class="related-grid" id="relatedGrid"></div>
     </section>
 
@@ -648,10 +830,12 @@
   <!-- Scripts -->
   <script type="module" src="/js/components.js"></script>
   <script type="module" src="/js/cart.js"></script>
+  <script type="module" src="/js/wishlist.js"></script>
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
     import { addToCart } from '/js/cart.js';
+    import { toggleWishlist, isInWishlist } from '/js/wishlist.js';
 
     // ─────────────────────────────────────────────────────────────────
     // CONSTANTS + helpers
@@ -931,22 +1115,68 @@
               </div>
             </div>
 
-            <!-- Add to cart -->
-            <button type="button" class="btn btn-primary btn-lg btn-block add-to-cart" id="addToCartBtn" disabled>
-              Add to Cart
-            </button>
+            <!-- Add to cart + Wishlist heart -->
+            <div class="cta-row">
+              <button type="button" class="btn btn-primary btn-lg add-to-cart" id="addToCartBtn" disabled>
+                Add to Bag
+              </button>
+              <button type="button" class="wishlist-btn" id="wishlistBtn" aria-label="Add to wishlist" aria-pressed="false">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none"
+                     stroke="currentColor" stroke-width="1.6"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Details / Fit / Care accordion -->
+            <div class="accordion" id="accordion">
+              <div class="accordion__item">
+                <button type="button" class="accordion__header" aria-expanded="false">
+                  <span>Details</span><span class="accordion__icon" aria-hidden="true"></span>
+                </button>
+                <div class="accordion__body">
+                  ${p.description
+                    ? escapeHtml(p.description)
+                    : 'Long-staple Egyptian cotton, hand-finished in our Greenhills workshop. Designed to live in for years.'}
+                </div>
+              </div>
+              <div class="accordion__item">
+                <button type="button" class="accordion__header" aria-expanded="false">
+                  <span>Fit &amp; Sizing</span><span class="accordion__icon" aria-hidden="true"></span>
+                </button>
+                <div class="accordion__body">
+                  Classic regular fit. Model is 5'11" / 180cm and wears a size M.
+                  See our <a href="/size-guide.html">Size Guide</a> for measurements.
+                </div>
+              </div>
+              <div class="accordion__item">
+                <button type="button" class="accordion__header" aria-expanded="false">
+                  <span>Care</span><span class="accordion__icon" aria-hidden="true"></span>
+                </button>
+                <div class="accordion__body">
+                  Machine wash cold with similar colors. Tumble dry low or hang dry.
+                  Warm iron if needed. Do not bleach.
+                </div>
+              </div>
+              <div class="accordion__item">
+                <button type="button" class="accordion__header" aria-expanded="false">
+                  <span>Shipping &amp; Returns</span><span class="accordion__icon" aria-hidden="true"></span>
+                </button>
+                <div class="accordion__body">
+                  Free shipping on orders over ₱2,500 within Metro Manila.
+                  30-day returns on unworn items with tags. Visit our
+                  <a href="/customer-service/returns.html">Returns page</a> for details.
+                </div>
+              </div>
+            </div>
 
           </div>
         </section>
       `;
 
-      // Below-the-fold sections
-      const descSection = document.getElementById('descriptionSection');
-      const descBody    = document.getElementById('descriptionBody');
-      if (p.description) {
-        descBody.textContent = p.description;
-        descSection.hidden = false;
-      }
+      // Note: description now lives in the accordion's "Details" panel, so we
+      // intentionally leave the legacy #descriptionSection hidden.
 
       // Now wire up the interactive bits
       renderSwatches();
@@ -1206,6 +1436,30 @@
         if (n > max) n = max;
         state.quantity = n;
         renderQty();
+      });
+
+      // Accordion items — click header to toggle the body
+      document.getElementById('accordion').addEventListener('click', (e) => {
+        const header = e.target.closest('.accordion__header');
+        if (!header) return;
+        const item = header.closest('.accordion__item');
+        const isOpen = item.classList.toggle('is-open');
+        header.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      });
+
+      // Wishlist heart — toggle localStorage and visual state
+      const wishlistBtn = document.getElementById('wishlistBtn');
+      const productId = state.product.id;
+      const setWishlistVisual = (active) => {
+        wishlistBtn.classList.toggle('is-active', active);
+        wishlistBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        wishlistBtn.setAttribute('aria-label', active ? 'Remove from wishlist' : 'Add to wishlist');
+      };
+      setWishlistVisual(isInWishlist(productId));
+      wishlistBtn.addEventListener('click', () => {
+        const nowActive = toggleWishlist(productId);
+        setWishlistVisual(nowActive);
+        showToast(nowActive ? 'Added to wishlist' : 'Removed from wishlist');
       });
 
       // Add to cart
