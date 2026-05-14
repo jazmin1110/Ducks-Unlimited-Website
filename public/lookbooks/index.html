@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lookbooks — Ducks Unlimited</title>
+  <meta name="description" content="The World of Ducks Unlimited. Editorial lookbooks from our Greenhills workshop." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    .lookbook-header {
+      text-align: center;
+      padding: var(--space-2xl) var(--space-md) var(--space-lg);
+      background: var(--color-white);
+    }
+
+    .lookbook-header h1 {
+      font-family: var(--font-heading);
+      font-size: var(--type-display);
+      font-weight: 400;
+      color: var(--color-primary);
+      letter-spacing: var(--ls-tight);
+      line-height: 1.05;
+      margin: 0.25rem 0 0.75rem;
+    }
+
+    .lookbook-header__sub {
+      color: var(--color-text-muted);
+      font-size: 0.95rem;
+      max-width: 560px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .lookbook-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-md);
+      padding-bottom: var(--space-2xl);
+    }
+
+    .lookbook-tile {
+      display: block;
+      position: relative;
+      text-decoration: none;
+      color: var(--color-white);
+      overflow: hidden;
+      aspect-ratio: 4 / 5;
+    }
+
+    .lookbook-tile img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s ease;
+    }
+
+    .lookbook-tile:hover { text-decoration: none; }
+    .lookbook-tile:hover img { transform: scale(1.04); }
+
+    .lookbook-tile__overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0) 35%, rgba(0,0,0,0.65) 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: var(--space-lg);
+    }
+
+    .lookbook-tile__date {
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: 0.4rem;
+    }
+
+    .lookbook-tile__title {
+      font-family: var(--font-heading);
+      font-size: 2rem;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+      line-height: 1.1;
+      margin-bottom: 0.5rem;
+    }
+
+    .lookbook-tile__sub {
+      font-size: 0.92rem;
+      opacity: 0.9;
+      line-height: 1.5;
+      margin-bottom: 0.75rem;
+      max-width: 440px;
+    }
+
+    .lookbook-tile__cta {
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--color-white);
+      padding-bottom: 0.2rem;
+      align-self: flex-start;
+    }
+
+    .lookbook-empty {
+      text-align: center;
+      padding: var(--space-2xl) var(--space-md);
+      color: var(--color-text-muted);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .lookbook-empty h2 {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      color: var(--color-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .lookbook-skel {
+      aspect-ratio: 4 / 5;
+      background: linear-gradient(90deg, #f0ebe1 0%, #faf7f2 50%, #f0ebe1 100%);
+      background-size: 200% 100%;
+      animation: lb-skel 1.4s ease-in-out infinite;
+    }
+
+    @keyframes lb-skel {
+      0%, 100% { background-position: 100% 0; }
+      50%      { background-position: 0% 0; }
+    }
+
+    @media (min-width: 768px) {
+      .lookbook-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-lg);
+      }
+      .lookbook-tile__title { font-size: 2.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div data-component="nav"></div>
+
+  <main>
+
+    <header class="lookbook-header">
+      <p class="eyebrow">The World of Ducks Unlimited</p>
+      <h1>Lookbooks</h1>
+      <span class="editorial-rule"></span>
+      <p class="lookbook-header__sub">
+        Editorial collections from our Greenhills workshop. Click any piece
+        in a photo to shop the look.
+      </p>
+    </header>
+
+    <div class="container">
+      <div class="lookbook-grid" id="lookbookGrid">
+        <!-- Skeletons replaced by JS -->
+        <div class="lookbook-skel"></div>
+        <div class="lookbook-skel"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <div data-component="footer"></div>
+
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+  <script type="module" src="/js/wishlist.js"></script>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+
+    const grid = document.getElementById('lookbookGrid');
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function formatMonthYear(iso) {
+      if (!iso) return '';
+      return new Date(iso).toLocaleDateString('en-PH', { month: 'long', year: 'numeric' });
+    }
+
+    function renderEmpty() {
+      grid.innerHTML = `
+        <div class="lookbook-empty">
+          <h2>Lookbooks coming soon</h2>
+          <p>We're putting together our first editorial collection. Check back shortly.</p>
+        </div>
+      `;
+      grid.style.gridTemplateColumns = '1fr';
+    }
+
+    async function load() {
+      const { data, error } = await supabase
+        .from('lookbooks')
+        .select('id, slug, title, subtitle, hero_image, published_at')
+        .not('published_at', 'is', null)
+        .order('published_at', { ascending: false });
+
+      if (error) { console.error(error); renderEmpty(); return; }
+      if (!data || data.length === 0) { renderEmpty(); return; }
+
+      grid.innerHTML = data.map(lb => `
+        <a class="lookbook-tile" href="/lookbooks/view.html?slug=${encodeURIComponent(lb.slug)}">
+          <img src="${escapeHtml(lb.hero_image)}" alt="${escapeHtml(lb.title)}" loading="lazy" />
+          <div class="lookbook-tile__overlay">
+            ${lb.published_at ? `<span class="lookbook-tile__date">${escapeHtml(formatMonthYear(lb.published_at))}</span>` : ''}
+            <h2 class="lookbook-tile__title">${escapeHtml(lb.title)}</h2>
+            ${lb.subtitle ? `<p class="lookbook-tile__sub">${escapeHtml(lb.subtitle)}</p>` : ''}
+            <span class="lookbook-tile__cta">Explore →</span>
+          </div>
+        </a>
+      `).join('');
+    }
+
+    load();
+  </script>
+
+</body>
+</html>

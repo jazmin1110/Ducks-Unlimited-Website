@@ -134,19 +134,44 @@ comment on table newsletter_subscribers is
 
 
 -- =============================================================================
+-- ADMIN USERS
+-- =============================================================================
+-- The base schema's admin RLS policies used "to authenticated using (true)",
+-- which treats every signed-in user as an admin. That was fine before
+-- customer accounts existed — now that they do, we need an explicit allowlist.
+--
+-- This table holds the user IDs that are allowed admin-level access. After
+-- running this migration, manually insert your own auth user ID:
+--
+--   insert into admin_users (id) values ('<paste your auth user id here>');
+--
+-- You can find your user ID in Authentication → Users in the Supabase dashboard.
+-- =============================================================================
+
+create table if not exists admin_users (
+  id          uuid primary key references auth.users (id) on delete cascade,
+  email       text,
+  created_at  timestamptz not null default now()
+);
+
+comment on table admin_users is
+  'Allowlist of auth.users.id values granted admin permissions via is_admin().';
+
+
+-- =============================================================================
 -- ROW LEVEL SECURITY
 -- Enable on every new table. Customers can only see/edit their own data.
--- Admins (controlled by admin_users) can read everything.
+-- Admins (rows in admin_users) can read everything.
 -- =============================================================================
 
 alter table customer_profiles      enable row level security;
 alter table wishlists              enable row level security;
 alter table customer_addresses     enable row level security;
 alter table newsletter_subscribers enable row level security;
+alter table admin_users            enable row level security;
 
 
 -- ── Helper: is the calling user an admin? ────────────────────────────────────
--- Reuses the admin_users table from the original schema.
 
 create or replace function public.is_admin()
 returns boolean
@@ -160,6 +185,14 @@ as $$
     where id = auth.uid()
   );
 $$;
+
+-- Admins can read the admin_users table (so the admin UI can list other admins)
+create policy "Admins can read admin_users"
+  on admin_users for select
+  using (public.is_admin());
+
+-- The first admin row has to be inserted by a service role (e.g. via the
+-- Supabase SQL editor). No other insert/update/delete policy by design.
 
 
 -- ── customer_profiles policies ───────────────────────────────────────────────
@@ -227,6 +260,69 @@ create policy "Admins can read newsletter subscribers"
 create policy "Admins can update newsletter subscribers"
   on newsletter_subscribers for update
   using (public.is_admin());
+
+
+-- =============================================================================
+-- LOCK DOWN ADMIN POLICIES — replace broad "to authenticated" with is_admin()
+-- =============================================================================
+-- The base schema used "to authenticated using (true)" for every admin write
+-- policy. Now that customer accounts exist, that lets every customer modify
+-- products/variants/inventory. Replace with the explicit is_admin() check.
+-- =============================================================================
+
+-- products
+drop policy if exists "Admins can read all products" on products;
+drop policy if exists "Admins can insert products"   on products;
+drop policy if exists "Admins can update products"   on products;
+drop policy if exists "Admins can delete products"   on products;
+
+create policy "Admins can read all products"
+  on products for select using (public.is_admin());
+create policy "Admins can insert products"
+  on products for insert with check (public.is_admin());
+create policy "Admins can update products"
+  on products for update using (public.is_admin());
+create policy "Admins can delete products"
+  on products for delete using (public.is_admin());
+
+-- variants
+drop policy if exists "Admins can read all variants" on variants;
+drop policy if exists "Admins can insert variants"   on variants;
+drop policy if exists "Admins can update variants"   on variants;
+drop policy if exists "Admins can delete variants"   on variants;
+
+create policy "Admins can read all variants"
+  on variants for select using (public.is_admin());
+create policy "Admins can insert variants"
+  on variants for insert with check (public.is_admin());
+create policy "Admins can update variants"
+  on variants for update using (public.is_admin());
+create policy "Admins can delete variants"
+  on variants for delete using (public.is_admin());
+
+-- inventory
+drop policy if exists "Admins can insert inventory" on inventory;
+drop policy if exists "Admins can update inventory" on inventory;
+drop policy if exists "Admins can delete inventory" on inventory;
+
+create policy "Admins can insert inventory"
+  on inventory for insert with check (public.is_admin());
+create policy "Admins can update inventory"
+  on inventory for update using (public.is_admin());
+create policy "Admins can delete inventory"
+  on inventory for delete using (public.is_admin());
+
+-- product_images
+drop policy if exists "Admins can insert product images" on product_images;
+drop policy if exists "Admins can update product images" on product_images;
+drop policy if exists "Admins can delete product images" on product_images;
+
+create policy "Admins can insert product images"
+  on product_images for insert with check (public.is_admin());
+create policy "Admins can update product images"
+  on product_images for update using (public.is_admin());
+create policy "Admins can delete product images"
+  on product_images for delete using (public.is_admin());
 
 
 -- =============================================================================
