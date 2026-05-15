@@ -129,6 +129,28 @@ svg {
   display: block;
 }
 
+/* ── Brand-tone placeholder for blank/missing images ──────────────────────
+   Renders as a soft warm-beige rectangle when an <img> has no src yet,
+   so empty image slots look intentional instead of showing a broken-image
+   icon. Used by:
+     - Homepage hero / collection tiles / editorial / journal teasers
+       (their hardcoded fallbacks are blank until photos are uploaded
+       via /admin/homepage.html)
+     - Mega-nav featured tiles in /components/nav.html
+     - Any future `<img class="is-empty">` we add elsewhere
+   The image-shaped wrapper provides the height (e.g. via aspect-ratio),
+   so this rule just paints the background. */
+img.is-empty,
+img:not([src]),
+img[src=""] {
+  background: linear-gradient(135deg, var(--color-bg-warm), #e8dfcc);
+  width: 100%;
+  height: 100%;
+  /* Hide the broken-image icon some browsers paint when src is empty. */
+  font-size: 0;
+  color: transparent;
+}
+
 button,
 input,
 select,

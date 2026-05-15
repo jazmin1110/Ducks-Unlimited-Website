@@ -17,9 +17,10 @@
        Reusable patterns live in /css/style.css; this file holds
        layout that's specific to the homepage.
 
-       NOTE on imagery: hero + lifestyle blocks reference picsum.photos
-       placeholder URLs so the layout looks complete out of the box.
-       Replace with real DU photography (see TODOs below).
+       NOTE on imagery: every photo slot starts BLANK. Hero, collection
+       tiles, and editorial blocks render brand-tone placeholders via the
+       `img.is-empty` rule in /css/style.css until real photos are
+       uploaded through /admin/homepage.html.
        ============================================================ */
 
     /* ── HERO ──────────────────────────────────────────────────── */
@@ -33,13 +34,11 @@
       color: var(--color-white);
       text-align: center;
       overflow: hidden;
+      /* Solid forest-green background while no hero photo is uploaded.
+         Once the admin uploads one via /admin/homepage.html, the storefront
+         reader (js/site-content.js) sets a background-image inline that
+         overrides this. */
       background: var(--color-primary);
-      /* TODO: replace with real /img/hero.jpg when ready */
-      background-image:
-        linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.45)),
-        url('https://picsum.photos/seed/du-hero-2026/1920/1200');
-      background-size: cover;
-      background-position: center;
     }
 
     .hero__inner {
@@ -553,7 +552,7 @@
              data-content-key="home.tile.polo" data-content-field="link" data-content-attr="href"
              href="/shop.html?audience=men">
             <img data-content-key="home.tile.polo" data-content-field="image_url" data-content-attr="src" loading="lazy" decoding="async"
-                 src="https://picsum.photos/seed/du-collection-men/600/800" alt="Men's Collection" />
+                 class="is-empty" src="" alt="Men's Collection" />
             <div class="collection-tile__overlay">
               <span class="collection-tile__label" data-content-key="home.tile.polo" data-content-field="label">For Him</span>
               <h3 class="collection-tile__name"   data-content-key="home.tile.polo" data-content-field="name">Men</h3>
@@ -565,7 +564,7 @@
              data-content-key="home.tile.tshirt" data-content-field="link" data-content-attr="href"
              href="/shop.html?audience=women">
             <img data-content-key="home.tile.tshirt" data-content-field="image_url" data-content-attr="src" loading="lazy" decoding="async"
-                 src="https://picsum.photos/seed/du-collection-women/600/800" alt="Women's Collection" />
+                 class="is-empty" src="" alt="Women's Collection" />
             <div class="collection-tile__overlay">
               <span class="collection-tile__label" data-content-key="home.tile.tshirt" data-content-field="label">For Her</span>
               <h3 class="collection-tile__name"   data-content-key="home.tile.tshirt" data-content-field="name">Women</h3>
@@ -577,7 +576,7 @@
              data-content-key="home.tile.bottoms" data-content-field="link" data-content-attr="href"
              href="/shop.html?audience=kids">
             <img data-content-key="home.tile.bottoms" data-content-field="image_url" data-content-attr="src" loading="lazy" decoding="async"
-                 src="https://picsum.photos/seed/du-collection-kids/600/800" alt="Kids & Baby Collection" />
+                 class="is-empty" src="" alt="Kids & Baby Collection" />
             <div class="collection-tile__overlay">
               <span class="collection-tile__label" data-content-key="home.tile.bottoms" data-content-field="label">Mini DU</span>
               <h3 class="collection-tile__name"   data-content-key="home.tile.bottoms" data-content-field="name">Kids &amp; Baby</h3>
@@ -600,7 +599,7 @@
       <div class="editorial__row">
         <div class="editorial__media">
           <img data-content-key="home.editorial.cotton" data-content-field="image_url" data-content-attr="src" loading="lazy" decoding="async"
-               src="https://picsum.photos/seed/du-editorial-cotton/900/1100"
+               class="is-empty" src=""
                alt="Egyptian cotton being woven" />
         </div>
         <div class="editorial__copy">
@@ -629,7 +628,7 @@
       <div class="editorial__row editorial__row--reverse">
         <div class="editorial__media">
           <img data-content-key="home.editorial.workshop" data-content-field="image_url" data-content-attr="src" loading="lazy" decoding="async"
-               src="https://picsum.photos/seed/du-editorial-workshop/900/1100"
+               class="is-empty" src=""
                alt="Hand-finishing in the Greenhills workshop" />
         </div>
         <div class="editorial__copy">
@@ -732,7 +731,7 @@
 
           <a class="journal-card" href="/journal/the-cotton-story">
             <div class="journal-card__media">
-              <img loading="lazy" decoding="async" src="https://picsum.photos/seed/du-journal-1/600/400" alt="" />
+              <img loading="lazy" decoding="async" class="is-empty" src="" alt="" />
             </div>
             <p class="journal-card__eyebrow">Materials</p>
             <h3 class="journal-card__title">Why Egyptian Cotton Matters</h3>
@@ -744,7 +743,7 @@
 
           <a class="journal-card" href="/journal/the-perfect-polo">
             <div class="journal-card__media">
-              <img loading="lazy" decoding="async" src="https://picsum.photos/seed/du-journal-2/600/400" alt="" />
+              <img loading="lazy" decoding="async" class="is-empty" src="" alt="" />
             </div>
             <p class="journal-card__eyebrow">Style Guide</p>
             <h3 class="journal-card__title">The Anatomy of a Perfect Polo</h3>
@@ -756,7 +755,7 @@
 
           <a class="journal-card" href="/journal/thirty-years">
             <div class="journal-card__media">
-              <img loading="lazy" decoding="async" src="https://picsum.photos/seed/du-journal-3/600/400" alt="" />
+              <img loading="lazy" decoding="async" class="is-empty" src="" alt="" />
             </div>
             <p class="journal-card__eyebrow">Heritage</p>
             <h3 class="journal-card__title">Thirty Years in Greenhills</h3>
