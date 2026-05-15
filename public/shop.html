@@ -8,6 +8,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
   <link rel="stylesheet" href="/css/style.css" />
 
   <style>
@@ -2028,26 +2029,40 @@
     });
 
     // ─────────────────────────────────────────────────────────────────
-    // INIT
+    // INIT — uses a localStorage cache so repeat visits paint instantly.
+    //
+    // Pattern: stale-while-revalidate. If we have a < 5 min old cache of
+    // products, render it RIGHT NOW so the page feels instant. Then quietly
+    // fetch fresh from Supabase in the background and re-render if anything
+    // changed. See /js/cache.js for the implementation.
     // ─────────────────────────────────────────────────────────────────
+
+    // Imported at the top with the other modules; doing it here so it's
+    // visible right next to where it's used.
+    const { swrCache } = await import('/js/cache.js');
 
     async function init() {
       showSkeletons(8);
 
-      const raw = await loadProducts();
-      state.products = raw.map(enrichProduct);
-
-      // Build the filter sidebar from the products we just loaded
-      buildFilterUI();
-
-      // Read URL params and tick the matching checkboxes / set price
+      // Read the URL filters once up front so the very first render
+      // (whether from cache or fresh) honors them.
       readFiltersFromURL();
-      syncUIFromState();
 
-      // Initial draw
-      updatePriceFill();
-      updatePriceDisplay();
-      update();
+      await swrCache({
+        // Bump the version suffix when the product fetch shape changes
+        // (e.g. you add a new column) so old caches get invalidated.
+        key: 'shop:products:v2',
+        maxAgeMs: 5 * 60 * 1000, // 5 minutes
+        fetcher: loadProducts,
+        onData: (raw, _source) => {
+          state.products = raw.map(enrichProduct);
+          buildFilterUI();
+          syncUIFromState();
+          updatePriceFill();
+          updatePriceDisplay();
+          update();
+        },
+      });
     }
 
     init();
