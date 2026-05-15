@@ -101,6 +101,10 @@
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
+  /* Belt-and-suspenders: prevents stray horizontal scroll on phones if any
+     page section accidentally overflows (e.g. a wide image, long word in
+     a heading, or a fixed-width element placed in a flex container). */
+  overflow-x: hidden;
 }
 
 body {
@@ -112,6 +116,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  /* Match html so the page width is hard-capped at viewport on every device */
+  overflow-x: hidden;
 }
 
 img,
