@@ -108,7 +108,11 @@ function applyToDom(byKey) {
     if (!content) continue; // row missing — leave the hardcoded fallback in place
 
     const value = content[field];
-    if (value == null) continue;
+    // Skip null, undefined, AND empty strings — an empty src/href would
+    // either paint a broken image or trigger a self-page re-fetch in some
+    // browsers. The HTML's hardcoded fallback (also blank for image
+    // fields) shows the brand-tone placeholder via CSS instead.
+    if (!value) continue;
 
     if (el.dataset.contentAttr) {
       // Set an attribute (src, href, alt, etc.)
