@@ -9,13 +9,7 @@
   <style>
     body { background: var(--color-bg-warm); }
 
-    nav.admin-nav { background: var(--color-primary); color: var(--color-white); padding: 0.85rem var(--space-md); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
-    .admin-nav a, .admin-nav button { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; }
-    .admin-nav a:hover, .admin-nav a.active { color: var(--color-accent); }
-    .admin-nav__brand { font-family: var(--font-heading); color: var(--color-white); font-size: 1rem; letter-spacing: 0.14em; }
-    .admin-nav__links { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; list-style: none; padding: 0; margin: 0; }
-    .admin-nav__logout { background: none; border: 1px solid rgba(255,255,255,0.3); padding: 0.35rem 0.8rem; cursor: pointer; }
-    .admin-nav__logout:hover { border-color: var(--color-accent); color: var(--color-accent); }
+    /* Nav styles live in /components/admin-nav.html (shared across admin) */
 
     main.admin-main { padding: var(--space-md); max-width: 1200px; margin: 0 auto; }
     .admin-h1 { font-family: var(--font-heading); color: var(--color-primary); font-size: 2rem; margin-bottom: 0.5rem; }
@@ -72,20 +66,8 @@
 </head>
 <body>
 
-  <nav class="admin-nav">
-    <a class="admin-nav__brand" href="/admin/dashboard.html">DU Admin</a>
-    <ul class="admin-nav__links">
-      <li><a href="/admin/dashboard.html">Dashboard</a></li>
-      <li><a href="/admin/products.html">Products</a></li>
-      <li><a href="/admin/inventory.html">Inventory</a></li>
-      <li><a href="/admin/orders.html">Orders</a></li>
-      <li><a href="/admin/lookbooks.html">Lookbooks</a></li>
-      <li><a href="/admin/journal.html">Journal</a></li>
-      <li><a href="/admin/gift-cards.html" class="active">Gift Cards</a></li>
-      <li><a href="/admin/stores.html">Stores</a></li>
-      <li><button class="admin-nav__logout" id="logoutBtn">Log Out</button></li>
-    </ul>
-  </nav>
+  <!-- Shared admin nav — see /components/admin-nav.html -->
+  <div data-component="admin-nav"></div>
 
   <main class="admin-main">
     <h1 class="admin-h1">Gift Cards</h1>
@@ -132,10 +114,7 @@
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { window.location.href = '/admin/index.html'; }
 
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      await supabase.auth.signOut();
-      window.location.href = '/admin/index.html';
-    });
+    // Log out is handled by /components/admin-nav.html
 
     function escapeHtml(s) {
       return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
@@ -237,5 +216,8 @@
     loadStats();
     load();
   </script>
+
+  <!-- Mounts the shared <div data-component="admin-nav"> at the top of <body> -->
+  <script type="module" src="/js/components.js"></script>
 </body>
 </html>
