@@ -26,6 +26,36 @@
       text-underline-offset: 4px;
     }
     .signout-btn:hover { color: var(--color-primary); }
+
+    /* ── Signed-out gate panel ──────────────────────────────────────────
+       Shown when a visitor hits an /account/* page without being signed in.
+       Replaces the old auto-redirect with a friendly CTA so they can either
+       sign in or create an account. */
+    .signed-out-gate {
+      max-width: 480px;
+      margin: var(--space-2xl) auto;
+      text-align: center;
+    }
+    .signed-out-gate__panel {
+      background: var(--color-white);
+      border: 1px solid var(--color-border-light);
+      padding: var(--space-xl) var(--space-md);
+    }
+    .signed-out-gate__sub {
+      color: var(--color-text-muted);
+      margin: var(--space-sm) auto var(--space-md);
+      max-width: 32ch;
+    }
+    .signed-out-gate__actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-top: var(--space);
+    }
+    @media (min-width: 480px) {
+      .signed-out-gate__actions { flex-direction: row; justify-content: center; }
+      .signed-out-gate__actions .btn { min-width: 160px; }
+    }
   </style>
 </head>
 <body>
@@ -34,42 +64,69 @@
 
   <main class="container account-shell">
 
-    <div class="account-header">
-      <p class="eyebrow">My Account</p>
-      <h1 id="greeting">Welcome back</h1>
-      <p class="account-header__sub" id="emailLine"></p>
+    <!-- Shown when the visitor is NOT signed in. gateAccountPage() in auth.js
+         toggles between this and #signedInView based on session state. -->
+    <div id="signedOutView" class="signed-out-gate" hidden>
+      <div class="signed-out-gate__panel">
+        <p class="eyebrow">My Account</p>
+        <h1>You're not signed in</h1>
+        <p class="signed-out-gate__sub">
+          Sign in to view your account, or create one in under a minute.
+        </p>
+        <div class="signed-out-gate__actions">
+          <a class="btn btn-primary"      href="/auth/sign-in.html" data-cta="sign-in">Sign In</a>
+          <a class="btn btn-outline-dark" href="/auth/sign-up.html" data-cta="sign-up">Create Account</a>
+        </div>
+      </div>
     </div>
 
-    <div class="account-grid">
+    <!-- Real page content — shown when signed in. -->
+    <div id="signedInView">
 
-      <a class="account-card" href="/account/orders.html">
-        <span class="account-card__label">Orders</span>
-        <h3>Order History</h3>
-        <p>Track your past purchases and view your order details.</p>
-      </a>
+      <div class="account-header">
+        <p class="eyebrow">My Account</p>
+        <h1 id="greeting">Welcome back</h1>
+        <p class="account-header__sub" id="emailLine"></p>
+      </div>
 
-      <a class="account-card" href="/account/wishlist.html">
-        <span class="account-card__label">Wishlist</span>
-        <h3>My Wishlist</h3>
-        <p>Pieces you've saved to come back to later.</p>
-      </a>
+      <div class="account-grid">
 
-      <a class="account-card" href="/account/addresses.html">
-        <span class="account-card__label">Addresses</span>
-        <h3>Shipping Addresses</h3>
-        <p>Manage saved addresses for faster checkout.</p>
-      </a>
+        <a class="account-card" href="/account/orders.html">
+          <span class="account-card__label">Orders</span>
+          <h3>Order History</h3>
+          <p>Track your past purchases and view your order details.</p>
+        </a>
 
-      <a class="account-card" href="/customer-service/help.html">
-        <span class="account-card__label">Support</span>
-        <h3>Help &amp; Contact</h3>
-        <p>Questions about an order or product? We're here to help.</p>
-      </a>
+        <a class="account-card" href="/account/wishlist.html">
+          <span class="account-card__label">Wishlist</span>
+          <h3>My Wishlist</h3>
+          <p>Pieces you've saved to come back to later.</p>
+        </a>
 
-    </div>
+        <a class="account-card" href="/account/addresses.html">
+          <span class="account-card__label">Addresses</span>
+          <h3>Shipping Addresses</h3>
+          <p>Manage saved addresses for faster checkout.</p>
+        </a>
 
-    <div class="signout-row">
-      <button type="button" class="signout-btn" id="signOutBtn">Sign Out</button>
+        <a class="account-card" href="/account/profile.html">
+          <span class="account-card__label">Profile</span>
+          <h3>Personal Details</h3>
+          <p>Update your name, phone, birthday, and email preferences.</p>
+        </a>
+
+        <a class="account-card" href="/customer-service/help.html">
+          <span class="account-card__label">Support</span>
+          <h3>Help &amp; Contact</h3>
+          <p>Questions about an order or product? We're here to help.</p>
+        </a>
+
+      </div>
+
+      <div class="signout-row">
+        <button type="button" class="signout-btn" id="signOutBtn">Sign Out</button>
+      </div>
+
     </div>
 
   </main>
@@ -81,10 +138,10 @@
   <script type="module" src="/js/wishlist.js"></script>
 
   <script type="module">
-    import { requireSignIn, signOut } from '/js/auth.js';
+    import { gateAccountPage, signOut } from '/js/auth.js';
 
-    const user = await requireSignIn();
-    if (!user) return; // redirect happened
+    const user = await gateAccountPage();
+    if (!user) return; // signed-out panel is shown; nothing else to do
 
     // Personalize greeting using display_name (set during sign-up) or fall
     // back to the first part of the email so it never reads "Welcome , null"

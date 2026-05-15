@@ -81,3 +81,44 @@ export async function requireSignIn(redirectTo = '/auth/sign-in.html') {
   }
   return user;
 }
+
+// ── Account page gate (non-redirecting) ─────────────────────────────────────
+// Use on /account/* pages to show a friendly CTA panel instead of redirecting
+// signed-out visitors. Expects two top-level elements in the page:
+//
+//   <div id="signedInView">  ...real page content...                </div>
+//   <div id="signedOutView" hidden>
+//     ...with <a data-cta="sign-in"> and <a data-cta="sign-up"> links...
+//   </div>
+//
+// What it does:
+//   1. Wires both CTA links with `?next=<current-page>` so visitors bounce
+//      back here after authenticating.
+//   2. If signed in: shows #signedInView, hides #signedOutView, returns the
+//      user object (drop-in replacement for `requireSignIn()`).
+//   3. If signed out: hides #signedInView, shows #signedOutView, returns null
+//      (so the page script can early-return).
+//
+// Returns: the user object when signed in, or null otherwise.
+
+export async function gateAccountPage() {
+  const inView  = document.getElementById('signedInView');
+  const outView = document.getElementById('signedOutView');
+
+  // Always wire the CTA links to bounce back here after auth
+  const next = encodeURIComponent(window.location.pathname + window.location.search);
+  outView?.querySelector('[data-cta="sign-in"]')
+    ?.setAttribute('href', `/auth/sign-in.html?next=${next}`);
+  outView?.querySelector('[data-cta="sign-up"]')
+    ?.setAttribute('href', `/auth/sign-up.html?next=${next}`);
+
+  const user = await getCurrentUser();
+  if (!user) {
+    if (inView)  inView.hidden  = true;
+    if (outView) outView.hidden = false;
+    return null;
+  }
+  if (inView)  inView.hidden  = false;
+  if (outView) outView.hidden = true;
+  return user;
+}

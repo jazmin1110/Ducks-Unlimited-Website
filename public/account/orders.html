@@ -116,6 +116,33 @@
     @media (min-width: 768px) {
       .orders-list { max-width: 800px; margin: 0 auto; }
     }
+
+    /* ── Signed-out gate panel ─────────────────────────────────────────── */
+    .signed-out-gate {
+      max-width: 480px;
+      margin: var(--space-2xl) auto;
+      text-align: center;
+    }
+    .signed-out-gate__panel {
+      background: var(--color-white);
+      border: 1px solid var(--color-border-light);
+      padding: var(--space-xl) var(--space-md);
+    }
+    .signed-out-gate__sub {
+      color: var(--color-text-muted);
+      margin: var(--space-sm) auto var(--space-md);
+      max-width: 32ch;
+    }
+    .signed-out-gate__actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-top: var(--space);
+    }
+    @media (min-width: 480px) {
+      .signed-out-gate__actions { flex-direction: row; justify-content: center; }
+      .signed-out-gate__actions .btn { min-width: 160px; }
+    }
   </style>
 </head>
 <body>
@@ -124,15 +151,35 @@
 
   <main class="container account-shell">
 
-    <a href="/account/" class="orders-back">← Back to account</a>
-
-    <div class="account-header">
-      <p class="eyebrow">Order History</p>
-      <h1>My Orders</h1>
-      <p class="account-header__sub" id="ordersSub">Loading…</p>
+    <!-- Shown when the visitor is NOT signed in. -->
+    <div id="signedOutView" class="signed-out-gate" hidden>
+      <div class="signed-out-gate__panel">
+        <p class="eyebrow">Order History</p>
+        <h1>You're not signed in</h1>
+        <p class="signed-out-gate__sub">
+          Sign in to view your past orders, or create an account to start tracking them.
+        </p>
+        <div class="signed-out-gate__actions">
+          <a class="btn btn-primary"      href="/auth/sign-in.html" data-cta="sign-in">Sign In</a>
+          <a class="btn btn-outline-dark" href="/auth/sign-up.html" data-cta="sign-up">Create Account</a>
+        </div>
+      </div>
     </div>
 
-    <div class="orders-list" id="ordersList"></div>
+    <!-- Real page content — shown when signed in. -->
+    <div id="signedInView">
+
+      <a href="/account/" class="orders-back">← Back to account</a>
+
+      <div class="account-header">
+        <p class="eyebrow">Order History</p>
+        <h1>My Orders</h1>
+        <p class="account-header__sub" id="ordersSub">Loading…</p>
+      </div>
+
+      <div class="orders-list" id="ordersList"></div>
+
+    </div><!-- /#signedInView -->
 
   </main>
 
@@ -144,10 +191,10 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
-    import { requireSignIn } from '/js/auth.js';
+    import { gateAccountPage } from '/js/auth.js';
 
-    const user = await requireSignIn();
-    if (!user) return;
+    const user = await gateAccountPage();
+    if (!user) return; // signed-out panel is shown; nothing else to do
 
     const list = document.getElementById('ordersList');
     const sub  = document.getElementById('ordersSub');

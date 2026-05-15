@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personal Details — Ducks Unlimited</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    .profile-back {
+      display: inline-block;
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      text-decoration: none;
+      margin-bottom: var(--space-md);
+    }
+    .profile-back:hover { color: var(--color-primary); }
+
+    .profile-form {
+      max-width: 600px;
+      margin: 0 auto;
+      background: var(--color-white);
+      padding: var(--space-lg);
+      border: 1px solid var(--color-border-light);
+    }
+
+    .profile-form .row { display: grid; gap: var(--space); grid-template-columns: 1fr; margin-bottom: var(--space); }
+
+    .field-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.35rem;
+    }
+
+    /* Inline "Saved ✓" / "Couldn't save" indicators next to each field label */
+    .field-saved, .field-error {
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .field-saved.is-visible { opacity: 1; color: var(--color-primary); }
+    .field-error { color: var(--color-error); opacity: 1; }
+
+    /* Help text under fields (e.g. the email read-only note) */
+    .field-help {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      margin-top: 0.4rem;
+    }
+
+    /* Disabled email field looks intentionally inert, not broken */
+    .input[disabled] {
+      background: var(--color-bg-warm);
+      color: var(--color-text-muted);
+      cursor: not-allowed;
+    }
+
+    /* Checkbox row for marketing opt-in */
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      padding: 0.75rem;
+      background: var(--color-bg-warm);
+      border: 1px solid var(--color-border-light);
+      cursor: pointer;
+    }
+    .check-row input { margin-top: 0.2rem; }
+    .check-row__text {
+      font-size: 0.9rem;
+      color: var(--color-text);
+      line-height: 1.45;
+    }
+    .check-row__sub {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      margin-top: 0.2rem;
+    }
+
+    .profile-addresses-link {
+      max-width: 600px;
+      margin: var(--space) auto 0;
+      text-align: center;
+    }
+
+    @media (min-width: 600px) {
+      .profile-form .row.cols-2 { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ── Signed-out gate panel ─────────────────────────────────────────── */
+    .signed-out-gate {
+      max-width: 480px;
+      margin: var(--space-2xl) auto;
+      text-align: center;
+    }
+    .signed-out-gate__panel {
+      background: var(--color-white);
+      border: 1px solid var(--color-border-light);
+      padding: var(--space-xl) var(--space-md);
+    }
+    .signed-out-gate__sub {
+      color: var(--color-text-muted);
+      margin: var(--space-sm) auto var(--space-md);
+      max-width: 32ch;
+    }
+    .signed-out-gate__actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-top: var(--space);
+    }
+    @media (min-width: 480px) {
+      .signed-out-gate__actions { flex-direction: row; justify-content: center; }
+      .signed-out-gate__actions .btn { min-width: 160px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div data-component="nav"></div>
+
+  <main class="container account-shell">
+
+    <!-- Shown when the visitor is NOT signed in. -->
+    <div id="signedOutView" class="signed-out-gate" hidden>
+      <div class="signed-out-gate__panel">
+        <p class="eyebrow">Profile</p>
+        <h1>You're not signed in</h1>
+        <p class="signed-out-gate__sub">
+          Sign in to view your personal details, or create an account to start saving them.
+        </p>
+        <div class="signed-out-gate__actions">
+          <a class="btn btn-primary"      href="/auth/sign-in.html" data-cta="sign-in">Sign In</a>
+          <a class="btn btn-outline-dark" href="/auth/sign-up.html" data-cta="sign-up">Create Account</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Real page content — shown when signed in. -->
+    <div id="signedInView">
+
+      <a href="/account/" class="profile-back">← Back to account</a>
+
+      <div class="account-header">
+        <p class="eyebrow">Profile</p>
+        <h1>Personal Details</h1>
+        <p class="account-header__sub">Changes save automatically as you go.</p>
+      </div>
+
+      <!--
+        Profile form. Every field auto-saves on the `change` event (fires on
+        blur/Enter for text/date inputs and on toggle for checkboxes — not on
+        every keystroke). Each field has its own [data-saved-for] and
+        [data-error-for] span so the feedback is local to whichever field
+        the customer just edited.
+      -->
+      <form class="profile-form" id="profileForm" autocomplete="on">
+
+        <!-- Display Name -->
+        <div class="row">
+          <div class="field">
+            <div class="field-label-row">
+              <label class="field-label" for="display_name">Display Name</label>
+              <span class="field-saved" data-saved-for="display_name">Saved ✓</span>
+              <span class="field-error" data-error-for="display_name" hidden>Couldn't save</span>
+            </div>
+            <input class="input" type="text" id="display_name" name="display_name"
+                   autocomplete="name" placeholder="What should we call you?" />
+          </div>
+        </div>
+
+        <!-- Email (read-only) -->
+        <div class="row">
+          <div class="field">
+            <label class="field-label" for="email">Email</label>
+            <input class="input" type="email" id="email" name="email" disabled />
+            <p class="field-help">To change your email, contact support.</p>
+          </div>
+        </div>
+
+        <!-- Phone + Birthday -->
+        <div class="row cols-2">
+          <div class="field">
+            <div class="field-label-row">
+              <label class="field-label" for="phone">Phone</label>
+              <span class="field-saved" data-saved-for="phone">Saved ✓</span>
+              <span class="field-error" data-error-for="phone" hidden>Couldn't save</span>
+            </div>
+            <input class="input" type="tel" id="phone" name="phone"
+                   autocomplete="tel" placeholder="09xx xxx xxxx" />
+          </div>
+
+          <div class="field">
+            <div class="field-label-row">
+              <label class="field-label" for="birthday">Birthday</label>
+              <span class="field-saved" data-saved-for="birthday">Saved ✓</span>
+              <span class="field-error" data-error-for="birthday" hidden>Couldn't save</span>
+            </div>
+            <input class="input" type="date" id="birthday" name="birthday" />
+          </div>
+        </div>
+
+        <!-- Gender -->
+        <div class="row">
+          <div class="field">
+            <div class="field-label-row">
+              <label class="field-label" for="gender">Gender</label>
+              <span class="field-saved" data-saved-for="gender">Saved ✓</span>
+              <span class="field-error" data-error-for="gender" hidden>Couldn't save</span>
+            </div>
+            <select class="input" id="gender" name="gender">
+              <option value="">— Select —</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="prefer_not_to_say">Prefer not to say</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Marketing opt-in -->
+        <div class="row">
+          <label class="check-row" for="marketing_opt_in">
+            <input type="checkbox" id="marketing_opt_in" name="marketing_opt_in" />
+            <span class="check-row__text">
+              Send me promos and lookbook updates.
+              <span class="check-row__sub">
+                We'll only email you about new collections, sales, and the occasional birthday treat. Unsubscribe anytime.
+              </span>
+              <span class="field-saved" data-saved-for="marketing_opt_in" style="margin-left:0;">Saved ✓</span>
+              <span class="field-error" data-error-for="marketing_opt_in" hidden style="margin-left:0;">Couldn't save</span>
+            </span>
+          </label>
+        </div>
+
+      </form>
+
+      <!-- Link to the separate addresses page so customers know where to manage shipping -->
+      <div class="profile-addresses-link">
+        <a class="btn btn-outline-dark" href="/account/addresses.html">
+          Manage Shipping Addresses →
+        </a>
+      </div>
+
+    </div><!-- /#signedInView -->
+
+  </main>
+
+  <div data-component="footer"></div>
+
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+  <script type="module" src="/js/wishlist.js"></script>
+
+  <script type="module">
+    // =========================================================================
+    // Profile page — auto-save customer_profiles fields on change.
+    // =========================================================================
+    // - `gateAccountPage()` toggles between #signedOutView and #signedInView,
+    //   so we early-return if the visitor isn't signed in.
+    // - On load we read the row from `customer_profiles` and pre-fill the form.
+    //   The signup trigger from migration 003 creates this row automatically,
+    //   but we defensively `insert` if it's missing (in case a customer was
+    //   created before that trigger existed).
+    // - Each field listens to `change` (not `input`) so we save on blur/Enter
+    //   instead of every keystroke. That's "not chatty" and keeps the "Saved ✓"
+    //   indicator from flickering.
+    // =========================================================================
+    import { supabase } from '/lib/supabase.js';
+    import { gateAccountPage } from '/js/auth.js';
+
+    const user = await gateAccountPage();
+    if (!user) return; // signed-out panel is shown; nothing else to do
+
+    // Grab field references once so the listeners read clean
+    const displayNameEl = document.getElementById('display_name');
+    const emailEl       = document.getElementById('email');
+    const phoneEl       = document.getElementById('phone');
+    const birthdayEl    = document.getElementById('birthday');
+    const genderEl      = document.getElementById('gender');
+    const marketingEl   = document.getElementById('marketing_opt_in');
+
+    // Email is read-only — pull it straight from the auth user
+    emailEl.value = user.email ?? '';
+
+    // ── Load existing profile (or create an empty row if missing) ──────────
+    async function loadProfile() {
+      const { data, error } = await supabase
+        .from('customer_profiles')
+        .select('display_name, phone, birthday, gender, marketing_opt_in')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Could not load profile:', error);
+        return;
+      }
+
+      // Defensive: if no row exists yet (older account predates the trigger),
+      // create one so subsequent updates have something to update.
+      if (!data) {
+        await supabase.from('customer_profiles').insert({ id: user.id });
+        return;
+      }
+
+      displayNameEl.value = data.display_name ?? '';
+      phoneEl.value       = data.phone        ?? '';
+      birthdayEl.value    = data.birthday     ?? '';
+      genderEl.value      = data.gender       ?? '';
+      marketingEl.checked = !!data.marketing_opt_in;
+    }
+
+    await loadProfile();
+
+    // ── Save one column to the current user's profile ──────────────────────
+    // Shows the "Saved ✓" indicator on success, or an inline error otherwise.
+    async function saveField(column, value) {
+      const indicator = document.querySelector(`[data-saved-for="${column}"]`);
+      const errorEl   = document.querySelector(`[data-error-for="${column}"]`);
+
+      if (errorEl) errorEl.hidden = true;
+
+      const { error } = await supabase
+        .from('customer_profiles')
+        .update({ [column]: value, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error(`Profile save failed for ${column}:`, error);
+        if (errorEl) errorEl.hidden = false;
+        return;
+      }
+
+      if (indicator) {
+        indicator.classList.add('is-visible');
+        setTimeout(() => indicator.classList.remove('is-visible'), 2000);
+      }
+    }
+
+    // ── Wire each field to auto-save on `change` ───────────────────────────
+    // Empty strings are stored as NULL so the DB doesn't carry around blanks.
+    displayNameEl.addEventListener('change', (e) => {
+      saveField('display_name', e.target.value.trim() || null);
+    });
+    phoneEl.addEventListener('change', (e) => {
+      saveField('phone', e.target.value.trim() || null);
+    });
+    birthdayEl.addEventListener('change', (e) => {
+      saveField('birthday', e.target.value || null);
+    });
+    genderEl.addEventListener('change', (e) => {
+      saveField('gender', e.target.value || null);
+    });
+    marketingEl.addEventListener('change', (e) => {
+      saveField('marketing_opt_in', e.target.checked);
+    });
+
+    // Prevent the form from accidentally submitting on Enter (no submit button,
+    // but pressing Enter in a single-input form still triggers submit in browsers).
+    document.getElementById('profileForm').addEventListener('submit', (e) => e.preventDefault());
+  </script>
+
+</body>
+</html>
