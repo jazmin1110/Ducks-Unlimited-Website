@@ -100,6 +100,33 @@
     @media (min-width: 768px) {
       .wishlist-grid { grid-template-columns: repeat(4, 1fr); gap: 2rem 1.5rem; }
     }
+
+    /* ── Signed-out gate panel ─────────────────────────────────────────── */
+    .signed-out-gate {
+      max-width: 480px;
+      margin: var(--space-2xl) auto;
+      text-align: center;
+    }
+    .signed-out-gate__panel {
+      background: var(--color-white);
+      border: 1px solid var(--color-border-light);
+      padding: var(--space-xl) var(--space-md);
+    }
+    .signed-out-gate__sub {
+      color: var(--color-text-muted);
+      margin: var(--space-sm) auto var(--space-md);
+      max-width: 32ch;
+    }
+    .signed-out-gate__actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-top: var(--space);
+    }
+    @media (min-width: 480px) {
+      .signed-out-gate__actions { flex-direction: row; justify-content: center; }
+      .signed-out-gate__actions .btn { min-width: 160px; }
+    }
   </style>
 </head>
 <body>
@@ -108,17 +135,37 @@
 
   <main class="container account-shell">
 
-    <a href="/account/" class="wishlist-back">← Back to account</a>
-
-    <div class="account-header">
-      <p class="eyebrow">Saved Pieces</p>
-      <h1>My Wishlist</h1>
-      <p class="account-header__sub" id="wlCount"></p>
+    <!-- Shown when the visitor is NOT signed in. -->
+    <div id="signedOutView" class="signed-out-gate" hidden>
+      <div class="signed-out-gate__panel">
+        <p class="eyebrow">Saved Pieces</p>
+        <h1>You're not signed in</h1>
+        <p class="signed-out-gate__sub">
+          Sign in to view your wishlist, or create an account to start saving pieces for later.
+        </p>
+        <div class="signed-out-gate__actions">
+          <a class="btn btn-primary"      href="/auth/sign-in.html" data-cta="sign-in">Sign In</a>
+          <a class="btn btn-outline-dark" href="/auth/sign-up.html" data-cta="sign-up">Create Account</a>
+        </div>
+      </div>
     </div>
 
-    <div id="wlContent">
-      <!-- Filled by script below -->
-    </div>
+    <!-- Real page content — shown when signed in. -->
+    <div id="signedInView">
+
+      <a href="/account/" class="wishlist-back">← Back to account</a>
+
+      <div class="account-header">
+        <p class="eyebrow">Saved Pieces</p>
+        <h1>My Wishlist</h1>
+        <p class="account-header__sub" id="wlCount"></p>
+      </div>
+
+      <div id="wlContent">
+        <!-- Filled by script below -->
+      </div>
+
+    </div><!-- /#signedInView -->
 
   </main>
 
@@ -129,11 +176,11 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
-    import { requireSignIn } from '/js/auth.js';
+    import { gateAccountPage } from '/js/auth.js';
     import { getWishlist, removeFromWishlist } from '/js/wishlist.js';
 
-    const user = await requireSignIn();
-    if (!user) return;
+    const user = await gateAccountPage();
+    if (!user) return; // signed-out panel is shown; nothing else to do
 
     const content = document.getElementById('wlContent');
     const countEl = document.getElementById('wlCount');

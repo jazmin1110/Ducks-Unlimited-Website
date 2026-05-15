@@ -145,6 +145,33 @@
       .addr-grid { grid-template-columns: repeat(2, 1fr); }
       .addr-form .row.cols-2 { grid-template-columns: 1fr 1fr; }
     }
+
+    /* ── Signed-out gate panel ─────────────────────────────────────────── */
+    .signed-out-gate {
+      max-width: 480px;
+      margin: var(--space-2xl) auto;
+      text-align: center;
+    }
+    .signed-out-gate__panel {
+      background: var(--color-white);
+      border: 1px solid var(--color-border-light);
+      padding: var(--space-xl) var(--space-md);
+    }
+    .signed-out-gate__sub {
+      color: var(--color-text-muted);
+      margin: var(--space-sm) auto var(--space-md);
+      max-width: 32ch;
+    }
+    .signed-out-gate__actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-top: var(--space);
+    }
+    @media (min-width: 480px) {
+      .signed-out-gate__actions { flex-direction: row; justify-content: center; }
+      .signed-out-gate__actions .btn { min-width: 160px; }
+    }
   </style>
 </head>
 <body>
@@ -152,6 +179,25 @@
   <div data-component="nav"></div>
 
   <main class="container account-shell">
+
+    <!-- Shown when the visitor is NOT signed in. gateAccountPage() in auth.js
+         toggles between this and #signedInView based on session state. -->
+    <div id="signedOutView" class="signed-out-gate" hidden>
+      <div class="signed-out-gate__panel">
+        <p class="eyebrow">Shipping</p>
+        <h1>You're not signed in</h1>
+        <p class="signed-out-gate__sub">
+          Sign in to view your saved addresses, or create an account to start saving them.
+        </p>
+        <div class="signed-out-gate__actions">
+          <a class="btn btn-primary"      href="/auth/sign-in.html" data-cta="sign-in">Sign In</a>
+          <a class="btn btn-outline-dark" href="/auth/sign-up.html" data-cta="sign-up">Create Account</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Real page content — shown when signed in. -->
+    <div id="signedInView">
 
     <a href="/account/" class="addr-back">← Back to account</a>
 
@@ -238,6 +284,8 @@
       </div>
     </form>
 
+    </div><!-- /#signedInView -->
+
   </main>
 
   <div data-component="footer"></div>
@@ -248,10 +296,10 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
-    import { requireSignIn } from '/js/auth.js';
+    import { gateAccountPage } from '/js/auth.js';
 
-    const user = await requireSignIn();
-    if (!user) return;
+    const user = await gateAccountPage();
+    if (!user) return; // signed-out panel is shown; nothing else to do
 
     const grid       = document.getElementById('addrGrid');
     const sub        = document.getElementById('addrSub');
