@@ -2,7 +2,7 @@
      Ducks Unlimited — Site Navigation (single-row, RL-style)
      =============================================================================
      Layout (desktop):
-       [Logo]   [Polos] [T-Shirts] [Bottoms] [Lookbook] [Journal] [Heritage]
+       [Logo]   [Men] [Women] [Kids & Baby] [Lookbook] [Journal] [Heritage]
                                               [Search]  [Sign In/Account]  [♡]  [Bag]
 
      Mobile collapses everything into a hamburger drawer. Mega-nav dropdowns
@@ -39,88 +39,96 @@
     <nav class="site-nav__menu" aria-label="Primary">
       <ul class="site-nav__links">
 
-        <li class="site-nav__item">
-          <a href="/shop.html?category=polo" data-mega="polo">Polos</a>
-          <div class="site-nav__mega" id="mega-polo" hidden>
-            <div class="container site-nav__mega-inner">
-              <div class="site-nav__mega-col">
-                <h4>Shop Polos</h4>
-                <ul>
-                  <li><a href="/shop.html?category=polo">All Polos</a></li>
-                  <li><a href="/shop.html?category=polo&sort=newest">New Arrivals</a></li>
-                  <li><a href="/shop.html?category=polo&fit=classic">Classic Fit</a></li>
-                  <li><a href="/shop.html?category=polo&fit=slim">Slim Fit</a></li>
-                </ul>
-              </div>
-              <div class="site-nav__mega-col">
-                <h4>Featured Colors</h4>
-                <ul>
-                  <li><a href="/shop.html?category=polo&color=white">White</a></li>
-                  <li><a href="/shop.html?category=polo&color=navy">Navy</a></li>
-                  <li><a href="/shop.html?category=polo&color=forest">Forest Green</a></li>
-                  <li><a href="/shop.html?category=polo&color=stripes">Stripes</a></li>
-                </ul>
-              </div>
-              <a class="site-nav__mega-feature" href="/lookbooks">
-                <img src="https://picsum.photos/seed/du-polo-feature/400/500" alt="" />
-                <span class="site-nav__mega-feature-label">The Polo Lookbook</span>
-              </a>
-            </div>
-          </div>
-        </li>
+        <!-- Top-level audience nav: Men / Women / Kids & Baby.
+             URLs use ?audience=... so they're future-proof when products
+             get tagged by audience. Until then, the shop page ignores the
+             param and shows all products — no broken state. -->
 
         <li class="site-nav__item">
-          <a href="/shop.html?category=t-shirt" data-mega="tshirt">T-Shirts</a>
-          <div class="site-nav__mega" id="mega-tshirt" hidden>
+          <a href="/shop.html?audience=men" data-mega="men">Men</a>
+          <div class="site-nav__mega" id="mega-men" hidden>
             <div class="container site-nav__mega-inner">
               <div class="site-nav__mega-col">
-                <h4>Shop T-Shirts</h4>
+                <h4>Shop Men</h4>
                 <ul>
-                  <li><a href="/shop.html?category=t-shirt">All T-Shirts</a></li>
-                  <li><a href="/shop.html?category=t-shirt&sort=newest">New Arrivals</a></li>
-                  <li><a href="/shop.html?category=t-shirt&style=crew">Crew Neck</a></li>
-                  <li><a href="/shop.html?category=t-shirt&style=v-neck">V-Neck</a></li>
+                  <li><a href="/shop.html?audience=men">All Men</a></li>
+                  <li><a href="/shop.html?audience=men&sort=newest">New Arrivals</a></li>
+                  <li><a href="/shop.html?audience=men&category=polo">Polos</a></li>
+                  <li><a href="/shop.html?audience=men&category=t-shirt">T-Shirts</a></li>
+                  <li><a href="/shop.html?audience=men&category=bottoms">Bottoms</a></li>
                 </ul>
               </div>
               <div class="site-nav__mega-col">
                 <h4>Featured</h4>
                 <ul>
-                  <li><a href="/shop.html?category=t-shirt&color=white">Essentials</a></li>
-                  <li><a href="/shop.html?category=t-shirt&color=black">All Black</a></li>
-                  <li><a href="/shop.html?category=t-shirt&pack=3">3-Pack Bundle</a></li>
+                  <li><a href="/shop.html?audience=men&category=outerwear">Outerwear</a></li>
+                  <li><a href="/shop.html?audience=men&style=formal">Formalwear</a></li>
+                  <li><a href="/shop.html?audience=men&sale=true">Sale</a></li>
                 </ul>
               </div>
               <a class="site-nav__mega-feature" href="/lookbooks">
-                <img src="https://picsum.photos/seed/du-tshirt-feature/400/500" alt="" />
-                <span class="site-nav__mega-feature-label">Everyday Essentials</span>
+                <img src="https://picsum.photos/seed/du-men-feature/400/500" alt="" />
+                <span class="site-nav__mega-feature-label">The Men's Lookbook</span>
               </a>
             </div>
           </div>
         </li>
 
         <li class="site-nav__item">
-          <a href="/shop.html?category=bottoms" data-mega="bottoms">Bottoms</a>
-          <div class="site-nav__mega" id="mega-bottoms" hidden>
+          <a href="/shop.html?audience=women" data-mega="women">Women</a>
+          <div class="site-nav__mega" id="mega-women" hidden>
             <div class="container site-nav__mega-inner">
               <div class="site-nav__mega-col">
-                <h4>Shorts</h4>
+                <h4>Shop Women</h4>
                 <ul>
-                  <li><a href="/shop.html?category=shorts">All Shorts</a></li>
-                  <li><a href="/shop.html?category=shorts&style=chino">Chino Shorts</a></li>
-                  <li><a href="/shop.html?category=shorts&style=swim">Swim Shorts</a></li>
+                  <li><a href="/shop.html?audience=women">All Women</a></li>
+                  <li><a href="/shop.html?audience=women&sort=newest">New Arrivals</a></li>
+                  <li><a href="/shop.html?audience=women&category=tops">Tops</a></li>
+                  <li><a href="/shop.html?audience=women&category=bottoms">Bottoms</a></li>
+                  <li><a href="/shop.html?audience=women&category=dresses">Dresses</a></li>
                 </ul>
               </div>
               <div class="site-nav__mega-col">
-                <h4>Pants</h4>
+                <h4>Featured</h4>
                 <ul>
-                  <li><a href="/shop.html?category=pants">All Pants</a></li>
-                  <li><a href="/shop.html?category=pants&style=chino">Chinos</a></li>
-                  <li><a href="/shop.html?category=pants&style=trouser">Trousers</a></li>
+                  <li><a href="/shop.html?audience=women&category=outerwear">Outerwear</a></li>
+                  <li><a href="/shop.html?audience=women&style=formal">Formalwear</a></li>
+                  <li><a href="/shop.html?audience=women&sale=true">Sale</a></li>
                 </ul>
               </div>
               <a class="site-nav__mega-feature" href="/lookbooks">
-                <img src="https://picsum.photos/seed/du-bottoms-feature/400/500" alt="" />
-                <span class="site-nav__mega-feature-label">The Tailored Edit</span>
+                <img src="https://picsum.photos/seed/du-women-feature/400/500" alt="" />
+                <span class="site-nav__mega-feature-label">The Women's Lookbook</span>
+              </a>
+            </div>
+          </div>
+        </li>
+
+        <li class="site-nav__item">
+          <a href="/shop.html?audience=kids" data-mega="kids">Kids &amp; Baby</a>
+          <div class="site-nav__mega" id="mega-kids" hidden>
+            <div class="container site-nav__mega-inner">
+              <div class="site-nav__mega-col">
+                <h4>Shop Kids &amp; Baby</h4>
+                <ul>
+                  <li><a href="/shop.html?audience=kids">All Kids &amp; Baby</a></li>
+                  <li><a href="/shop.html?audience=kids&sort=newest">New Arrivals</a></li>
+                  <li><a href="/shop.html?audience=kids&group=boys">Boys</a></li>
+                  <li><a href="/shop.html?audience=kids&group=girls">Girls</a></li>
+                  <li><a href="/shop.html?audience=kids&group=baby">Baby</a></li>
+                </ul>
+              </div>
+              <div class="site-nav__mega-col">
+                <h4>By Category</h4>
+                <ul>
+                  <li><a href="/shop.html?audience=kids&category=tops">Tops</a></li>
+                  <li><a href="/shop.html?audience=kids&category=bottoms">Bottoms</a></li>
+                  <li><a href="/shop.html?audience=kids&category=sets">Sets</a></li>
+                </ul>
+              </div>
+              <a class="site-nav__mega-feature" href="/lookbooks">
+                <img src="https://picsum.photos/seed/du-kids-feature/400/500" alt="" />
+                <span class="site-nav__mega-feature-label">Mini Ducks Unlimited</span>
               </a>
             </div>
           </div>
