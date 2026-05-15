@@ -219,7 +219,9 @@
     var currentPanel = null;
 
     function isDesktop() {
-      return window.matchMedia('(min-width: 768px) and (hover: hover)').matches;
+      // Matches the CSS breakpoint above — mega-nav hover only triggers
+      // once we're on the desktop layout (≥ 900px).
+      return window.matchMedia('(min-width: 900px) and (hover: hover)').matches;
     }
 
     function openPanel(panel) {
@@ -524,7 +526,9 @@
 
   .site-nav__mega[hidden] { display: none; }
 
-  @media (max-width: 767px) {
+  /* On the mobile drawer (< 900px), force mega panels visible inline so the
+     [hidden] attribute set by hover behavior doesn't hide them in the drawer. */
+  @media (max-width: 899.98px) {
     .site-nav__mega { display: block !important; }
     .site-nav__mega[hidden] { display: block !important; }
   }
@@ -595,13 +599,22 @@
 
   .site-nav__search-form input {
     flex: 1;
+    /* min-width: 0 lets flex shrink properly so the input doesn't overflow
+       the container on narrow phones (350-380px wide). */
+    min-width: 0;
     border: none;
     outline: none;
     background: transparent;
     font-family: var(--font-heading);
-    font-size: 1.5rem;
+    /* Smaller font on mobile so it fits without horizontal scroll */
+    font-size: 1.05rem;
     color: var(--color-text);
     letter-spacing: 0.01em;
+  }
+
+  /* Bump search input back up on bigger screens */
+  @media (min-width: 768px) {
+    .site-nav__search-form input { font-size: 1.5rem; }
   }
 
   .site-nav__search-form input::placeholder {
@@ -623,16 +636,20 @@
 
 
   /* ────────────────────────────────────────────────────────────────────
-     DESKTOP (≥ 768px)
+     TABLET / SMALL DESKTOP (≥ 900px)
      Logo on the left, nav center, utilities on the right — single row.
+     Bumped from 768px → 900px because at 768-900px the 6 nav links + util
+     icons crowded the brand off the row. Phones AND iPad portrait now
+     stay on the cleaner mobile drawer layout.
      ──────────────────────────────────────────────────────────────────── */
 
-  @media (min-width: 768px) {
+  @media (min-width: 900px) {
 
     .site-nav__main {
       flex-wrap: nowrap;
       min-height: var(--nav-main-h);
-      gap: 2rem;
+      /* Tighter gap at small desktops; bumped back up at ≥ 1024px below */
+      gap: 1.25rem;
     }
 
     .site-nav__hamburger { display: none; }
@@ -644,7 +661,7 @@
       text-align: left;
     }
 
-    .site-nav__logo    { font-size: 1.4rem; letter-spacing: 0.14em; }
+    .site-nav__logo    { font-size: 1.25rem; letter-spacing: 0.12em; }
     .site-nav__tagline { font-size: 0.6rem; }
 
     /* Menu is the flexible middle slot */
@@ -662,7 +679,8 @@
     .site-nav__links {
       flex-direction: row;
       justify-content: center;
-      gap: 2.5rem;
+      /* Tighter on small desktops, expands at ≥ 1024px (rule below) */
+      gap: 1.4rem;
     }
 
     .site-nav__item {
@@ -675,12 +693,13 @@
     .site-nav__item > a {
       font-family: var(--font-body);
       font-weight: 500;
-      font-size: 0.78rem;
-      letter-spacing: 0.16em;
+      font-size: 0.74rem;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--color-text);
       padding: 0.5rem 0;
       position: relative;
+      white-space: nowrap; /* prevent label-wrap mid-word at narrow widths */
     }
 
     .site-nav__item > a::after {
@@ -772,8 +791,16 @@
   }
 
 
+  /* Roomier spacing once we have a real desktop's worth of width */
   @media (min-width: 1024px) {
-    .site-nav__links { gap: 3rem; }
+    .site-nav__main      { gap: 2rem; }
+    .site-nav__logo      { font-size: 1.4rem; letter-spacing: 0.14em; }
+    .site-nav__links     { gap: 2.5rem; }
+    .site-nav__item > a  { font-size: 0.78rem; letter-spacing: 0.16em; }
     .site-nav__mega-inner { grid-template-columns: 1fr 1fr 1.2fr; gap: 4rem; }
+  }
+
+  @media (min-width: 1280px) {
+    .site-nav__links { gap: 3rem; }
   }
 </style>

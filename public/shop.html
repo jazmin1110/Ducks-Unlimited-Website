@@ -824,6 +824,99 @@
 
     .grid-empty p { font-size: 0.9rem; }
 
+    /* "Clear search" / "Clear filters" CTA in the empty state */
+    .grid-empty__cta {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.6rem 1.4rem;
+      background: var(--color-primary);
+      color: var(--color-white);
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+
+    .grid-empty__cta:hover { background: var(--color-primary-dark, #143a23); }
+
+    /* ── Filter group: collapsible <details> styling ─────────────── */
+
+    /* Hide the default disclosure arrow; we render our own chevron via ::after */
+    .filter-group > summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      /* Inherits .filter-group__label styles from below */
+    }
+    .filter-group > summary::-webkit-details-marker { display: none; }
+
+    .filter-group > summary::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-right: 1.5px solid var(--color-text-muted);
+      border-bottom: 1.5px solid var(--color-text-muted);
+      transform: rotate(45deg);
+      transition: transform 0.2s ease;
+      margin-left: 0.5rem;
+    }
+
+    /* Flip the chevron when the section is open */
+    .filter-group[open] > summary::after { transform: rotate(-135deg); }
+
+
+    /* ── Active filter chips bar ─────────────────────────────────── */
+    .active-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+
+    .active-chips[hidden] { display: none; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.75rem;
+      background: var(--color-primary);
+      color: var(--color-white);
+      border-radius: 999px;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+
+    .chip:hover { background: #143a23; } /* slightly darker forest green */
+
+    .chip__x {
+      font-size: 0.95rem;
+      line-height: 0.7;
+      font-weight: 300;
+    }
+
+    /* "Clear all" chip variant — outlined instead of filled */
+    .chip--clear {
+      background: none;
+      color: var(--color-primary);
+      border: 1px solid var(--color-primary);
+    }
+
+    .chip--clear:hover {
+      background: var(--color-primary);
+      color: var(--color-white);
+    }
+
     /* ── Mobile-only: drawer behavior for the filter sidebar ───── */
 
     /* Overlay shown behind the drawer when it's open */
@@ -909,8 +1002,11 @@
       }
     }
 
+    /* Editorial / Ralph-Lauren-inspired layout: cap at 3 cols on wide screens
+       so cards stay generous and there's more breathing room around imagery. */
     @media (min-width: 1280px) {
-      .products-grid { grid-template-columns: repeat(4, 1fr); }
+      .products-grid { gap: 3rem 2rem; }
+      .shop          { gap: 4rem; grid-template-columns: 260px 1fr; }
     }
   </style>
 </head>
@@ -919,12 +1015,15 @@
   <!-- ── Nav (mounted by /js/components.js) ── -->
   <div data-component="nav"></div>
 
-  <!-- ── Page header — editorial title block ── -->
+  <!-- ── Page header — editorial title block ──
+       The eyebrow + headline + subtitle are repainted by the script when a
+       search query is present (?q=foo) so the page reads as a search-results
+       page instead of the generic catalog view. -->
   <header class="shop-header">
     <div class="container">
-      <p class="shop-header__eyebrow">The Collection</p>
-      <h1>Shop All</h1>
-      <p class="shop-header__sub">
+      <p class="shop-header__eyebrow" id="shopEyebrow">The Collection</p>
+      <h1 id="shopHeading">Shop All</h1>
+      <p class="shop-header__sub" id="shopSubtitle">
         Every piece is hand-finished in our Greenhills workshop —
         Egyptian cotton, made to last.
       </p>
@@ -947,33 +1046,37 @@
         <button type="button" class="filter-drawer-close" id="closeDrawerBtn" aria-label="Close filters">×</button>
       </div>
 
+      <!-- Each filter is wrapped in <details open> so the admin/customer can
+           collapse a section by clicking its header. open by default keeps
+           current behavior (everything visible) but lets users tidy the panel. -->
+
       <!-- Category checkboxes — rendered by JS once products load -->
-      <div class="filter-group">
-        <span class="filter-group__label">Category</span>
+      <details class="filter-group" open>
+        <summary class="filter-group__label">Category</summary>
         <div class="filter-options" id="categoryOptions">
           <span class="filter-check__count">Loading…</span>
         </div>
-      </div>
+      </details>
 
       <!-- Size checkboxes — fixed set -->
-      <div class="filter-group">
-        <span class="filter-group__label">Size</span>
+      <details class="filter-group" open>
+        <summary class="filter-group__label">Size</summary>
         <div class="filter-options" id="sizeOptions">
           <!-- Rendered by JS so we can attach the same event handler pattern -->
         </div>
-      </div>
+      </details>
 
       <!-- Color checkboxes — rendered by JS once products load -->
-      <div class="filter-group">
-        <span class="filter-group__label">Color</span>
+      <details class="filter-group" open>
+        <summary class="filter-group__label">Color</summary>
         <div class="filter-options" id="colorOptions">
           <span class="filter-check__count">Loading…</span>
         </div>
-      </div>
+      </details>
 
       <!-- Price range -->
-      <div class="filter-group">
-        <span class="filter-group__label">Price Range</span>
+      <details class="filter-group" open>
+        <summary class="filter-group__label">Price Range</summary>
 
         <div class="range-slider">
           <div class="range-slider__track"></div>
@@ -987,7 +1090,7 @@
           <span>—</span>
           <span>₱<strong id="maxPriceDisplay">5,000</strong></span>
         </div>
-      </div>
+      </details>
 
     </aside>
 
@@ -1013,6 +1116,10 @@
           </select>
         </div>
       </div>
+
+      <!-- Active filter chips: shows currently-applied filters as removable
+           pills. Filled by renderActiveFilterChips() in the script below. -->
+      <div class="active-chips" id="activeChips" hidden></div>
 
       <div class="products-grid" id="productsGrid">
         <!-- Skeleton cards while loading, replaced by JS -->
@@ -1112,6 +1219,9 @@
         colors:     new Set(),
         minPrice:   PRICE_MIN,
         maxPrice:   PRICE_MAX,
+        // Free-text search query (from the nav search bar via ?q=...).
+        // Empty string = no search active.
+        query:      '',
       },
 
       sort: 'newest',
@@ -1193,7 +1303,7 @@
       const { data, error } = await supabase
         .from('products')
         .select(`
-          id, name, base_price, category, created_at,
+          id, name, description, base_price, category, created_at,
           variants (
             id, color, size, price_override,
             inventory ( channel, quantity )
@@ -1230,6 +1340,7 @@
       return {
         id:          p.id,
         name:        p.name,
+        description: p.description ?? '',
         category:    p.category,
         basePrice:   Number(p.base_price),
         createdAt:   p.created_at,
@@ -1318,6 +1429,15 @@
     // ─────────────────────────────────────────────────────────────────
 
     function productMatchesFilters(p, f) {
+      // ── Free-text search (from the nav search bar) ──
+      // Match if the query appears in the product name OR description
+      // (case-insensitive). Empty query = no filter applied.
+      if (f.query) {
+        const q = f.query.toLowerCase();
+        const haystack = `${p.name ?? ''} ${p.description ?? ''}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+
       // Category — product's category must be in the selected set
       if (f.categories.size > 0 && !f.categories.has(p.category)) return false;
 
@@ -1392,12 +1512,33 @@
 
     function renderGrid(products) {
       if (products.length === 0) {
-        grid.innerHTML = `
-          <div class="grid-empty">
-            <h3>No products match these filters.</h3>
-            <p>Try clearing some filters to see more options.</p>
-          </div>
-        `;
+        // Distinct empty states for "search returned nothing" vs.
+        // "filters returned nothing" — one is much more useful to a customer
+        // who typed a query and got no hits.
+        const q = state.filters.query;
+        if (q) {
+          grid.innerHTML = `
+            <div class="grid-empty">
+              <h3>No results for "${escapeHtml(q)}".</h3>
+              <p>Try a different search term, or browse the full collection.</p>
+              <button type="button" class="grid-empty__cta" id="emptyClearSearchBtn">Clear search</button>
+            </div>
+          `;
+          // Wire the CTA to clear the search and re-render.
+          document.getElementById('emptyClearSearchBtn')?.addEventListener('click', () => {
+            state.filters.query = '';
+            update();
+          });
+        } else {
+          grid.innerHTML = `
+            <div class="grid-empty">
+              <h3>No products match these filters.</h3>
+              <p>Try clearing some filters to see more options.</p>
+              <button type="button" class="grid-empty__cta" id="emptyClearAllBtn">Clear all filters</button>
+            </div>
+          `;
+          document.getElementById('emptyClearAllBtn')?.addEventListener('click', clearAllFilters);
+        }
         return;
       }
 
@@ -1492,7 +1633,8 @@
       const f = state.filters;
       return f.categories.size + f.sizes.size + f.colors.size
         + (f.minPrice !== PRICE_MIN ? 1 : 0)
-        + (f.maxPrice !== PRICE_MAX ? 1 : 0);
+        + (f.maxPrice !== PRICE_MAX ? 1 : 0)
+        + (f.query ? 1 : 0); // search query counts as an active filter
     }
 
     function updateMobileFilterBadge() {
@@ -1544,6 +1686,7 @@
     function applyFiltersToURL() {
       const p = new URLSearchParams();
       const f = state.filters;
+      if (f.query)           p.set('q',        f.query);
       if (f.categories.size) p.set('category', [...f.categories].join(','));
       if (f.sizes.size)      p.set('size',     [...f.sizes].join(','));
       if (f.colors.size)     p.set('color',    [...f.colors].join(','));
@@ -1563,6 +1706,8 @@
         (p.get(key) ?? '').split(',').map(s => s.trim()).filter(Boolean)
       );
 
+      // Free-text search query (the nav search form submits to ?q=)
+      state.filters.query      = (p.get('q') ?? '').trim();
       state.filters.categories = parseSet('category');
       state.filters.sizes      = parseSet('size');
       state.filters.colors     = parseSet('color');
@@ -1605,8 +1750,111 @@
       renderCount(visible.length, state.products.length);
       updateClearButton();
       updateMobileFilterBadge();
+      renderActiveChips();
+      renderShopHeader();
       applyFiltersToURL();
     }
+
+    // Swap the page header copy when a search query is active so the page
+    // reads as "Search results for X" instead of "Shop All".
+    function renderShopHeader() {
+      const eyebrow  = document.getElementById('shopEyebrow');
+      const heading  = document.getElementById('shopHeading');
+      const subtitle = document.getElementById('shopSubtitle');
+      if (!eyebrow || !heading || !subtitle) return;
+
+      const q = state.filters.query;
+      if (q) {
+        eyebrow.textContent  = 'Search Results';
+        heading.textContent  = `Results for "${q}"`;
+        subtitle.textContent = 'Filter or sort below to refine your search.';
+      } else {
+        eyebrow.textContent  = 'The Collection';
+        heading.textContent  = 'Shop All';
+        subtitle.textContent = 'Every piece is hand-finished in our Greenhills workshop — Egyptian cotton, made to last.';
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // ACTIVE FILTER CHIPS — render currently-selected filters as
+    // removable pills above the product grid. Each click removes that
+    // single filter and re-runs update(). Pattern after Ralph Lauren
+    // / J.Crew shop bar.
+    // ─────────────────────────────────────────────────────────────────
+
+    function renderActiveChips() {
+      const chipsEl = document.getElementById('activeChips');
+      if (!chipsEl) return;
+
+      const f = state.filters;
+      const chips = [];
+
+      // Search query as its own chip — easy to remove without touching filters
+      if (f.query) {
+        chips.push({ kind: 'query', label: `Search: "${f.query}"`, value: '' });
+      }
+      // Each selected category/size/color becomes a chip
+      for (const c of f.categories) {
+        chips.push({ kind: 'category', label: CATEGORY_LABELS[c] ?? c, value: c });
+      }
+      for (const s of f.sizes)  chips.push({ kind: 'size',  label: `Size: ${s}`, value: s });
+      for (const c of f.colors) chips.push({ kind: 'color', label: c, value: c });
+
+      // Custom price range gets a chip too
+      if (f.minPrice !== PRICE_MIN || f.maxPrice !== PRICE_MAX) {
+        chips.push({
+          kind: 'price',
+          label: `₱${formatPrice(f.minPrice)} – ₱${formatPrice(f.maxPrice)}`,
+          value: '',
+        });
+      }
+
+      if (chips.length === 0) {
+        chipsEl.hidden = true;
+        chipsEl.innerHTML = '';
+        return;
+      }
+
+      chipsEl.hidden = false;
+      chipsEl.innerHTML = chips.map((c) => `
+        <button type="button" class="chip" data-chip-kind="${c.kind}" data-chip-value="${escapeHtml(c.value)}">
+          <span>${escapeHtml(c.label)}</span>
+          <span class="chip__x" aria-hidden="true">×</span>
+        </button>
+      `).join('') + `
+        <button type="button" class="chip chip--clear" id="chipClearAll">
+          Clear all
+        </button>
+      `;
+    }
+
+    // One delegated handler removes a single chip (or all)
+    document.getElementById('activeChips')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('button.chip');
+      if (!btn) return;
+
+      if (btn.id === 'chipClearAll') {
+        clearAllFilters();
+        return;
+      }
+
+      const kind = btn.dataset.chipKind;
+      const value = btn.dataset.chipValue;
+
+      switch (kind) {
+        case 'query':    state.filters.query = ''; break;
+        case 'category': state.filters.categories.delete(value); break;
+        case 'size':     state.filters.sizes.delete(value); break;
+        case 'color':    state.filters.colors.delete(value); break;
+        case 'price':
+          state.filters.minPrice = PRICE_MIN;
+          state.filters.maxPrice = PRICE_MAX;
+          break;
+      }
+      // Sync the corresponding checkbox/range UI before re-rendering
+      syncUIFromState();
+      update();
+    });
 
     // ─────────────────────────────────────────────────────────────────
     // EVENT WIRING
@@ -1743,8 +1991,10 @@
       if (e.key === 'Escape' && !qvDrawer.hidden) closeQuickView();
     });
 
-    // Clear all filters
-    clearBtn.addEventListener('click', () => {
+    // Clear every active filter (used by the sidebar "Clear all" button,
+    // the chips bar's "Clear all" pill, and the empty-state CTA).
+    function clearAllFilters() {
+      state.filters.query = '';
       state.filters.categories.clear();
       state.filters.sizes.clear();
       state.filters.colors.clear();
@@ -1753,7 +2003,9 @@
       state.sort = 'newest';
       syncUIFromState();
       update();
-    });
+    }
+
+    clearBtn.addEventListener('click', clearAllFilters);
 
     // Mobile filter drawer
     function openDrawer() {
