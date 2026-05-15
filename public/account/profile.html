@@ -93,6 +93,19 @@
       text-align: center;
     }
 
+    /* Header above the Default Shipping Address form */
+    .profile-section-header {
+      max-width: 600px;
+      margin: var(--space-xl) auto var(--space);
+      text-align: left;
+    }
+    .profile-section-header h2 {
+      font-family: var(--font-heading, serif);
+      font-size: 1.6rem;
+      margin: 0 0 0.35rem;
+      color: var(--color-text);
+    }
+
     @media (min-width: 600px) {
       .profile-form .row.cols-2 { grid-template-columns: 1fr 1fr; }
     }
@@ -244,10 +257,121 @@
 
       </form>
 
+      <!--
+        Default Shipping Address. Auto-saves to `customer_addresses` (the same
+        table that powers /account/addresses.html). On first save we insert a
+        row with is_default=true; subsequent saves update that same row.
+      -->
+      <div class="profile-section-header">
+        <h2>Default Shipping Address</h2>
+        <p class="account-header__sub">Used to pre-fill checkout. You can add more addresses on the Addresses page.</p>
+      </div>
+
+      <form class="profile-form" id="addressForm" autocomplete="on">
+
+        <!-- Recipient Name -->
+        <div class="row">
+          <div class="field">
+            <div class="field-label-row">
+              <label class="field-label" for="addr_recipient_name">Recipient Name</label>
+              <span class="field-saved" data-saved-for="recipient_name">Saved ✓</span>
+              <span class="field-error" data-error-for="recipient_name" hidden>Couldn't save</span>
+            </div>
+            <input class="input" type="text" id="addr_recipient_name" name="recipient_name"
+                   autocomplete="name" placeholder="Full name for the package" />
+          </div>
+        </div>
+
+        <!-- Phone -->
+        <div class="row">
+          <div class="field">
+            <div class="field-label-row">
+              <label class="field-label" for="addr_phone">Phone</label>
+              <span class="field-saved" data-saved-for="addr_phone">Saved ✓</span>
+              <span class="field-error" data-error-for="addr_phone" hidden>Couldn't save</span>
+            </div>
+            <input class="input" type="tel" id="addr_phone" name="addr_phone"
+                   autocomplete="tel" placeholder="09xx xxx xxxx" />
+          </div>
+        </div>
+
+        <!-- Line 1 -->
+        <div class="row">
+          <div class="field">
+            <div class="field-label-row">
+              <label class="field-label" for="addr_line1">Address Line 1</label>
+              <span class="field-saved" data-saved-for="line1">Saved ✓</span>
+              <span class="field-error" data-error-for="line1" hidden>Couldn't save</span>
+            </div>
+            <input class="input" type="text" id="addr_line1" name="line1"
+                   autocomplete="address-line1" placeholder="House #, Street" />
+          </div>
+        </div>
+
+        <!-- Line 2 -->
+        <div class="row">
+          <div class="field">
+            <div class="field-label-row">
+              <label class="field-label" for="addr_line2">Address Line 2 <span class="field-help" style="margin:0;">(optional)</span></label>
+              <span class="field-saved" data-saved-for="line2">Saved ✓</span>
+              <span class="field-error" data-error-for="line2" hidden>Couldn't save</span>
+            </div>
+            <input class="input" type="text" id="addr_line2" name="line2"
+                   autocomplete="address-line2" placeholder="Subdivision, Building, Unit" />
+          </div>
+        </div>
+
+        <!-- Barangay + City -->
+        <div class="row cols-2">
+          <div class="field">
+            <div class="field-label-row">
+              <label class="field-label" for="addr_barangay">Barangay</label>
+              <span class="field-saved" data-saved-for="barangay">Saved ✓</span>
+              <span class="field-error" data-error-for="barangay" hidden>Couldn't save</span>
+            </div>
+            <input class="input" type="text" id="addr_barangay" name="barangay" />
+          </div>
+
+          <div class="field">
+            <div class="field-label-row">
+              <label class="field-label" for="addr_city">City / Municipality</label>
+              <span class="field-saved" data-saved-for="city">Saved ✓</span>
+              <span class="field-error" data-error-for="city" hidden>Couldn't save</span>
+            </div>
+            <input class="input" type="text" id="addr_city" name="city"
+                   autocomplete="address-level2" />
+          </div>
+        </div>
+
+        <!-- Province + Postal -->
+        <div class="row cols-2">
+          <div class="field">
+            <div class="field-label-row">
+              <label class="field-label" for="addr_province">Province</label>
+              <span class="field-saved" data-saved-for="province">Saved ✓</span>
+              <span class="field-error" data-error-for="province" hidden>Couldn't save</span>
+            </div>
+            <input class="input" type="text" id="addr_province" name="province"
+                   autocomplete="address-level1" />
+          </div>
+
+          <div class="field">
+            <div class="field-label-row">
+              <label class="field-label" for="addr_postal_code">Postal Code</label>
+              <span class="field-saved" data-saved-for="postal_code">Saved ✓</span>
+              <span class="field-error" data-error-for="postal_code" hidden>Couldn't save</span>
+            </div>
+            <input class="input" type="text" id="addr_postal_code" name="postal_code"
+                   autocomplete="postal-code" inputmode="numeric" />
+          </div>
+        </div>
+
+      </form>
+
       <!-- Link to the separate addresses page so customers know where to manage shipping -->
       <div class="profile-addresses-link">
         <a class="btn btn-outline-dark" href="/account/addresses.html">
-          Manage Shipping Addresses →
+          Manage Multiple Addresses →
         </a>
       </div>
 
@@ -367,6 +491,125 @@
     // Prevent the form from accidentally submitting on Enter (no submit button,
     // but pressing Enter in a single-input form still triggers submit in browsers).
     document.getElementById('profileForm').addEventListener('submit', (e) => e.preventDefault());
+
+    // =========================================================================
+    // Default Shipping Address — auto-save to customer_addresses
+    // =========================================================================
+    // Mirrors the same per-field auto-save pattern above, but writes to the
+    // user's default address row in customer_addresses. First save inserts a
+    // row with is_default=true (after clearing any other default); subsequent
+    // saves update that same row.
+    // =========================================================================
+
+    const addrFields = {
+      recipient_name: document.getElementById('addr_recipient_name'),
+      phone:          document.getElementById('addr_phone'),
+      line1:          document.getElementById('addr_line1'),
+      line2:          document.getElementById('addr_line2'),
+      barangay:       document.getElementById('addr_barangay'),
+      city:           document.getElementById('addr_city'),
+      province:       document.getElementById('addr_province'),
+      postal_code:    document.getElementById('addr_postal_code'),
+    };
+
+    // Mapping from DB column → indicator key (phone clashes with the profile's
+    // own phone indicator, so we suffix it as `addr_phone` in the DOM).
+    const indicatorKey = {
+      recipient_name: 'recipient_name',
+      phone:          'addr_phone',
+      line1:          'line1',
+      line2:          'line2',
+      barangay:       'barangay',
+      city:           'city',
+      province:       'province',
+      postal_code:    'postal_code',
+    };
+
+    let addressId = null; // populated after load or first insert
+
+    async function loadAddress() {
+      const { data, error } = await supabase
+        .from('customer_addresses')
+        .select('id, recipient_name, phone, line1, line2, barangay, city, province, postal_code')
+        .eq('user_id', user.id)
+        .eq('is_default', true)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Could not load default address:', error);
+        return;
+      }
+      if (!data) return; // no default address yet — fields stay empty
+
+      addressId = data.id;
+      for (const [col, el] of Object.entries(addrFields)) {
+        el.value = data[col] ?? '';
+      }
+    }
+
+    await loadAddress();
+
+    // Save one column to the user's default address. Inserts a new row on the
+    // first edit (after clearing any other is_default=true rows so the partial
+    // unique index isn't violated).
+    async function saveAddressField(column, value) {
+      const key       = indicatorKey[column];
+      const indicator = document.querySelector(`[data-saved-for="${key}"]`);
+      const errorEl   = document.querySelector(`[data-error-for="${key}"]`);
+
+      if (errorEl) errorEl.hidden = true;
+
+      let error;
+      if (addressId) {
+        ({ error } = await supabase
+          .from('customer_addresses')
+          .update({ [column]: value, updated_at: new Date().toISOString() })
+          .eq('id', addressId));
+      } else {
+        // First save — clear any stale defaults, then insert this one as default.
+        await supabase
+          .from('customer_addresses')
+          .update({ is_default: false })
+          .eq('user_id', user.id)
+          .eq('is_default', true);
+
+        const { data, error: insertErr } = await supabase
+          .from('customer_addresses')
+          .insert({
+            user_id: user.id,
+            is_default: true,
+            country: 'PH',
+            label: 'Home',
+            [column]: value,
+          })
+          .select('id')
+          .single();
+
+        error = insertErr;
+        if (data) addressId = data.id;
+      }
+
+      if (error) {
+        console.error(`Address save failed for ${column}:`, error);
+        if (errorEl) errorEl.hidden = false;
+        return;
+      }
+
+      if (indicator) {
+        indicator.classList.add('is-visible');
+        setTimeout(() => indicator.classList.remove('is-visible'), 2000);
+      }
+    }
+
+    // Wire each address field to auto-save on `change` (blur/Enter).
+    for (const [col, el] of Object.entries(addrFields)) {
+      el.addEventListener('change', (e) => {
+        saveAddressField(col, e.target.value.trim() || null);
+      });
+    }
+
+    // Prevent Enter from submitting the address form.
+    document.getElementById('addressForm').addEventListener('submit', (e) => e.preventDefault());
   </script>
 
 </body>

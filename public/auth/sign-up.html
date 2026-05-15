@@ -23,10 +23,6 @@
         Save your favorites, track orders, and check out faster next time.
       </p>
 
-      <div class="auth-success" id="formSuccess" hidden>
-        Check your inbox. We sent a confirmation link to verify your email.
-      </div>
-
       <form class="auth-form" id="signUpForm" novalidate>
 
         <div class="auth-error" id="formError" hidden></div>
@@ -85,10 +81,9 @@
         `/auth/sign-in.html?next=${encodeURIComponent(params.get('next'))}`;
     }
 
-    const form       = document.getElementById('signUpForm');
-    const errorBox   = document.getElementById('formError');
-    const successBox = document.getElementById('formSuccess');
-    const submitBtn  = document.getElementById('submitBtn');
+    const form      = document.getElementById('signUpForm');
+    const errorBox  = document.getElementById('formError');
+    const submitBtn = document.getElementById('submitBtn');
 
     function showError(msg) {
       errorBox.textContent = msg;
@@ -124,14 +119,9 @@
         return;
       }
 
-      // If email confirmation is on, user will need to verify before signing in.
-      // If it's off, they're already signed in — bounce to next.
-      if (user && user.confirmed_at) {
-        window.location.href = nextUrl;
-      } else {
-        form.hidden = true;
-        successBox.hidden = false;
-      }
+      // Email confirmation is disabled in Supabase, so a successful signUp
+      // returns a live session — bounce straight to the account page.
+      window.location.href = nextUrl;
     });
   </script>
 

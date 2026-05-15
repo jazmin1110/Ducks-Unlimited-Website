@@ -322,6 +322,7 @@
 <script type="module">
   // Swap "Sign In" → "My Account" once the user has a session.
   import { onAuthChange } from '/js/auth.js';
+  import { supabase } from '/lib/supabase.js';
 
   function paintAuthLinks(user) {
     document.querySelectorAll('[data-auth-link]').forEach((el) => {
@@ -335,6 +336,12 @@
     });
   }
 
+  // Fast first paint from the cached session (localStorage, no network) so
+  // signed-in visitors never see a flash of "Sign In" while getUser() resolves.
+  const { data: { session } } = await supabase.auth.getSession();
+  paintAuthLinks(session?.user ?? null);
+
+  // Then subscribe for live sign-in / sign-out updates across tabs and pages.
   onAuthChange(paintAuthLinks);
 </script>
 
