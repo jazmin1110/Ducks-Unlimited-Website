@@ -10,40 +10,7 @@
     /* Match the existing admin shell — minimal, dense, content-first */
     body { background: var(--color-bg-warm); }
 
-    nav.admin-nav {
-      background: var(--color-primary);
-      color: var(--color-white);
-      padding: 0.85rem var(--space-md);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-
-    .admin-nav a, .admin-nav button {
-      color: rgba(255,255,255,0.85);
-      text-decoration: none;
-      font-size: 0.78rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-    }
-
-    .admin-nav a:hover, .admin-nav a.active { color: var(--color-accent); }
-
-    .admin-nav__brand {
-      font-family: var(--font-heading);
-      color: var(--color-white);
-      font-size: 1rem;
-      letter-spacing: 0.14em;
-    }
-
-    .admin-nav__links { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; list-style: none; padding: 0; margin: 0; }
-    .admin-nav__logout {
-      background: none; border: 1px solid rgba(255,255,255,0.3);
-      padding: 0.35rem 0.8rem; cursor: pointer;
-    }
-    .admin-nav__logout:hover { border-color: var(--color-accent); color: var(--color-accent); }
+    /* Nav styles live in /components/admin-nav.html (shared across admin) */
 
     main.admin-main { padding: var(--space-md); max-width: 1200px; margin: 0 auto; }
 
@@ -150,20 +117,8 @@
 </head>
 <body>
 
-  <nav class="admin-nav">
-    <a class="admin-nav__brand" href="/admin/dashboard.html">DU Admin</a>
-    <ul class="admin-nav__links">
-      <li><a href="/admin/dashboard.html">Dashboard</a></li>
-      <li><a href="/admin/products.html">Products</a></li>
-      <li><a href="/admin/inventory.html">Inventory</a></li>
-      <li><a href="/admin/orders.html">Orders</a></li>
-      <li><a href="/admin/lookbooks.html" class="active">Lookbooks</a></li>
-      <li><a href="/admin/journal.html">Journal</a></li>
-      <li><a href="/admin/gift-cards.html">Gift Cards</a></li>
-      <li><a href="/admin/stores.html">Stores</a></li>
-      <li><button class="admin-nav__logout" id="logoutBtn">Log Out</button></li>
-    </ul>
-  </nav>
+  <!-- Shared admin nav — see /components/admin-nav.html -->
+  <div data-component="admin-nav"></div>
 
   <main class="admin-main">
     <h1 class="admin-h1">Lookbooks</h1>
@@ -246,8 +201,15 @@
 
       <h3 style="margin-top: var(--space); font-size: 1rem;">Add New Scene</h3>
       <form id="newSceneForm">
-        <div class="form-row cols-3">
-          <div class="field"><label class="field-label" for="s_image">Image URL *</label><input class="input" id="s_image" required></div>
+        <div class="form-row">
+          <div class="field">
+            <label class="field-label">Scene Image *</label>
+            <!-- Uploader UI; the resulting URL ends up in the hidden #s_image input -->
+            <div data-image-uploader="s_image"></div>
+            <input type="hidden" id="s_image" required>
+          </div>
+        </div>
+        <div class="form-row cols-2">
           <div class="field"><label class="field-label" for="s_caption">Caption</label><input class="input" id="s_caption"></div>
           <div class="field"><label class="field-label" for="s_order">Order</label><input class="input" id="s_order" type="number" value="0"></div>
         </div>
@@ -285,15 +247,27 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { mountImageUploader } from '/admin/js/image-uploader.js';
 
     // Require admin sign-in (admin/index.html already gates the section)
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { window.location.href = '/admin/index.html'; }
 
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      await supabase.auth.signOut();
-      window.location.href = '/admin/index.html';
-    });
+    // Log out is handled by /components/admin-nav.html
+
+    // ── Scene image uploader ────────────────────────────────────────────
+    // The "Add New Scene" form needs a fresh empty uploader after each submit
+    // so the next scene starts with no preview. We wrap the mount in a helper.
+    function mountSceneUploader(currentUrl = '') {
+      mountImageUploader({
+        container:   document.querySelector('[data-image-uploader="s_image"]'),
+        hiddenInput: document.getElementById('s_image'),
+        bucket:      'site-content',
+        pathPrefix:  'lookbooks',
+        currentUrl,
+      });
+    }
+    mountSceneUploader();
 
     // ── Helpers ─────────────────────────────────────────────────────────
     function escapeHtml(s) {
@@ -523,6 +497,9 @@
       if (error) { alert('Add scene failed: ' + error.message); return; }
       e.target.reset();
       document.getElementById('s_order').value = '0';
+      // Form.reset() doesn't touch the hidden input or the uploader's preview,
+      // so remount the uploader to clear it for the next scene
+      mountSceneUploader('');
       openEditor(lookbookId);
     });
 
@@ -566,5 +543,8 @@
     await loadProducts();
     loadList();
   </script>
+
+  <!-- Mounts the shared <div data-component="admin-nav"> at the top of <body> -->
+  <script type="module" src="/js/components.js"></script>
 </body>
 </html>

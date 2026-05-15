@@ -502,21 +502,27 @@
   <main>
 
     <!-- ────────────────────────────────────────────────────────
-         HERO — full-bleed editorial photograph + display headline
-         TODO: swap picsum.photos URL for real /img/hero.jpg
+         HERO — content driven by /admin/homepage.html (site_content table).
+         Hardcoded text below acts as a fallback if Supabase is unreachable.
+         data-content-key="home.hero" + data-content-field="..." attributes
+         tell /js/site-content.js what to replace.
          ──────────────────────────────────────────────────────── -->
-    <section class="hero">
+    <section class="hero" data-content-key="home.hero" data-content-field="image_url" data-content-bg-image>
       <div class="hero__inner">
-        <p class="hero__eyebrow">Ducks Unlimited · Est. 1995</p>
-        <h1 class="hero__headline">
+        <p class="hero__eyebrow"  data-content-key="home.hero" data-content-field="eyebrow">Ducks Unlimited · Est. 1995</p>
+        <h1 class="hero__headline" data-content-key="home.hero" data-content-field="headline" data-content-html>
           Affordable luxury,<br />
           hand-finished in the Philippines.
         </h1>
-        <p class="hero__sub">
+        <p class="hero__sub" data-content-key="home.hero" data-content-field="sub">
           Egyptian cotton garments, woven, cut, and sewn in our Greenhills
           workshop — the way we've done it for three decades.
         </p>
-        <a href="/shop.html" class="btn btn-outline-light">Shop the Collection</a>
+        <a class="btn btn-outline-light"
+           data-content-key="home.hero" data-content-field="cta_link" data-content-attr="href"
+           href="/shop.html">
+          <span data-content-key="home.hero" data-content-field="cta_text">Shop the Collection</span>
+        </a>
       </div>
       <span class="hero__scroll" aria-hidden="true">Scroll</span>
     </section>
@@ -537,31 +543,42 @@
 
         <div class="collections__grid">
 
-          <a class="collection-tile" href="/shop.html?category=polo">
-            <!-- TODO: replace with real DU polo lifestyle photo -->
-            <img src="https://picsum.photos/seed/du-collection-polo/600/800" alt="Polo Shirts" />
+          <!-- Each tile is editable in /admin/homepage.html under its key
+               (home.tile.polo / .tshirt / .bottoms). The hardcoded text
+               below is a fallback for when Supabase is unreachable. -->
+          <a class="collection-tile"
+             data-content-key="home.tile.polo" data-content-field="link" data-content-attr="href"
+             href="/shop.html?category=polo">
+            <img data-content-key="home.tile.polo" data-content-field="image_url" data-content-attr="src"
+                 src="https://picsum.photos/seed/du-collection-polo/600/800" alt="Polo Shirts" />
             <div class="collection-tile__overlay">
-              <span class="collection-tile__label">Iconic</span>
-              <h3 class="collection-tile__name">Polo Shirts</h3>
-              <span class="collection-tile__cta">Shop Polos</span>
+              <span class="collection-tile__label" data-content-key="home.tile.polo" data-content-field="label">Iconic</span>
+              <h3 class="collection-tile__name"   data-content-key="home.tile.polo" data-content-field="name">Polo Shirts</h3>
+              <span class="collection-tile__cta"  data-content-key="home.tile.polo" data-content-field="cta_text">Shop Polos</span>
             </div>
           </a>
 
-          <a class="collection-tile" href="/shop.html?category=t-shirt">
-            <img src="https://picsum.photos/seed/du-collection-tshirt/600/800" alt="T-Shirts" />
+          <a class="collection-tile"
+             data-content-key="home.tile.tshirt" data-content-field="link" data-content-attr="href"
+             href="/shop.html?category=t-shirt">
+            <img data-content-key="home.tile.tshirt" data-content-field="image_url" data-content-attr="src"
+                 src="https://picsum.photos/seed/du-collection-tshirt/600/800" alt="T-Shirts" />
             <div class="collection-tile__overlay">
-              <span class="collection-tile__label">Essentials</span>
-              <h3 class="collection-tile__name">T-Shirts</h3>
-              <span class="collection-tile__cta">Shop T-Shirts</span>
+              <span class="collection-tile__label" data-content-key="home.tile.tshirt" data-content-field="label">Essentials</span>
+              <h3 class="collection-tile__name"   data-content-key="home.tile.tshirt" data-content-field="name">T-Shirts</h3>
+              <span class="collection-tile__cta"  data-content-key="home.tile.tshirt" data-content-field="cta_text">Shop T-Shirts</span>
             </div>
           </a>
 
-          <a class="collection-tile" href="/shop.html?category=bottoms">
-            <img src="https://picsum.photos/seed/du-collection-bottoms/600/800" alt="Bottoms" />
+          <a class="collection-tile"
+             data-content-key="home.tile.bottoms" data-content-field="link" data-content-attr="href"
+             href="/shop.html?category=bottoms">
+            <img data-content-key="home.tile.bottoms" data-content-field="image_url" data-content-attr="src"
+                 src="https://picsum.photos/seed/du-collection-bottoms/600/800" alt="Bottoms" />
             <div class="collection-tile__overlay">
-              <span class="collection-tile__label">Tailored</span>
-              <h3 class="collection-tile__name">Bottoms</h3>
-              <span class="collection-tile__cta">Shop Bottoms</span>
+              <span class="collection-tile__label" data-content-key="home.tile.bottoms" data-content-field="label">Tailored</span>
+              <h3 class="collection-tile__name"   data-content-key="home.tile.bottoms" data-content-field="name">Bottoms</h3>
+              <span class="collection-tile__cta"  data-content-key="home.tile.bottoms" data-content-field="cta_text">Shop Bottoms</span>
             </div>
           </a>
 
@@ -576,48 +593,60 @@
          ──────────────────────────────────────────────────────── -->
     <section class="editorial">
 
-      <!-- Row 1: image left, copy right -->
+      <!-- Row 1 (image left, copy right) — editable as home.editorial.cotton -->
       <div class="editorial__row">
         <div class="editorial__media">
-          <img src="https://picsum.photos/seed/du-editorial-cotton/900/1100"
+          <img data-content-key="home.editorial.cotton" data-content-field="image_url" data-content-attr="src"
+               src="https://picsum.photos/seed/du-editorial-cotton/900/1100"
                alt="Egyptian cotton being woven" />
         </div>
         <div class="editorial__copy">
-          <p class="eyebrow">The Material</p>
-          <h2 class="display-sm">Woven from the finest Egyptian cotton.</h2>
+          <p class="eyebrow"     data-content-key="home.editorial.cotton" data-content-field="eyebrow">The Material</p>
+          <h2 class="display-sm" data-content-key="home.editorial.cotton" data-content-field="headline">Woven from the finest Egyptian cotton.</h2>
           <span class="editorial-rule editorial-rule--left"></span>
+          <div data-content-key="home.editorial.cotton" data-content-field="body_html" data-content-html>
+            <p>
+              Every Ducks Unlimited garment begins with long-staple Egyptian
+              cotton — softer to the touch, stronger in the seam, and built to
+              outlast trend cycles. We weave the cloth ourselves so we can
+              guarantee what's inside each piece.
+            </p>
+          </div>
           <p>
-            Every Ducks Unlimited garment begins with long-staple Egyptian
-            cotton — softer to the touch, stronger in the seam, and built to
-            outlast trend cycles. We weave the cloth ourselves so we can
-            guarantee what's inside each piece.
-          </p>
-          <p>
-            <a href="/journal/the-cotton-story" class="btn btn-outline-dark">
-              Read the Cotton Story
+            <a class="btn btn-outline-dark"
+               data-content-key="home.editorial.cotton" data-content-field="cta_link" data-content-attr="href"
+               href="/journal/the-cotton-story">
+              <span data-content-key="home.editorial.cotton" data-content-field="cta_text">Read the Cotton Story</span>
             </a>
           </p>
         </div>
       </div>
 
-      <!-- Row 2: copy left, image right -->
+      <!-- Row 2 (copy left, image right) — editable as home.editorial.workshop -->
       <div class="editorial__row editorial__row--reverse">
         <div class="editorial__media">
-          <img src="https://picsum.photos/seed/du-editorial-workshop/900/1100"
+          <img data-content-key="home.editorial.workshop" data-content-field="image_url" data-content-attr="src"
+               src="https://picsum.photos/seed/du-editorial-workshop/900/1100"
                alt="Hand-finishing in the Greenhills workshop" />
         </div>
         <div class="editorial__copy">
-          <p class="eyebrow">The Workshop</p>
-          <h2 class="display-sm">Hand-finished, one piece at a time.</h2>
+          <p class="eyebrow"     data-content-key="home.editorial.workshop" data-content-field="eyebrow">The Workshop</p>
+          <h2 class="display-sm" data-content-key="home.editorial.workshop" data-content-field="headline">Hand-finished, one piece at a time.</h2>
           <span class="editorial-rule editorial-rule--left"></span>
+          <div data-content-key="home.editorial.workshop" data-content-field="body_html" data-content-html>
+            <p>
+              From the first cut to the final hem, every Ducks Unlimited piece
+              is finished by hand in our family-run workshop in Greenhills.
+              No middlemen, no outsourcing — just three decades of craft
+              passed down through our team.
+            </p>
+          </div>
           <p>
-            From the first cut to the final hem, every Ducks Unlimited piece
-            is finished by hand in our family-run workshop in Greenhills.
-            No middlemen, no outsourcing — just three decades of craft
-            passed down through our team.
-          </p>
-          <p>
-            <a href="/#story" class="btn btn-outline-dark">Discover Our Heritage</a>
+            <a class="btn btn-outline-dark"
+               data-content-key="home.editorial.workshop" data-content-field="cta_link" data-content-attr="href"
+               href="/#story">
+              <span data-content-key="home.editorial.workshop" data-content-field="cta_text">Discover Our Heritage</span>
+            </a>
           </p>
         </div>
       </div>
@@ -750,6 +779,13 @@
 
   <script type="module" src="/js/components.js"></script>
   <script type="module" src="/js/cart.js"></script>
+
+  <!-- Apply CMS content (hero, tiles, editorial blocks) from site_content.
+       See /js/site-content.js for the data-content-* attribute contract. -->
+  <script type="module">
+    import { applySiteContent } from '/js/site-content.js';
+    applySiteContent('home.');
+  </script>
 
   <!-- Page-specific: fetch the 8 newest active products into the grid -->
   <script type="module">

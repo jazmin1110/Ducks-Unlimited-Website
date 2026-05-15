@@ -17,68 +17,7 @@
       min-height: 100vh;
     }
 
-    /* ── Nav (same as other admin pages) ── */
-    nav {
-      background-color: #1B4D2E;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 1.5rem;
-      height: 56px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .nav-brand {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1.2rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: #fff;
-      text-decoration: none;
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
-      list-style: none;
-    }
-
-    .nav-links a {
-      color: rgba(255,255,255,0.8);
-      text-decoration: none;
-      font-size: 0.875rem;
-      font-weight: 500;
-      padding: 0.4rem 0.75rem;
-      border-radius: 4px;
-      transition: background-color 0.15s, color 0.15s;
-    }
-
-    .nav-links a:hover,
-    .nav-links a.active {
-      background-color: rgba(255,255,255,0.12);
-      color: #fff;
-    }
-
-    .btn-logout {
-      background: none;
-      border: 1px solid rgba(255,255,255,0.35);
-      color: rgba(255,255,255,0.8);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.8rem;
-      font-weight: 500;
-      padding: 0.35rem 0.9rem;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-left: 0.5rem;
-      transition: background-color 0.15s, color 0.15s;
-    }
-
-    .btn-logout:hover { background-color: rgba(255,255,255,0.12); color: #fff; }
+    /* Nav styles live in /components/admin-nav.html (shared across admin) */
 
     /* ── Page layout ── */
     main {
@@ -554,21 +493,8 @@
 </head>
 <body>
 
-  <!-- ── Nav ── -->
-  <nav>
-    <a class="nav-brand" href="/admin/dashboard.html">Ducks Unlimited</a>
-    <ul class="nav-links">
-      <li><a href="/admin/dashboard.html">Dashboard</a></li>
-      <li><a href="/admin/products.html">Products</a></li>
-      <li><a href="/admin/inventory.html" class="active">Inventory</a></li>
-      <li><a href="/admin/orders.html">Orders</a></li>
-      <li><a href="/admin/lookbooks.html">Lookbooks</a></li>
-      <li><a href="/admin/journal.html">Journal</a></li>
-      <li><a href="/admin/gift-cards.html">Gift Cards</a></li>
-      <li><a href="/admin/stores.html">Stores</a></li>
-      <li><button class="btn-logout" id="logoutBtn">Log Out</button></li>
-    </ul>
-  </nav>
+  <!-- Shared admin nav — see /components/admin-nav.html -->
+  <div data-component="admin-nav"></div>
 
   <main>
 
@@ -721,11 +647,7 @@
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) window.location.href = '/admin/index.html';
 
-    // ── Log out ──
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      await supabase.auth.signOut();
-      window.location.href = '/admin/index.html';
-    });
+    // Log out is handled by /components/admin-nav.html
 
     // ─────────────────────────────────────────────────────────────────────
     // CONSTANTS & ELEMENT REFERENCES
@@ -1140,6 +1062,9 @@
     const variantParam = new URLSearchParams(window.location.search).get('variant');
     if (variantParam) openEditPanel(variantParam);
   </script>
+
+  <!-- Mounts the shared <div data-component="admin-nav"> at the top of <body> -->
+  <script type="module" src="/js/components.js"></script>
 
 </body>
 </html>

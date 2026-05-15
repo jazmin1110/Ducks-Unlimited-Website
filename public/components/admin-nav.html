@@ -1,0 +1,320 @@
+<!-- =============================================================================
+     Ducks Unlimited — Admin Navigation (shared across all /admin/* pages)
+     =============================================================================
+     Single source of truth for the admin top bar. Mounted by /js/components.js
+     when a page contains: <div data-component="admin-nav"></div>
+
+     What it does:
+       - Renders the same nav UI on every admin page
+       - Auto-highlights the current page's link based on location.pathname
+       - Renders the logged-in admin's email on the right
+       - Handles the "Log Out" button (signs out of Supabase, redirects to login)
+
+     Why this exists:
+       Before this component, every admin page had its own inline copy of the
+       nav markup AND its own nav CSS. Two different visual styles had drifted
+       (forest-green pill bar vs. uppercase-text bar). Centralizing fixes that.
+
+     Usage in an admin page:
+       1. Add this line where the nav should appear:
+            <div data-component="admin-nav"></div>
+       2. Include the loader once near the end of <body>:
+            <script type="module" src="/js/components.js"></script>
+       3. Delete any inline `<nav>` block and its `<style>` rules from the page.
+       4. Delete any `logoutBtn` event listener from the page — this file owns it.
+     ============================================================================= -->
+
+<header class="admin-nav" data-admin-nav>
+  <div class="admin-nav__inner">
+
+    <!-- Brand block (clicks back to dashboard) -->
+    <a class="admin-nav__brand" href="/admin/dashboard.html">
+      <span class="admin-nav__brand-name">Ducks Unlimited</span>
+      <span class="admin-nav__brand-tag">Admin</span>
+    </a>
+
+    <!-- Hamburger toggle (mobile only) — checkbox-driven, no JS needed -->
+    <input type="checkbox" id="adminNavToggle" class="admin-nav__toggle" aria-label="Toggle admin menu" />
+    <label for="adminNavToggle" class="admin-nav__hamburger" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </label>
+
+    <!-- Primary links -->
+    <nav class="admin-nav__menu" aria-label="Admin">
+      <ul class="admin-nav__links">
+        <li><a href="/admin/dashboard.html" data-path="/admin/dashboard.html">Dashboard</a></li>
+        <li><a href="/admin/products.html"  data-path="/admin/products.html">Products</a></li>
+        <li><a href="/admin/inventory.html" data-path="/admin/inventory.html">Inventory</a></li>
+        <li><a href="/admin/orders.html"    data-path="/admin/orders.html">Orders</a></li>
+        <li><a href="/admin/homepage.html"  data-path="/admin/homepage.html">Homepage</a></li>
+        <li><a href="/admin/lookbooks.html" data-path="/admin/lookbooks.html">Lookbooks</a></li>
+        <li><a href="/admin/journal.html"   data-path="/admin/journal.html">Journal</a></li>
+        <li><a href="/admin/gift-cards.html" data-path="/admin/gift-cards.html">Gift Cards</a></li>
+        <li><a href="/admin/stores.html"    data-path="/admin/stores.html">Stores</a></li>
+      </ul>
+    </nav>
+
+    <!-- Right side: signed-in email + log out + view-site -->
+    <div class="admin-nav__right">
+      <a class="admin-nav__view-site" href="/" target="_blank" rel="noopener" title="Open live site in a new tab">View site ↗</a>
+      <span class="admin-nav__email" data-admin-email></span>
+      <button type="button" class="admin-nav__logout" data-admin-logout>Log Out</button>
+    </div>
+
+  </div>
+</header>
+
+<style>
+  /* All selectors scoped to .admin-nav so they can't collide with page styles. */
+
+  .admin-nav {
+    background: #1B4D2E;          /* brand forest green */
+    color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .admin-nav__inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1.25rem;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  /* ── Brand ── */
+  .admin-nav__brand {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+    text-decoration: none;
+    color: #fff;
+    flex: 0 0 auto;
+    order: 1;
+  }
+
+  .admin-nav__brand-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .admin-nav__brand-tag {
+    font-size: 0.55rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #C9A84C;               /* brand muted gold */
+    margin-top: 0.15rem;
+  }
+
+  /* ── Hamburger (mobile only — hidden via media query at ≥900px) ── */
+  .admin-nav__toggle {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+  }
+
+  .admin-nav__hamburger {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 26px;
+    height: 20px;
+    padding: 3px 0;
+    cursor: pointer;
+    margin-left: auto;
+    order: 2;
+  }
+
+  .admin-nav__hamburger span {
+    display: block;
+    height: 2px;
+    background: #fff;
+    border-radius: 1px;
+    transition: transform 0.2s, opacity 0.2s;
+  }
+
+  .admin-nav__toggle:checked ~ .admin-nav__hamburger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .admin-nav__toggle:checked ~ .admin-nav__hamburger span:nth-child(2) { opacity: 0; }
+  .admin-nav__toggle:checked ~ .admin-nav__hamburger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ── Menu (collapsed by default on mobile, inline on desktop) ── */
+  .admin-nav__menu {
+    flex-basis: 100%;
+    order: 4;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease;
+  }
+
+  .admin-nav__toggle:checked ~ .admin-nav__menu {
+    max-height: 70vh;
+    overflow-y: auto;
+    margin-bottom: 0.75rem;
+  }
+
+  .admin-nav__links {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .admin-nav__links a {
+    display: block;
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.55rem 0.75rem;
+    border-radius: 4px;
+    transition: background-color 0.15s, color 0.15s;
+  }
+
+  .admin-nav__links a:hover,
+  .admin-nav__links a.is-active {
+    background-color: rgba(255,255,255,0.12);
+    color: #fff;
+  }
+
+  /* ── Right cluster (email + logout) ── */
+  .admin-nav__right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-basis: 100%;
+    order: 5;
+    padding-bottom: 0.5rem;
+  }
+
+  .admin-nav__view-site {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #C9A84C;
+    text-decoration: none;
+    border: 1px solid rgba(201,168,76,0.4);
+    padding: 0.3rem 0.7rem;
+    border-radius: 4px;
+    transition: background-color 0.15s, color 0.15s;
+  }
+
+  .admin-nav__view-site:hover {
+    background-color: rgba(201,168,76,0.15);
+    color: #fff;
+  }
+
+  .admin-nav__email {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.65);
+    margin-left: auto;
+  }
+
+  .admin-nav__logout {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.35);
+    color: rgba(255,255,255,0.8);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.35rem 0.9rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+  }
+
+  .admin-nav__logout:hover {
+    background-color: rgba(255,255,255,0.12);
+    color: #fff;
+  }
+
+  /* ──────────────────────────────────────────────────────────────────────────
+     DESKTOP (≥ 900px) — everything in a single row.
+     ────────────────────────────────────────────────────────────────────────── */
+  @media (min-width: 900px) {
+    .admin-nav__inner {
+      flex-wrap: nowrap;
+      gap: 1.5rem;
+    }
+
+    .admin-nav__hamburger { display: none; }
+
+    .admin-nav__menu {
+      flex: 1;
+      flex-basis: auto;
+      order: 2;
+      max-height: none;
+      overflow: visible;
+      margin: 0;
+    }
+
+    .admin-nav__links {
+      flex-direction: row;
+      align-items: center;
+      gap: 0.1rem;
+      padding: 0;
+      flex-wrap: wrap;
+    }
+
+    .admin-nav__right {
+      flex-basis: auto;
+      order: 3;
+      padding: 0;
+    }
+
+    .admin-nav__email { margin-left: 0; }
+  }
+</style>
+
+<script type="module">
+  // ── Active link highlighting ──────────────────────────────────────────────
+  // Mark the link whose data-path matches the current page so the user can
+  // always see where they are. Runs once on mount.
+  (function highlightActive() {
+    const path = window.location.pathname;
+    // Treat "/admin/" and "/admin/index.html" as dashboard for highlight purposes
+    const normalized =
+      path === '/admin/' || path === '/admin/index.html'
+        ? '/admin/dashboard.html'
+        : path;
+
+    document.querySelectorAll('[data-admin-nav] [data-path]').forEach((link) => {
+      if (link.getAttribute('data-path') === normalized) {
+        link.classList.add('is-active');
+      }
+    });
+  })();
+
+  // ── Email + logout (uses Supabase session) ────────────────────────────────
+  // Imported here so each admin page doesn't have to wire up its own logout.
+  import { supabase } from '/lib/supabase.js';
+
+  // Show the signed-in email on the right side of the nav.
+  // We do this here (not in each page) so it's consistent everywhere.
+  (async function paintEmail() {
+    const { data: { session } } = await supabase.auth.getSession();
+    const slot = document.querySelector('[data-admin-email]');
+    if (slot && session?.user?.email) {
+      slot.textContent = session.user.email;
+    }
+  })();
+
+  // Wire up the log-out button. Sign out, then bounce to the login page.
+  document.querySelectorAll('[data-admin-logout]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      window.location.href = '/admin/index.html';
+    });
+  });
+</script>

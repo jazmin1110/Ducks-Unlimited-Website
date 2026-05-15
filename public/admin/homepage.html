@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Homepage — Admin · Ducks Unlimited</title>
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    /* Nav styles live in /components/admin-nav.html (shared across admin) */
+
+    body { background: var(--color-bg-warm); }
+
+    main.admin-main { padding: var(--space-md); max-width: 1100px; margin: 0 auto; }
+
+    .admin-h1 { font-family: var(--font-heading); color: var(--color-primary); font-size: 2rem; margin-bottom: 0.5rem; }
+    .admin-sub { color: var(--color-text-muted); margin-bottom: var(--space-md); }
+
+    /* ── Sticky action bar ──
+       Save / Preview / Publish stay visible at the top while the admin
+       scrolls through the (long) form. Saves them an unnecessary scroll
+       every time they want to publish. */
+    .action-bar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--color-bg-warm);
+      border-bottom: 1px solid var(--color-border-light);
+      padding: 0.75rem 0;
+      margin-bottom: var(--space-md);
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .action-bar__status {
+      margin-left: auto;
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+    }
+
+    .action-bar__status.is-dirty { color: var(--color-warning); }
+    .action-bar__status.is-saved { color: var(--color-success); }
+
+    /* Per-section panels */
+    .admin-panel {
+      background: var(--color-white);
+      padding: var(--space-md);
+      margin-bottom: var(--space-md);
+      border: 1px solid var(--color-border-light);
+    }
+    .admin-panel h2 {
+      font-family: var(--font-heading);
+      font-size: 1.3rem;
+      color: var(--color-primary);
+      margin-bottom: var(--space);
+    }
+    .admin-panel h3 {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      color: var(--color-primary);
+      margin: var(--space) 0 0.5rem;
+    }
+
+    .form-row { display: grid; gap: var(--space-sm); grid-template-columns: 1fr; margin-bottom: var(--space-sm); }
+    @media (min-width: 768px) {
+      .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+    }
+
+    .help-text { font-size: 0.78rem; color: var(--color-text-muted); margin-top: 0.4rem; }
+
+    /* Editorial-row + tile sub-panels visually nested inside the admin-panel */
+    .sub-panel {
+      background: var(--color-bg);
+      border: 1px solid var(--color-border-light);
+      padding: var(--space);
+      margin-bottom: var(--space);
+    }
+
+    .sub-panel:last-child { margin-bottom: 0; }
+
+    /* Layout: image uploader on the left, copy fields on the right (desktop) */
+    .editor-grid {
+      display: grid;
+      gap: var(--space);
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 768px) {
+      .editor-grid { grid-template-columns: 320px 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Shared admin nav — see /components/admin-nav.html -->
+  <div data-component="admin-nav"></div>
+
+  <main class="admin-main">
+
+    <h1 class="admin-h1">Homepage</h1>
+    <p class="admin-sub">Edit the copy and images that appear on the live storefront's homepage. Click <strong>Preview</strong> to see your draft on the real site, then <strong>Publish</strong> when it's ready to go live.</p>
+
+    <!-- ── Sticky action bar ── -->
+    <div class="action-bar">
+      <button type="button" class="btn btn-primary" id="saveDraftBtn">Save Draft</button>
+      <button type="button" class="btn btn-ghost"   id="previewBtn">Preview ↗</button>
+      <button type="button" class="btn btn-ghost"   id="publishBtn">Publish</button>
+      <button type="button" class="btn btn-ghost"   id="revertBtn"  title="Discard draft and reset to the published version">Revert to published</button>
+      <span class="action-bar__status" id="statusEl">Loading…</span>
+    </div>
+
+
+    <!-- ── HERO ── -->
+    <section class="admin-panel" data-section="home.hero">
+      <h2>Hero</h2>
+      <p class="help-text" style="margin-top:-0.25rem;margin-bottom:var(--space);">The full-screen photo + headline at the top of the homepage.</p>
+
+      <div class="editor-grid">
+        <div>
+          <label class="field-label">Background image</label>
+          <div data-image-uploader="hero_image"></div>
+          <input type="hidden" id="hero_image">
+          <p class="help-text">Wide landscape photo works best (≥ 1600 px wide).</p>
+        </div>
+        <div>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label" for="hero_eyebrow">Eyebrow (small text above headline)</label>
+              <input class="input" id="hero_eyebrow">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label" for="hero_headline">Headline</label>
+              <textarea class="textarea" id="hero_headline" rows="2"></textarea>
+              <p class="help-text">Use <code>&lt;br/&gt;</code> to control line breaks.</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label" for="hero_sub">Subheading</label>
+              <textarea class="textarea" id="hero_sub" rows="3"></textarea>
+            </div>
+          </div>
+          <div class="form-row cols-2">
+            <div class="field">
+              <label class="field-label" for="hero_cta_text">CTA button text</label>
+              <input class="input" id="hero_cta_text">
+            </div>
+            <div class="field">
+              <label class="field-label" for="hero_cta_link">CTA button link</label>
+              <input class="input" id="hero_cta_link" placeholder="/shop.html">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ── COLLECTION TILES (3 of them) ── -->
+    <section class="admin-panel">
+      <h2>Featured Collections (3 tiles)</h2>
+      <p class="help-text" style="margin-top:-0.25rem;margin-bottom:var(--space);">The three large image tiles linking to category pages.</p>
+
+      <!-- Tiles are templated below — three sub-panels with identical fields -->
+      <div id="tilesContainer"></div>
+    </section>
+
+
+    <!-- ── EDITORIAL ROWS (2 of them) ── -->
+    <section class="admin-panel">
+      <h2>Editorial Rows (2 blocks)</h2>
+      <p class="help-text" style="margin-top:-0.25rem;margin-bottom:var(--space);">The alternating image + text blocks below the collection tiles.</p>
+
+      <div id="editorialContainer"></div>
+    </section>
+
+  </main>
+
+
+  <script type="module">
+    // =========================================================================
+    // Homepage CMS editor
+    // =========================================================================
+    // - On load, fetches every site_content row whose key starts with `home.`
+    //   from Supabase. Prefills the form with `draft` if present, else `published`.
+    // - "Save Draft" upserts each section's `draft` JSONB (does NOT touch published).
+    // - "Preview" opens /index.html?preview=1 in a new tab (storefront reads `draft`
+    //   when ?preview=1 is set AND visitor has an admin session).
+    // - "Publish" copies draft → published for every dirty section.
+    // - "Revert" wipes the local draft and reloads the published version.
+    // =========================================================================
+
+    import { supabase } from '/lib/supabase.js';
+    import { mountImageUploader } from '/admin/js/image-uploader.js';
+
+    // ── Auth guard ──
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { window.location.href = '/admin/index.html'; }
+
+    // ── Schema ──
+    // The shape of each section's JSONB blob. Matches /js/site-content.js
+    // and the seed values in database/migrations/007_site_content.sql.
+    // Adding a field here? Add it to the form too AND to those two files.
+    const HERO_FIELDS = ['eyebrow','headline','sub','cta_text','cta_link','image_url'];
+
+    // Three collection tiles. The key suffix matches the seed.
+    const TILES = [
+      { key: 'home.tile.polo',    label: 'Polo Shirts tile' },
+      { key: 'home.tile.tshirt',  label: 'T-Shirts tile' },
+      { key: 'home.tile.bottoms', label: 'Bottoms tile' },
+    ];
+
+    // Two editorial rows.
+    const EDITORIALS = [
+      { key: 'home.editorial.cotton',   label: 'Editorial Row 1 — Cotton story' },
+      { key: 'home.editorial.workshop', label: 'Editorial Row 2 — Workshop story' },
+    ];
+
+    // In-memory cache of every key's published + draft blobs. Keyed by `key`.
+    // Updated as the admin types so we know what to upsert on Save Draft.
+    const state = {}; // { 'home.hero': { published: {...}, draft: {...} }, ... }
+
+
+    // ─────────────────────────────────────────────────────────────────────
+    // RENDER REPEATING SECTIONS
+    // The 3 tiles + 2 editorial rows have identical UI; we generate them
+    // here so the markup stays compact and there's only one place to edit
+    // their field list.
+    // ─────────────────────────────────────────────────────────────────────
+
+    function renderTilePanels() {
+      const c = document.getElementById('tilesContainer');
+      c.innerHTML = TILES.map((t) => `
+        <div class="sub-panel" data-section="${t.key}">
+          <h3>${t.label}</h3>
+          <div class="editor-grid">
+            <div>
+              <label class="field-label">Image</label>
+              <div data-image-uploader="img_${t.key}"></div>
+              <input type="hidden" id="img_${t.key}">
+            </div>
+            <div>
+              <div class="form-row cols-2">
+                <div class="field">
+                  <label class="field-label" for="lbl_${t.key}">Label (small)</label>
+                  <input class="input" id="lbl_${t.key}">
+                </div>
+                <div class="field">
+                  <label class="field-label" for="nm_${t.key}">Name (large)</label>
+                  <input class="input" id="nm_${t.key}">
+                </div>
+              </div>
+              <div class="form-row cols-2">
+                <div class="field">
+                  <label class="field-label" for="cta_${t.key}">CTA text</label>
+                  <input class="input" id="cta_${t.key}">
+                </div>
+                <div class="field">
+                  <label class="field-label" for="lnk_${t.key}">Link</label>
+                  <input class="input" id="lnk_${t.key}" placeholder="/shop.html?category=...">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderEditorialPanels() {
+      const c = document.getElementById('editorialContainer');
+      c.innerHTML = EDITORIALS.map((e) => `
+        <div class="sub-panel" data-section="${e.key}">
+          <h3>${e.label}</h3>
+          <div class="editor-grid">
+            <div>
+              <label class="field-label">Image</label>
+              <div data-image-uploader="img_${e.key}"></div>
+              <input type="hidden" id="img_${e.key}">
+              <div class="form-row" style="margin-top:0.5rem;">
+                <div class="field">
+                  <label class="field-label" for="alt_${e.key}">Image alt text</label>
+                  <input class="input" id="alt_${e.key}" placeholder="Describe the image for accessibility">
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="form-row">
+                <div class="field">
+                  <label class="field-label" for="eb_${e.key}">Eyebrow</label>
+                  <input class="input" id="eb_${e.key}">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="field">
+                  <label class="field-label" for="hl_${e.key}">Headline</label>
+                  <input class="input" id="hl_${e.key}">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="field">
+                  <label class="field-label" for="bd_${e.key}">Body (HTML)</label>
+                  <textarea class="textarea" id="bd_${e.key}" rows="5"></textarea>
+                  <p class="help-text">Wrap paragraphs in <code>&lt;p&gt;…&lt;/p&gt;</code>.</p>
+                </div>
+              </div>
+              <div class="form-row cols-2">
+                <div class="field">
+                  <label class="field-label" for="ct_${e.key}">CTA text</label>
+                  <input class="input" id="ct_${e.key}">
+                </div>
+                <div class="field">
+                  <label class="field-label" for="cl_${e.key}">CTA link</label>
+                  <input class="input" id="cl_${e.key}">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    renderTilePanels();
+    renderEditorialPanels();
+
+
+    // ─────────────────────────────────────────────────────────────────────
+    // FIELD <-> JSON BLOB MAPPERS
+    // For each section we need (a) read the form into a JS object that
+    // matches the JSONB shape, and (b) populate the form from such an object.
+    // Keeping these next to each other so they stay in sync.
+    // ─────────────────────────────────────────────────────────────────────
+
+    // ---- HERO ----
+    function readHero() {
+      return {
+        eyebrow:   v('hero_eyebrow'),
+        headline:  v('hero_headline'),
+        sub:       v('hero_sub'),
+        cta_text:  v('hero_cta_text'),
+        cta_link:  v('hero_cta_link'),
+        image_url: v('hero_image'),
+      };
+    }
+    function writeHero(d = {}) {
+      set('hero_eyebrow',  d.eyebrow);
+      set('hero_headline', d.headline);
+      set('hero_sub',      d.sub);
+      set('hero_cta_text', d.cta_text);
+      set('hero_cta_link', d.cta_link);
+      // image_url is set indirectly via the uploader below
+    }
+
+    // ---- TILE ----
+    function readTile(key) {
+      return {
+        image_url: v(`img_${key}`),
+        label:     v(`lbl_${key}`),
+        name:      v(`nm_${key}`),
+        cta_text:  v(`cta_${key}`),
+        link:      v(`lnk_${key}`),
+      };
+    }
+    function writeTile(key, d = {}) {
+      set(`lbl_${key}`, d.label);
+      set(`nm_${key}`,  d.name);
+      set(`cta_${key}`, d.cta_text);
+      set(`lnk_${key}`, d.link);
+    }
+
+    // ---- EDITORIAL ROW ----
+    function readEditorial(key) {
+      return {
+        image_url: v(`img_${key}`),
+        image_alt: v(`alt_${key}`),
+        eyebrow:   v(`eb_${key}`),
+        headline:  v(`hl_${key}`),
+        body_html: v(`bd_${key}`),
+        cta_text:  v(`ct_${key}`),
+        cta_link:  v(`cl_${key}`),
+      };
+    }
+    function writeEditorial(key, d = {}) {
+      set(`alt_${key}`, d.image_alt);
+      set(`eb_${key}`,  d.eyebrow);
+      set(`hl_${key}`,  d.headline);
+      set(`bd_${key}`,  d.body_html);
+      set(`ct_${key}`,  d.cta_text);
+      set(`cl_${key}`,  d.cta_link);
+    }
+
+    // Tiny DOM helpers
+    function v(id)        { return (document.getElementById(id)?.value ?? '').trim(); }
+    function set(id, val) { const el = document.getElementById(id); if (el) el.value = val ?? ''; }
+
+
+    // ─────────────────────────────────────────────────────────────────────
+    // LOAD — fetch existing rows and populate the form
+    // ─────────────────────────────────────────────────────────────────────
+
+    async function loadAll() {
+      const { data, error } = await supabase
+        .from('site_content')
+        .select('key, published, draft')
+        .like('key', 'home.%');
+
+      if (error) {
+        setStatus('Could not load — see console', 'is-dirty');
+        console.error(error);
+        return;
+      }
+
+      // Cache rows we got back, plus seed any keys that don't exist yet
+      // with an empty {published:null, draft:null} so saving works either way.
+      for (const row of (data || [])) {
+        state[row.key] = { published: row.published, draft: row.draft };
+      }
+      for (const key of allKeys()) {
+        if (!state[key]) state[key] = { published: null, draft: null };
+      }
+
+      // Populate the hero form. Prefer draft (admin's in-progress edits) if present.
+      const heroSrc = state['home.hero']?.draft || state['home.hero']?.published || {};
+      writeHero(heroSrc);
+      // Mount the image uploader pre-filled with whichever URL we're starting from
+      mountImageUploader({
+        container:   document.querySelector('[data-image-uploader="hero_image"]'),
+        hiddenInput: document.getElementById('hero_image'),
+        bucket:      'site-content',
+        pathPrefix:  'homepage',
+        currentUrl:  heroSrc.image_url || '',
+        onChange:    markDirty,
+      });
+
+      // Populate each tile + mount its uploader
+      for (const t of TILES) {
+        const src = state[t.key]?.draft || state[t.key]?.published || {};
+        writeTile(t.key, src);
+        mountImageUploader({
+          container:   document.querySelector(`[data-image-uploader="img_${t.key}"]`),
+          hiddenInput: document.getElementById(`img_${t.key}`),
+          bucket:      'site-content',
+          pathPrefix:  'homepage',
+          currentUrl:  src.image_url || '',
+          onChange:    markDirty,
+        });
+      }
+
+      // Populate each editorial row + mount its uploader
+      for (const e of EDITORIALS) {
+        const src = state[e.key]?.draft || state[e.key]?.published || {};
+        writeEditorial(e.key, src);
+        mountImageUploader({
+          container:   document.querySelector(`[data-image-uploader="img_${e.key}"]`),
+          hiddenInput: document.getElementById(`img_${e.key}`),
+          bucket:      'site-content',
+          pathPrefix:  'homepage',
+          currentUrl:  src.image_url || '',
+          onChange:    markDirty,
+        });
+      }
+
+      setStatus(haveAnyDrafts() ? 'Loaded — unsaved draft on disk' : 'Loaded', 'is-saved');
+    }
+
+    function allKeys() {
+      return ['home.hero', ...TILES.map((t) => t.key), ...EDITORIALS.map((e) => e.key)];
+    }
+
+    function haveAnyDrafts() {
+      return allKeys().some((k) => state[k]?.draft);
+    }
+
+
+    // ─────────────────────────────────────────────────────────────────────
+    // SAVE / PREVIEW / PUBLISH / REVERT
+    // ─────────────────────────────────────────────────────────────────────
+
+    // Read every section's current form state and return [{key, draft}, ...]
+    function snapshotForm() {
+      const rows = [];
+      rows.push({ key: 'home.hero', draft: readHero() });
+      for (const t of TILES)      rows.push({ key: t.key, draft: readTile(t.key) });
+      for (const e of EDITORIALS) rows.push({ key: e.key, draft: readEditorial(e.key) });
+      return rows;
+    }
+
+    // ── Save Draft ──
+    document.getElementById('saveDraftBtn').addEventListener('click', async () => {
+      setStatus('Saving…');
+
+      const rows = snapshotForm().map((r) => ({
+        key:   r.key,
+        draft: r.draft,
+        // Preserve existing published so we don't accidentally null it out.
+        published: state[r.key]?.published ?? null,
+        updated_by: session.user.id,
+      }));
+
+      // Upsert all rows in one batch (PostgREST handles array bodies)
+      const { error } = await supabase.from('site_content').upsert(rows, { onConflict: 'key' });
+      if (error) {
+        console.error(error);
+        setStatus('Save failed — see console', 'is-dirty');
+        return;
+      }
+
+      // Update local cache
+      for (const r of rows) state[r.key].draft = r.draft;
+      setStatus('Draft saved · ' + new Date().toLocaleTimeString(), 'is-saved');
+    });
+
+    // ── Preview ──
+    // Opens the live site with ?preview=1; the storefront's site-content reader
+    // will load `draft` instead of `published` when a signed-in admin visits with
+    // that flag.
+    document.getElementById('previewBtn').addEventListener('click', () => {
+      window.open('/index.html?preview=1', '_blank', 'noopener');
+    });
+
+    // ── Publish ──
+    document.getElementById('publishBtn').addEventListener('click', async () => {
+      if (!confirm('Publish current draft to the live site? This is immediately visible to all visitors.')) return;
+      setStatus('Publishing…');
+
+      // Take whatever's currently on screen and write it to BOTH draft and
+      // published. (Saving draft first ensures unsaved field changes also publish.)
+      const rows = snapshotForm().map((r) => ({
+        key:        r.key,
+        draft:      r.draft,
+        published:  r.draft,
+        updated_by: session.user.id,
+      }));
+      const { error } = await supabase.from('site_content').upsert(rows, { onConflict: 'key' });
+      if (error) {
+        console.error(error);
+        setStatus('Publish failed — see console', 'is-dirty');
+        return;
+      }
+      for (const r of rows) {
+        state[r.key].draft     = r.draft;
+        state[r.key].published = r.published;
+      }
+      setStatus('Published · ' + new Date().toLocaleTimeString(), 'is-saved');
+    });
+
+    // ── Revert ──
+    // Discards the draft entirely and reloads the published version into the form.
+    document.getElementById('revertBtn').addEventListener('click', async () => {
+      if (!confirm('Discard your draft and revert the form to the published version?')) return;
+      setStatus('Reverting…');
+
+      // Null out the draft column for every home.* row.
+      const rows = allKeys().map((key) => ({
+        key,
+        draft:      null,
+        published:  state[key]?.published ?? null,
+        updated_by: session.user.id,
+      }));
+      const { error } = await supabase.from('site_content').upsert(rows, { onConflict: 'key' });
+      if (error) {
+        console.error(error);
+        setStatus('Revert failed — see console', 'is-dirty');
+        return;
+      }
+      for (const key of allKeys()) state[key].draft = null;
+
+      // Reload form from published version
+      await loadAll();
+      setStatus('Reverted to published', 'is-saved');
+    });
+
+
+    // ─────────────────────────────────────────────────────────────────────
+    // STATUS + DIRTY TRACKING
+    // ─────────────────────────────────────────────────────────────────────
+
+    const statusEl = document.getElementById('statusEl');
+    function setStatus(text, cls = '') {
+      statusEl.textContent = text;
+      statusEl.className = 'action-bar__status ' + cls;
+    }
+
+    function markDirty() {
+      setStatus('Unsaved changes', 'is-dirty');
+    }
+
+    // Mark dirty as soon as the admin edits any input/textarea
+    document.addEventListener('input', (e) => {
+      if (e.target.matches('input, textarea')) markDirty();
+    });
+
+    // Warn before navigating away with unsaved changes
+    window.addEventListener('beforeunload', (e) => {
+      if (statusEl.classList.contains('is-dirty')) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+
+
+    // ── Kick everything off ──
+    await loadAll();
+  </script>
+
+  <!-- Mounts the shared <div data-component="admin-nav"> at the top of <body> -->
+  <script type="module" src="/js/components.js"></script>
+
+</body>
+</html>

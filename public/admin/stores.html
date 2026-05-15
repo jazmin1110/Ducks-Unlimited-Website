@@ -9,13 +9,7 @@
   <style>
     body { background: var(--color-bg-warm); }
 
-    nav.admin-nav { background: var(--color-primary); color: var(--color-white); padding: 0.85rem var(--space-md); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
-    .admin-nav a, .admin-nav button { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; }
-    .admin-nav a:hover, .admin-nav a.active { color: var(--color-accent); }
-    .admin-nav__brand { font-family: var(--font-heading); color: var(--color-white); font-size: 1rem; letter-spacing: 0.14em; }
-    .admin-nav__links { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; list-style: none; padding: 0; margin: 0; }
-    .admin-nav__logout { background: none; border: 1px solid rgba(255,255,255,0.3); padding: 0.35rem 0.8rem; cursor: pointer; }
-    .admin-nav__logout:hover { border-color: var(--color-accent); color: var(--color-accent); }
+    /* Nav styles live in /components/admin-nav.html (shared across admin) */
 
     main.admin-main { padding: var(--space-md); max-width: 1100px; margin: 0 auto; }
     .admin-h1 { font-family: var(--font-heading); color: var(--color-primary); font-size: 2rem; margin-bottom: 0.5rem; }
@@ -66,20 +60,8 @@
 </head>
 <body>
 
-  <nav class="admin-nav">
-    <a class="admin-nav__brand" href="/admin/dashboard.html">DU Admin</a>
-    <ul class="admin-nav__links">
-      <li><a href="/admin/dashboard.html">Dashboard</a></li>
-      <li><a href="/admin/products.html">Products</a></li>
-      <li><a href="/admin/inventory.html">Inventory</a></li>
-      <li><a href="/admin/orders.html">Orders</a></li>
-      <li><a href="/admin/lookbooks.html">Lookbooks</a></li>
-      <li><a href="/admin/journal.html">Journal</a></li>
-      <li><a href="/admin/gift-cards.html">Gift Cards</a></li>
-      <li><a href="/admin/stores.html" class="active">Stores</a></li>
-      <li><button class="admin-nav__logout" id="logoutBtn">Log Out</button></li>
-    </ul>
-  </nav>
+  <!-- Shared admin nav — see /components/admin-nav.html -->
+  <div data-component="admin-nav"></div>
 
   <main class="admin-main">
     <h1 class="admin-h1">Stores</h1>
@@ -120,7 +102,14 @@
           <div class="field"><label class="field-label" for="description">Description</label><textarea class="textarea" id="description" rows="3"></textarea></div>
         </div>
         <div class="form-row">
-          <div class="field"><label class="field-label" for="image_url">Hero Image URL</label><input class="input" id="image_url" placeholder="https://..."></div>
+          <div class="field">
+            <label class="field-label">Hero Image</label>
+            <!-- Uploader UI mounts inside this div; the file URL ends up in the hidden input below.
+                 See /admin/js/image-uploader.js for the widget implementation. -->
+            <div data-image-uploader="image_url"></div>
+            <input type="hidden" id="image_url">
+            <p class="help-text">Upload a JPG, PNG, or WEBP — max 5 MB. Shown on /stores.html.</p>
+          </div>
         </div>
 
         <label class="field-label" style="margin-top: var(--space);">Hours</label>
@@ -153,14 +142,27 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { mountImageUploader } from '/admin/js/image-uploader.js';
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { window.location.href = '/admin/index.html'; }
 
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      await supabase.auth.signOut();
-      window.location.href = '/admin/index.html';
-    });
+    // Log out is handled by /components/admin-nav.html
+
+    // ── Hero image uploader ─────────────────────────────────────────────
+    // Re-mount the uploader whenever we load a different store into the form
+    // (edit) or clear it (reset). Pass the existing image URL so the preview
+    // shows up immediately when editing.
+    function mountStoreUploader(currentUrl = '') {
+      mountImageUploader({
+        container:   document.querySelector('[data-image-uploader="image_url"]'),
+        hiddenInput: document.getElementById('image_url'),
+        bucket:      'site-content',
+        pathPrefix:  'stores',
+        currentUrl,
+      });
+    }
+    mountStoreUploader(); // initial empty mount
 
     function escapeHtml(s) {
       return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
@@ -199,6 +201,8 @@
       document.getElementById('display_order').value = '0';
       document.getElementById('is_active').checked = true;
       writeHours(null);
+      // Clear any image preview by remounting the uploader empty
+      mountStoreUploader('');
     }
     document.getElementById('resetBtn').addEventListener('click', resetForm);
 
@@ -252,7 +256,8 @@
       document.getElementById('lat').value         = data.lat ?? '';
       document.getElementById('lng').value         = data.lng ?? '';
       document.getElementById('description').value = data.description ?? '';
-      document.getElementById('image_url').value   = data.image_url ?? '';
+      // Re-mount the uploader with this store's existing image so the preview shows
+      mountStoreUploader(data.image_url ?? '');
       document.getElementById('is_active').checked = !!data.is_active;
       writeHours(data.hours);
 
@@ -302,5 +307,8 @@
 
     load();
   </script>
+
+  <!-- Mounts the shared <div data-component="admin-nav"> at the top of <body> -->
+  <script type="module" src="/js/components.js"></script>
 </body>
 </html>

@@ -9,31 +9,7 @@
   <style>
     body { background: var(--color-bg-warm); }
 
-    nav.admin-nav {
-      background: var(--color-primary);
-      color: var(--color-white);
-      padding: 0.85rem var(--space-md);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-    .admin-nav a, .admin-nav button {
-      color: rgba(255,255,255,0.85);
-      text-decoration: none;
-      font-size: 0.78rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-    }
-    .admin-nav a:hover, .admin-nav a.active { color: var(--color-accent); }
-    .admin-nav__brand { font-family: var(--font-heading); color: var(--color-white); font-size: 1rem; letter-spacing: 0.14em; }
-    .admin-nav__links { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; list-style: none; padding: 0; margin: 0; }
-    .admin-nav__logout {
-      background: none; border: 1px solid rgba(255,255,255,0.3);
-      padding: 0.35rem 0.8rem; cursor: pointer;
-    }
-    .admin-nav__logout:hover { border-color: var(--color-accent); color: var(--color-accent); }
+    /* Nav styles live in /components/admin-nav.html (shared across admin) */
 
     main.admin-main { padding: var(--space-md); max-width: 1200px; margin: 0 auto; }
 
@@ -111,20 +87,8 @@
 </head>
 <body>
 
-  <nav class="admin-nav">
-    <a class="admin-nav__brand" href="/admin/dashboard.html">DU Admin</a>
-    <ul class="admin-nav__links">
-      <li><a href="/admin/dashboard.html">Dashboard</a></li>
-      <li><a href="/admin/products.html">Products</a></li>
-      <li><a href="/admin/inventory.html">Inventory</a></li>
-      <li><a href="/admin/orders.html">Orders</a></li>
-      <li><a href="/admin/lookbooks.html">Lookbooks</a></li>
-      <li><a href="/admin/journal.html" class="active">Journal</a></li>
-      <li><a href="/admin/gift-cards.html">Gift Cards</a></li>
-      <li><a href="/admin/stores.html">Stores</a></li>
-      <li><button class="admin-nav__logout" id="logoutBtn">Log Out</button></li>
-    </ul>
-  </nav>
+  <!-- Shared admin nav — see /components/admin-nav.html -->
+  <div data-component="admin-nav"></div>
 
   <main class="admin-main">
     <h1 class="admin-h1">Journal</h1>
@@ -191,6 +155,22 @@
         <div class="form-row">
           <div class="field">
             <label class="field-label" for="e_body">Body (HTML) *</label>
+
+            <!-- Image upload helper. Using a wrapper + hidden input so it
+                 plays nicely with the shared image-uploader widget. The
+                 onChange callback inserts an <img> tag at the cursor in
+                 the body textarea below. -->
+            <details style="margin-bottom: 0.5rem;">
+              <summary style="cursor: pointer; font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-primary);">
+                + Upload image to insert into body
+              </summary>
+              <div style="margin-top: 0.5rem;">
+                <div data-image-uploader="journal_inline_image"></div>
+                <input type="hidden" id="journal_inline_image">
+                <p class="help-text">When the upload finishes, an <code>&lt;img&gt;</code> tag is inserted at your cursor in the body below.</p>
+              </div>
+            </details>
+
             <textarea class="body-textarea" id="e_body" required placeholder="<p>Long-staple Egyptian cotton starts...</p>
 <h2>Why it matters</h2>
 <p>The longer the fiber...</p>
@@ -220,14 +200,47 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { mountImageUploader } from '/admin/js/image-uploader.js';
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { window.location.href = '/admin/index.html'; }
 
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-      await supabase.auth.signOut();
-      window.location.href = '/admin/index.html';
-    });
+    // Log out is handled by /components/admin-nav.html
+
+    // ── Inline image uploader for the body editor ──────────────────────
+    // When the admin uploads an image, we insert an <img> tag into the
+    // body textarea at the cursor (or append if the textarea isn't focused).
+    // After insertion we remount the uploader with an empty state so the
+    // admin can immediately upload another image without confusion.
+    function mountJournalUploader() {
+      mountImageUploader({
+        container:   document.querySelector('[data-image-uploader="journal_inline_image"]'),
+        hiddenInput: document.getElementById('journal_inline_image'),
+        bucket:      'site-content',
+        pathPrefix:  'journal',
+        onChange: (url) => {
+          if (!url) return; // "Remove" was clicked — nothing to insert
+          insertImgIntoBody(url);
+          // Reset the uploader so the next upload starts fresh
+          mountJournalUploader();
+        },
+      });
+    }
+    mountJournalUploader();
+
+    // Inserts <img src="..." alt="" /> at the cursor position in the body
+    // textarea. Falls back to appending if the textarea isn't focused.
+    function insertImgIntoBody(url) {
+      const ta = document.getElementById('e_body');
+      const tag = `\n<img src="${url}" alt="" />\n`;
+      const start = ta.selectionStart ?? ta.value.length;
+      const end   = ta.selectionEnd   ?? ta.value.length;
+      ta.value = ta.value.slice(0, start) + tag + ta.value.slice(end);
+      // Move cursor right after the inserted tag
+      const newPos = start + tag.length;
+      ta.focus();
+      ta.setSelectionRange(newPos, newPos);
+    }
 
     function escapeHtml(s) {
       return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
@@ -370,5 +383,8 @@
 
     loadList();
   </script>
+
+  <!-- Mounts the shared <div data-component="admin-nav"> at the top of <body> -->
+  <script type="module" src="/js/components.js"></script>
 </body>
 </html>
