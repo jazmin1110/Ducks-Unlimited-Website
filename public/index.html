@@ -543,42 +543,44 @@
 
         <div class="collections__grid">
 
-          <!-- Each tile is editable in /admin/homepage.html under its key
-               (home.tile.polo / .tshirt / .bottoms). The hardcoded text
-               below is a fallback for when Supabase is unreachable. -->
+          <!-- Each tile is editable in /admin/homepage.html. Keys remain
+               home.tile.polo / .tshirt / .bottoms (internal IDs unchanged
+               for backward compatibility) but the displayed content has
+               been re-themed to Men / Women / Kids & Baby audiences.
+               The hardcoded text below is a fallback if Supabase is down. -->
           <a class="collection-tile"
              data-content-key="home.tile.polo" data-content-field="link" data-content-attr="href"
-             href="/shop.html?category=polo">
+             href="/shop.html?audience=men">
             <img data-content-key="home.tile.polo" data-content-field="image_url" data-content-attr="src"
-                 src="https://picsum.photos/seed/du-collection-polo/600/800" alt="Polo Shirts" />
+                 src="https://picsum.photos/seed/du-collection-men/600/800" alt="Men's Collection" />
             <div class="collection-tile__overlay">
-              <span class="collection-tile__label" data-content-key="home.tile.polo" data-content-field="label">Iconic</span>
-              <h3 class="collection-tile__name"   data-content-key="home.tile.polo" data-content-field="name">Polo Shirts</h3>
-              <span class="collection-tile__cta"  data-content-key="home.tile.polo" data-content-field="cta_text">Shop Polos</span>
+              <span class="collection-tile__label" data-content-key="home.tile.polo" data-content-field="label">For Him</span>
+              <h3 class="collection-tile__name"   data-content-key="home.tile.polo" data-content-field="name">Men</h3>
+              <span class="collection-tile__cta"  data-content-key="home.tile.polo" data-content-field="cta_text">Shop Men</span>
             </div>
           </a>
 
           <a class="collection-tile"
              data-content-key="home.tile.tshirt" data-content-field="link" data-content-attr="href"
-             href="/shop.html?category=t-shirt">
+             href="/shop.html?audience=women">
             <img data-content-key="home.tile.tshirt" data-content-field="image_url" data-content-attr="src"
-                 src="https://picsum.photos/seed/du-collection-tshirt/600/800" alt="T-Shirts" />
+                 src="https://picsum.photos/seed/du-collection-women/600/800" alt="Women's Collection" />
             <div class="collection-tile__overlay">
-              <span class="collection-tile__label" data-content-key="home.tile.tshirt" data-content-field="label">Essentials</span>
-              <h3 class="collection-tile__name"   data-content-key="home.tile.tshirt" data-content-field="name">T-Shirts</h3>
-              <span class="collection-tile__cta"  data-content-key="home.tile.tshirt" data-content-field="cta_text">Shop T-Shirts</span>
+              <span class="collection-tile__label" data-content-key="home.tile.tshirt" data-content-field="label">For Her</span>
+              <h3 class="collection-tile__name"   data-content-key="home.tile.tshirt" data-content-field="name">Women</h3>
+              <span class="collection-tile__cta"  data-content-key="home.tile.tshirt" data-content-field="cta_text">Shop Women</span>
             </div>
           </a>
 
           <a class="collection-tile"
              data-content-key="home.tile.bottoms" data-content-field="link" data-content-attr="href"
-             href="/shop.html?category=bottoms">
+             href="/shop.html?audience=kids">
             <img data-content-key="home.tile.bottoms" data-content-field="image_url" data-content-attr="src"
-                 src="https://picsum.photos/seed/du-collection-bottoms/600/800" alt="Bottoms" />
+                 src="https://picsum.photos/seed/du-collection-kids/600/800" alt="Kids & Baby Collection" />
             <div class="collection-tile__overlay">
-              <span class="collection-tile__label" data-content-key="home.tile.bottoms" data-content-field="label">Tailored</span>
-              <h3 class="collection-tile__name"   data-content-key="home.tile.bottoms" data-content-field="name">Bottoms</h3>
-              <span class="collection-tile__cta"  data-content-key="home.tile.bottoms" data-content-field="cta_text">Shop Bottoms</span>
+              <span class="collection-tile__label" data-content-key="home.tile.bottoms" data-content-field="label">Mini DU</span>
+              <h3 class="collection-tile__name"   data-content-key="home.tile.bottoms" data-content-field="name">Kids &amp; Baby</h3>
+              <span class="collection-tile__cta"  data-content-key="home.tile.bottoms" data-content-field="cta_text">Shop Kids</span>
             </div>
           </a>
 
