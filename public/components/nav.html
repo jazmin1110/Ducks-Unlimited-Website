@@ -19,6 +19,17 @@
 
 <header class="site-nav" data-site-nav>
 
+  <!-- ── Brand switcher strip (above the main nav row) ──────────────────── -->
+  <!-- Tabs for each active brand. The current brand gets an underline in the
+       brand's accent color. Clicking a tab swaps the current brand and (if
+       we're on a brand home) navigates to the other brand's home. -->
+  <div class="site-nav__brandbar" data-brand-switcher>
+    <div class="container site-nav__brandbar-inner">
+      <button type="button" class="site-nav__brandtab" data-brand-slug="du" aria-pressed="false">Ducks Unlimited</button>
+      <button type="button" class="site-nav__brandtab" data-brand-slug="rw" aria-pressed="false">Rocwood</button>
+    </div>
+  </div>
+
   <div class="container site-nav__main">
 
     <!-- Hamburger checkbox — drives the mobile drawer via :checked -->
@@ -29,10 +40,10 @@
       <span></span><span></span><span></span>
     </label>
 
-    <!-- Logo -->
-    <a class="site-nav__brand" href="/">
-      <span class="site-nav__logo">Ducks Unlimited</span>
-      <span class="site-nav__tagline">est. 1995</span>
+    <!-- Logo — brand name + tagline are swapped by brand.js via data-brand -->
+    <a class="site-nav__brand" href="/" data-brand-home>
+      <span class="site-nav__logo"    data-brand-name>Ducks Unlimited</span>
+      <span class="site-nav__tagline" data-brand-tagline>est. 1995</span>
     </a>
 
     <!-- ── Primary menu (center on desktop, drawer on mobile) ── -->
@@ -320,6 +331,52 @@
 
 
 <script type="module">
+  // ── Brand switcher wiring ─────────────────────────────────────────────────
+  // Paints the active brand tab, swaps the logo + tagline, and handles clicks
+  // on the brand tabs. Keeps the nav in sync when brand changes elsewhere
+  // (e.g. a product page's "View in Rocwood" link).
+  import { getCurrentBrand, setBrand, allBrands } from '/js/brand.js';
+
+  function paintBrand(brand) {
+    // Logo text
+    document.querySelectorAll('[data-brand-name]').forEach((el) => {
+      el.textContent = brand.name;
+    });
+    // Tagline (hide element if the brand has none)
+    document.querySelectorAll('[data-brand-tagline]').forEach((el) => {
+      if (brand.tagline) {
+        el.textContent = brand.tagline;
+        el.style.display = '';
+      } else {
+        el.style.display = 'none';
+      }
+    });
+    // Logo link → brand's home
+    document.querySelectorAll('[data-brand-home]').forEach((el) => {
+      el.setAttribute('href', brand.homePath);
+    });
+    // Tabs: aria-pressed + visual active class
+    document.querySelectorAll('[data-brand-slug]').forEach((btn) => {
+      const isActive = btn.dataset.brandSlug === brand.slug;
+      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      btn.classList.toggle('is-active', isActive);
+    });
+  }
+
+  // Paint on first load
+  paintBrand(getCurrentBrand());
+
+  // Repaint when brand changes elsewhere
+  window.addEventListener('brand:change', (e) => paintBrand(e.detail));
+
+  // Wire the tabs
+  document.querySelectorAll('[data-brand-slug]').forEach((btn) => {
+    btn.addEventListener('click', () => setBrand(btn.dataset.brandSlug));
+  });
+</script>
+
+
+<script type="module">
   // Swap "Sign In" → "My Account" once the user has a session.
   import { onAuthChange } from '/js/auth.js';
   import { supabase } from '/lib/supabase.js';
@@ -355,6 +412,54 @@
     position: sticky;
     top: 0;
     z-index: 50;
+  }
+
+  /* ── Brand switcher strip ───────────────────────────────────────────────
+     Thin tabbed bar above the main nav row. Two tabs side-by-side; the
+     active one gets an underline in the brand's accent color.          */
+  .site-nav__brandbar {
+    background: var(--color-bg-warm);
+    border-bottom: 1px solid var(--color-border-light);
+    font-family: var(--font-body);
+  }
+
+  .site-nav__brandbar-inner {
+    display: flex;
+    gap: 0;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+
+  .site-nav__brandtab {
+    appearance: none;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.55rem 1rem;
+    font-family: var(--font-body);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-text-light);
+    position: relative;
+    transition: color 0.15s;
+  }
+
+  .site-nav__brandtab:hover { color: var(--color-text); }
+
+  .site-nav__brandtab.is-active {
+    color: var(--color-text);
+  }
+
+  .site-nav__brandtab.is-active::after {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    right: 1rem;
+    bottom: 0;
+    height: 2px;
+    background: var(--color-accent);
   }
 
   /* ── Main row ── */

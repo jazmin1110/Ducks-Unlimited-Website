@@ -14,7 +14,7 @@
    ============================================================================= */
 
 :root {
-  /* Brand colors */
+  /* Brand colors — Ducks Unlimited (default). Rocwood overrides below. */
   --color-primary:        #1B4D2E;  /* Forest green */
   --color-primary-dark:   #163d24;  /* Hover / pressed */
   --color-accent:         #C9A84C;  /* Muted gold */
@@ -83,6 +83,22 @@
   /* Layout */
   --container-max:      1200px;
   --container-max-wide: 1440px; /* Editorial / full-width sections */
+}
+
+
+/* =============================================================================
+   PER-BRAND THEME OVERRIDES
+   Switched by `data-brand` on <html>, set by /js/brand.js on page load.
+   Keep this minimal — only tokens that must change per brand. Typography and
+   layout stay shared so the site reads as one system.
+   ============================================================================= */
+
+:root[data-brand="rw"] {
+  --color-primary:        #2A2420;  /* Rocwood: deep espresso */
+  --color-primary-dark:   #1C1816;
+  --color-accent:         #8C6B3F;  /* Rocwood: warm bronze */
+  --color-accent-dark:    #74582F;
+  --color-success:        #2A2420;
 }
 
 

@@ -1,5 +1,11 @@
 // =============================================================================
-// Ducks Unlimited — Component Loader
+// Ducks Unlimited + Rocwood — Component Loader
+// =============================================================================
+// Imports brand.js for its side effect — resolves the current brand and sets
+// `data-brand` on <html> before any component is mounted, so the nav paints
+// with the right accent on first render.
+import '/js/brand.js';
+
 // =============================================================================
 // Auto-mounts shared HTML snippets from /public/components/ into placeholder
 // elements on the page.
