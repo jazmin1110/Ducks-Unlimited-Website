@@ -58,8 +58,14 @@ async function mountOne(slot) {
 }
 
 export async function mountComponents(root = document) {
-  const slots = root.querySelectorAll('[data-component]');
-  await Promise.all([...slots].map(mountOne));
+  // Mount in waves so a component template can embed its own
+  // <div data-component="x"></div> slot and still get resolved. Cap the
+  // number of waves at 5 so a self-referential loop can't hang the page.
+  for (let wave = 0; wave < 5; wave++) {
+    const slots = root.querySelectorAll('[data-component]');
+    if (slots.length === 0) break;
+    await Promise.all([...slots].map(mountOne));
+  }
 
   // Tell other modules the DOM changed. cart.js listens for this and
   // re-paints any cart count badges that just appeared (e.g. inside the nav).

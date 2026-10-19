@@ -1,0 +1,101 @@
+<!-- =============================================================================
+     Ducks Unlimited + Rocwood — Announcement Bar
+     =============================================================================
+     Static top strip above the brand switcher. One line, one message.
+     Rotating announcements lose attention (Baymard research), so this stays
+     single and static. Later: wire to site_content so the admin can edit it
+     without a code change.
+
+     To use on a page:
+       <div data-component="announcement-bar"></div>
+
+     Dismissible: a tiny × on the right stashes a flag in localStorage so the
+     bar stays hidden for 24 hours. Comes back the next day, so new messages
+     reach visitors who dismissed an old one.
+     ============================================================================= -->
+
+<div class="announcement-bar" data-announcement-bar>
+  <div class="announcement-bar__inner">
+    <span class="announcement-bar__msg">
+      Free shipping on orders over <strong>₱3,000</strong> · Shipped from Greenhills, Metro Manila
+    </span>
+    <button type="button" class="announcement-bar__close" aria-label="Dismiss">×</button>
+  </div>
+</div>
+
+<style>
+  .announcement-bar {
+    background: var(--color-primary);
+    color: #fff;
+    font-family: var(--font-body);
+  }
+
+  .announcement-bar__inner {
+    max-width: var(--container-max-wide);
+    margin: 0 auto;
+    padding: 0.55rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    position: relative;
+    font-size: 0.72rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .announcement-bar__msg strong {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+
+  .announcement-bar__close {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.6);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    transition: color 0.15s;
+  }
+
+  .announcement-bar__close:hover { color: #fff; }
+
+  /* Dismissed state — stays collapsed until the stash expires (see JS below). */
+  .announcement-bar[hidden] { display: none; }
+
+  @media (max-width: 639px) {
+    .announcement-bar__inner {
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      padding-right: 2.25rem; /* leave room for the × */
+      text-align: center;
+    }
+  }
+</style>
+
+<script>
+  (function () {
+    const DISMISS_KEY = 'announcement_dismissed_until';
+    const DISMISS_MS  = 24 * 60 * 60 * 1000; // 24 hours
+
+    const bar = document.querySelector('[data-announcement-bar]');
+    if (!bar) return;
+
+    // Hide if the stash hasn't expired yet.
+    try {
+      const until = Number(localStorage.getItem(DISMISS_KEY));
+      if (until && Date.now() < until) bar.hidden = true;
+    } catch {}
+
+    bar.querySelector('.announcement-bar__close').addEventListener('click', () => {
+      bar.hidden = true;
+      try { localStorage.setItem(DISMISS_KEY, String(Date.now() + DISMISS_MS)); } catch {}
+    });
+  })();
+</script>

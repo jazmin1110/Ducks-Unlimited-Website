@@ -455,6 +455,106 @@
       color: var(--color-primary);
     }
 
+    /* ── Trust strip pinned under the CTA ── */
+    .pdp-trust {
+      list-style: none;
+      padding: 0;
+      margin: 0.9rem 0 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+    }
+
+    .pdp-trust li {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+
+    .pdp-trust svg { color: var(--color-primary); flex: 0 0 16px; }
+
+    .pdp-trust strong {
+      color: var(--color-text);
+      font-weight: 500;
+    }
+
+    @media (min-width: 640px) {
+      .pdp-trust {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.4rem 1.2rem;
+      }
+    }
+
+    /* ── Mobile sticky Add-to-Bag ───────────────────────────────────────
+       Only shown on narrow viewports (phones). Fades in after the main
+       CTA scrolls out of view (see the IntersectionObserver below). */
+    .pdp-sticky-cta {
+      position: fixed;
+      inset: auto 0 0 0;
+      z-index: 90;
+      background: var(--color-white);
+      border-top: 1px solid var(--color-border);
+      padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom));
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+    }
+
+    .pdp-sticky-cta[hidden] { display: none; }
+
+    .pdp-sticky-cta__thumb {
+      flex: 0 0 44px;
+      aspect-ratio: 1 / 1;
+      background: var(--color-bg-warm);
+      overflow: hidden;
+    }
+
+    .pdp-sticky-cta__thumb img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+
+    .pdp-sticky-cta__info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+    }
+
+    .pdp-sticky-cta__name {
+      font-family: var(--font-heading);
+      font-size: 0.9rem;
+      color: var(--color-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pdp-sticky-cta__price {
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+    }
+
+    .pdp-sticky-cta__btn {
+      flex: 0 0 auto;
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 0.75rem 1.1rem;
+      border-radius: 0;
+    }
+
+    /* Desktop + tablets: don't need the sticky bar; the main CTA is right
+       there in the layout. */
+    @media (min-width: 720px) {
+      .pdp-sticky-cta { display: none !important; }
+    }
+
     .wishlist-btn.is-active {
       border-color: var(--color-primary);
       color: var(--color-primary);
@@ -1130,6 +1230,23 @@
               </button>
             </div>
 
+            <!-- Trust strip — the three things buyers want to know before adding
+                 to bag, pinned inline so they aren't buried in an accordion. -->
+            <ul class="pdp-trust">
+              <li>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h13l3 4v6h-2"></path><circle cx="7" cy="18" r="2"></circle><circle cx="17" cy="18" r="2"></circle></svg>
+                Free shipping over <strong>₱3,000</strong>
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg>
+                30-day returns
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 6v6c0 4.5 3 8.5 8 10 5-1.5 8-5.5 8-10V6l-8-4z"></path></svg>
+                Shipped from Greenhills, Manila
+              </li>
+            </ul>
+
             <!-- Details / Fit / Care accordion -->
             <div class="accordion" id="accordion">
               <div class="accordion__item">
@@ -1595,6 +1712,61 @@
     }
 
     init();
+  </script>
+
+  <!-- ── Mobile sticky Add-to-Bag ───────────────────────────────────────
+       Slides up from the bottom once the main Add-to-Bag button has scrolled
+       out of view on mobile. Mirrors the main CTA's enabled/disabled state
+       and forwards clicks to it so there's one source of truth for cart adds. -->
+  <div class="pdp-sticky-cta" id="pdpStickyCta" hidden>
+    <div class="pdp-sticky-cta__thumb" id="pdpStickyThumb"></div>
+    <div class="pdp-sticky-cta__info">
+      <span class="pdp-sticky-cta__name" id="pdpStickyName"></span>
+      <span class="pdp-sticky-cta__price" id="pdpStickyPrice"></span>
+    </div>
+    <button type="button" class="btn btn-primary pdp-sticky-cta__btn" id="pdpStickyBtn" disabled>Add to Bag</button>
+  </div>
+
+  <script type="module">
+    // Mobile sticky Add-to-Bag — pure UI/DOM wiring; no cart logic of its own.
+    const main    = document.getElementById('addToCartBtn');
+    const sticky  = document.getElementById('pdpStickyCta');
+    const stickyBtn   = document.getElementById('pdpStickyBtn');
+    const stickyName  = document.getElementById('pdpStickyName');
+    const stickyPrice = document.getElementById('pdpStickyPrice');
+    const stickyThumb = document.getElementById('pdpStickyThumb');
+
+    if (main && sticky) {
+      // Reveal only after the user has scrolled past the main CTA.
+      const io = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) sticky.hidden = true;
+        else                      sticky.hidden = false;
+      }, { threshold: 0 });
+      io.observe(main);
+
+      // Mirror the main button's disabled state so the sticky bar never
+      // promises an add the main button would refuse.
+      new MutationObserver(() => {
+        stickyBtn.disabled    = main.disabled;
+        stickyBtn.textContent = main.textContent.trim();
+      }).observe(main, { attributes: true, attributeFilter: ['disabled'], childList: true, subtree: true });
+
+      // Keep the thumb + name + price in sync with the product page.
+      function paintStickyMeta() {
+        const name  = document.querySelector('.product-title')?.textContent?.trim() || '';
+        const price = document.querySelector('.product-price')?.textContent?.trim() || '';
+        const img   = document.querySelector('.gallery__main img, .product-image img')?.getAttribute('src') || '';
+        stickyName.textContent  = name;
+        stickyPrice.textContent = price;
+        stickyThumb.innerHTML   = img ? `<img src="${img}" alt="" />` : '';
+      }
+      paintStickyMeta();
+      // Rerun whenever the gallery or price updates
+      new MutationObserver(paintStickyMeta).observe(document.body, { childList: true, subtree: true, characterData: true });
+
+      // Delegate click to the main button so cart logic stays in one place.
+      stickyBtn.addEventListener('click', () => main.click());
+    }
   </script>
 
 </body>

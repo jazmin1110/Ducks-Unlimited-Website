@@ -17,6 +17,14 @@
        - /js/auth.js swaps the Sign In link to "My Account" when signed in
      ============================================================================= -->
 
+<!-- Announcement bar sits above the whole nav. Mounted via the components
+     loader's second pass (see /js/components.js). -->
+<div data-component="announcement-bar"></div>
+
+<!-- Mini-cart slide-in. Lives at the end of <body> visually (position:fixed),
+     but mounted here so every page with the nav gets it automatically. -->
+<div data-component="mini-cart"></div>
+
 <header class="site-nav" data-site-nav>
 
   <!-- ── Brand switcher strip (above the main nav row) ──────────────────── -->

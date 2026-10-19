@@ -328,6 +328,46 @@
       color: var(--color-primary);
     }
 
+    /* ── Free-shipping progress bar ─────────────────────────────────── */
+    .ship-progress {
+      background: var(--color-bg-warm);
+      padding: 0.75rem 0.85rem;
+      border-radius: var(--radius);
+      margin: 0.5rem 0 0.75rem;
+    }
+
+    .ship-progress__msg {
+      font-size: 0.82rem;
+      color: var(--color-text);
+      margin-bottom: 0.5rem;
+    }
+
+    .ship-progress__msg strong {
+      color: var(--color-primary);
+      font-weight: 500;
+    }
+
+    .ship-progress__track {
+      height: 6px;
+      background: rgba(0,0,0,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .ship-progress__fill {
+      height: 100%;
+      background: var(--color-accent);
+      transition: width 0.3s ease;
+    }
+
+    .ship-progress--unlocked .ship-progress__fill {
+      background: var(--color-primary);
+    }
+
+    .ship-progress--unlocked .ship-progress__msg strong {
+      color: var(--color-primary);
+    }
+
     /* Notice shown above the checkout button when items are OOS */
     .summary-notice {
       background: var(--color-error-bg);
@@ -627,6 +667,40 @@
       return { available: true, effectiveQty: item.quantity, max: info.stock, info };
     }
 
+    // ── Free shipping threshold ────────────────────────────────────────
+    // Spent above this (PHP), shipping is on us. Showing a progress bar
+    // toward this amount in the cart summary lifts average order value by
+    // nudging customers to add one more item.
+    const FREE_SHIPPING_THRESHOLD = 3000;
+
+    function renderShippingProgress(subtotal) {
+      if (subtotal <= 0) return '';
+      if (subtotal >= FREE_SHIPPING_THRESHOLD) {
+        return `
+          <div class="ship-progress ship-progress--unlocked">
+            <div class="ship-progress__msg">
+              <strong>Free shipping unlocked.</strong> We'll cover the delivery.
+            </div>
+            <div class="ship-progress__track">
+              <div class="ship-progress__fill" style="width:100%"></div>
+            </div>
+          </div>
+        `;
+      }
+      const remaining = FREE_SHIPPING_THRESHOLD - subtotal;
+      const pct       = Math.max(2, Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100));
+      return `
+        <div class="ship-progress">
+          <div class="ship-progress__msg">
+            Add <strong>${formatPrice(remaining)}</strong> more for free shipping.
+          </div>
+          <div class="ship-progress__track">
+            <div class="ship-progress__fill" style="width:${pct.toFixed(1)}%"></div>
+          </div>
+        </div>
+      `;
+    }
+
     // Sum of line totals using effective quantity + current price
     function computeSubtotal() {
       let total = 0;
@@ -812,9 +886,11 @@
               <span class="summary-row__value">${formatPrice(subtotal)}</span>
             </div>
 
+            ${renderShippingProgress(subtotal)}
+
             <div class="summary-row summary-row--shipping">
               <span class="summary-row__label">Shipping</span>
-              <span class="summary-row__value">Calculated at checkout</span>
+              <span class="summary-row__value">${subtotal >= FREE_SHIPPING_THRESHOLD ? 'Free' : 'Calculated at checkout'}</span>
             </div>
 
             <div class="summary-row summary-row--total">
