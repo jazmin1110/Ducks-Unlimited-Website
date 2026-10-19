@@ -695,6 +695,7 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { adminBrandFilter } from '/js/brand.js';
 
     // ── Auth guard ──
     const { data: { session } } = await supabase.auth.getSession();
@@ -793,17 +794,23 @@
     async function loadOrders() {
       tableBody.innerHTML = '<tr><td colspan="6" class="table-state">Loading orders…</td></tr>';
 
-      // Fetch just what we need for the list — fast and small.
-      // order_items(count) embeds a count of related items without pulling
-      // the actual rows.
-      const { data, error } = await supabase
+      // Scope to the admin's chosen brand. Each order has brand_id (migration
+      // 011); the embedded brands!inner lets us filter by slug at the DB.
+      const brandFilter = adminBrandFilter();
+
+      let query = supabase
         .from('orders')
         .select(`
           id, order_number, customer_name, total_amount,
           payment_status, fulfillment_status, created_at,
+          brands!inner ( slug, name ),
           order_items ( count )
         `)
         .order('created_at', { ascending: false });
+
+      if (brandFilter) query = query.eq('brands.slug', brandFilter);
+
+      const { data, error } = await query;
 
       if (error) {
         console.error(error);

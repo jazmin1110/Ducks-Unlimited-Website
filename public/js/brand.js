@@ -125,6 +125,49 @@ export function brandBySlug(slug) {
 }
 
 
+// =============================================================================
+// Admin-side brand filter
+// =============================================================================
+// Admin pages pick a brand independently of what visitors are browsing as.
+// Backed by a separate localStorage key so switching brands in admin doesn't
+// bleed into the public storefront experience, and vice versa.
+//
+// Admin additionally has an "all" value: show rows from every brand at once.
+// Public never has this.
+
+const ADMIN_STORAGE_KEY = 'admin_brand';
+const ADMIN_DEFAULT     = 'du';
+export const ADMIN_ALL  = 'all';
+
+export function getAdminBrandSlug() {
+  try {
+    const s = localStorage.getItem(ADMIN_STORAGE_KEY);
+    if (s === ADMIN_ALL) return ADMIN_ALL;
+    if (s && KNOWN_BRANDS[s]) return s;
+  } catch {}
+  return ADMIN_DEFAULT;
+}
+
+export function setAdminBrandSlug(slug) {
+  if (slug !== ADMIN_ALL && !KNOWN_BRANDS[slug]) return;
+  try { localStorage.setItem(ADMIN_STORAGE_KEY, slug); } catch {}
+}
+
+// Build a Supabase relational filter that scopes a query to the admin's
+// currently-selected brand. Returns `null` when "All brands" is selected so
+// the caller can skip the filter entirely.
+//
+// Usage:
+//   let q = supabase.from('products').select('*, brands!inner(slug)');
+//   const f = adminBrandFilter();
+//   if (f) q = q.eq('brands.slug', f);
+//   const { data } = await q;
+export function adminBrandFilter() {
+  const slug = getAdminBrandSlug();
+  return slug === ADMIN_ALL ? null : slug;
+}
+
+
 // ─── Run on load so the first paint already has the right brand ────────────
 
 applyBrand(resolveSlug());

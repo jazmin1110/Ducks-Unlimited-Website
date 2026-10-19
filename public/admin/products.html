@@ -907,6 +907,7 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { adminBrandFilter, getAdminBrandSlug, ADMIN_ALL } from '/js/brand.js';
 
     // ── Auth guard ──
     const { data: { session } } = await supabase.auth.getSession();
@@ -942,11 +943,18 @@
     async function loadProducts() {
       tableBody.innerHTML = '<tr><td colspan="6" class="table-state">Loading…</td></tr>';
 
-      // Fetch products with a count of their variants using Supabase's relation embedding
-      const { data: products, error } = await supabase
+      // Scope to the admin's chosen brand. `null` = "All brands" (no filter).
+      // `brands!inner` ensures the row drops out when the slug doesn't match.
+      const brandFilter = adminBrandFilter();
+
+      let query = supabase
         .from('products')
-        .select('*, variants(count)')
+        .select('*, brands!inner ( slug, name ), variants(count)')
         .order('created_at', { ascending: false });
+
+      if (brandFilter) query = query.eq('brands.slug', brandFilter);
+
+      const { data: products, error } = await query;
 
       if (error) {
         tableBody.innerHTML = `<tr><td colspan="6" class="table-state">Failed to load products. Please refresh.</td></tr>`;
@@ -1155,6 +1163,30 @@
       }
 
       // ── INSERT new product ──
+      // Products belong to a brand (DU or RW). While the brand filter is on
+      // "All brands" we can't guess which one — nudge the admin to pick.
+      const brandSlug = getAdminBrandSlug();
+      if (brandSlug === ADMIN_ALL) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Product';
+        showPanelError('Select a brand (Ducks Unlimited or Rocwood) in the top bar before creating a product.');
+        return;
+      }
+
+      // Resolve the slug to the brand's UUID so we can attach it to the row.
+      const { data: brandRow, error: brandErr } = await supabase
+        .from('brands').select('id').eq('slug', brandSlug).single();
+
+      if (brandErr || !brandRow) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Product';
+        showPanelError('Could not resolve the current brand. Refresh and try again.');
+        console.error(brandErr);
+        return;
+      }
+
+      payload.brand_id = brandRow.id;
+
       // Use .select().single() so we get the new row's ID back. Then,
       // instead of closing the panel, we transition it into "edit mode"
       // for the freshly-created product — that way the user can keep

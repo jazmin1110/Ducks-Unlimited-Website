@@ -1301,17 +1301,25 @@
     // ─────────────────────────────────────────────────────────────────
 
     async function loadProducts() {
+      // Scope the catalog to the current brand (DU or RW). The brand resolver
+      // in /js/brand.js has already run via components.js, so CURRENT_BRAND
+      // is set here. We join brands via !inner so Supabase filters at the
+      // DB layer — nothing extra traveling over the wire.
+      const brandSlug = (window.CURRENT_BRAND?.slug) || 'du';
+
       const { data, error } = await supabase
         .from('products')
         .select(`
           id, name, description, base_price, category, created_at,
+          brands!inner ( slug ),
           variants (
             id, color, size, price_override,
             inventory ( channel, quantity )
           ),
           product_images ( image_url, is_primary, display_order )
         `)
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('brands.slug', brandSlug);
 
       if (error) {
         console.error('Failed to load products:', error);

@@ -54,8 +54,18 @@
       </ul>
     </nav>
 
-    <!-- Right side: signed-in email + log out + view-site -->
+    <!-- Right side: brand filter + view-site + email + log out -->
     <div class="admin-nav__right">
+      <!-- Brand filter — scopes every list on every admin page to the chosen brand.
+           Persists across pages via localStorage (see /js/brand.js). -->
+      <label class="admin-nav__brand-filter" title="Filter admin by brand">
+        <span class="admin-nav__brand-filter-label">Brand</span>
+        <select data-admin-brand-select>
+          <option value="du">Ducks Unlimited</option>
+          <option value="rw">Rocwood</option>
+          <option value="all">All brands</option>
+        </select>
+      </label>
       <a class="admin-nav__view-site" href="/" target="_blank" rel="noopener" title="Open live site in a new tab">View site ↗</a>
       <span class="admin-nav__email" data-admin-email></span>
       <button type="button" class="admin-nav__logout" data-admin-logout>Log Out</button>
@@ -239,6 +249,40 @@
     color: #fff;
   }
 
+  /* ── Brand filter dropdown (admin-wide) ── */
+  .admin-nav__brand-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.55rem;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 4px;
+    background: rgba(255,255,255,0.06);
+  }
+
+  .admin-nav__brand-filter-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.55);
+  }
+
+  .admin-nav__brand-filter select {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding-right: 0.5rem;
+    cursor: pointer;
+  }
+
+  .admin-nav__brand-filter select option {
+    color: #1A1A1A;
+  }
+
   /* ──────────────────────────────────────────────────────────────────────────
      DESKTOP (≥ 900px) — everything in a single row.
      ────────────────────────────────────────────────────────────────────────── */
@@ -317,4 +361,19 @@
       window.location.href = '/admin/index.html';
     });
   });
+
+  // ── Brand filter: paint current selection and reload on change ───────────
+  // Each admin page's data loader reads getAdminBrandSlug() when it queries
+  // Supabase, so a reload is the simplest way to refresh the entire list
+  // with the newly-selected brand's rows.
+  import { getAdminBrandSlug, setAdminBrandSlug } from '/js/brand.js';
+
+  const brandSelect = document.querySelector('[data-admin-brand-select]');
+  if (brandSelect) {
+    brandSelect.value = getAdminBrandSlug();
+    brandSelect.addEventListener('change', () => {
+      setAdminBrandSlug(brandSelect.value);
+      window.location.reload();
+    });
+  }
 </script>
