@@ -112,6 +112,27 @@
     </div>
 
 
+    <!-- ── SHOP PAGE INTRO ──
+         Title + subtitle shown at the top of /shop.html for this brand.
+         (The hero below is the HOMEPAGE hero, not the shop page.) -->
+    <section class="admin-panel" data-section="shop.intro">
+      <h2>Shop Page Intro</h2>
+      <p class="help-text" style="margin-top:-0.25rem;margin-bottom:var(--space);">The headline and subtitle at the top of the Shop page for this brand.</p>
+      <div class="form-row">
+        <div class="field">
+          <label class="field-label" for="shop_title">Title</label>
+          <input class="input" id="shop_title" placeholder="Shop All">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label class="field-label" for="shop_subtitle">Subtitle</label>
+          <textarea class="textarea" id="shop_subtitle" rows="2"></textarea>
+        </div>
+      </div>
+    </section>
+
+
     <!-- ── ANNOUNCEMENT BAR ──
          The thin strip pinned above the nav on every page. Leave the
          message blank to hide the bar entirely for this brand. -->
@@ -387,6 +408,18 @@
     // Keeping these next to each other so they stay in sync.
     // ─────────────────────────────────────────────────────────────────────
 
+    // ---- SHOP INTRO ----
+    function readShopIntro() {
+      return {
+        title:    v('shop_title'),
+        subtitle: v('shop_subtitle'),
+      };
+    }
+    function writeShopIntro(d = {}) {
+      set('shop_title',    d.title);
+      set('shop_subtitle', d.subtitle);
+    }
+
     // ---- ANNOUNCEMENT BAR ----
     function readAnnouncement() {
       return {
@@ -467,14 +500,14 @@
     // ─────────────────────────────────────────────────────────────────────
 
     async function loadAll() {
-      // Fetch this brand's homepage rows only. We leave global rows
-      // (brand_id IS NULL) out of this editor — they belong to a future
-      // "shared defaults" screen; editing them here would silently blow
-      // away values that other brands rely on.
+      // Fetch this brand's rows for every key this page edits. We leave
+      // global rows (brand_id IS NULL) out of this editor — they belong to
+      // a future "shared defaults" screen; editing them here would silently
+      // blow away values that other brands rely on.
       const { data, error } = await supabase
         .from('site_content')
         .select('key, published, draft')
-        .like('key', 'home.%')
+        .in('key', allKeys())
         .eq('brand_id', activeBrandId);
 
       if (error) {
@@ -491,6 +524,10 @@
       for (const key of allKeys()) {
         if (!state[key]) state[key] = { published: null, draft: null };
       }
+
+      // Populate the Shop Page section.
+      const shopSrc = state['shop.intro']?.draft || state['shop.intro']?.published || {};
+      writeShopIntro(shopSrc);
 
       // Populate the announcement bar fields.
       const annSrc = state['home.announcement']?.draft || state['home.announcement']?.published || {};
@@ -542,6 +579,7 @@
 
     function allKeys() {
       return [
+        'shop.intro',
         'home.announcement',
         'home.hero',
         ...TILES.map((t) => t.key),
@@ -561,6 +599,7 @@
     // Read every section's current form state and return [{key, draft}, ...]
     function snapshotForm() {
       const rows = [];
+      rows.push({ key: 'shop.intro',        draft: readShopIntro() });
       rows.push({ key: 'home.announcement', draft: readAnnouncement() });
       rows.push({ key: 'home.hero',         draft: readHero() });
       for (const t of TILES)      rows.push({ key: t.key, draft: readTile(t.key) });
