@@ -19,15 +19,20 @@ begin
     return;
   end if;
 
-  -- 1. Drop the single-column uniqueness on key (name is Supabase default).
-  --    If your constraint has a different name, uncomment and adjust.
+  -- 1. The original schema (migration 007) declared `key text primary key`,
+  --    so the PK constraint on key alone is still enforcing uniqueness and
+  --    would reject per-brand duplicates. Swap it out for a surrogate uuid
+  --    id so the table still has a primary key (needed for Supabase Realtime
+  --    / replication identity). Drop any older name variants too.
+  execute 'alter table site_content drop constraint if exists site_content_pkey';
   execute 'alter table site_content drop constraint if exists site_content_key_key';
+  execute 'alter table site_content add column if not exists id uuid primary key default gen_random_uuid()';
 
-  -- 2. Replace with a composite unique that treats NULL brand_id as a single
-  --    distinct value. Postgres' default UNIQUE treats NULLs as distinct, so
-  --    we use `nulls not distinct` (Postgres 15+, which Supabase runs).
-  --    This means at most ONE global row per key AND at most one row per
-  --    (key, brand) pair — exactly what we want.
+  -- 2. Composite unique that treats NULL brand_id as a single distinct value.
+  --    Postgres' default UNIQUE treats NULLs as distinct, so we use
+  --    `nulls not distinct` (Postgres 15+, which Supabase runs). This means
+  --    at most ONE global row per key AND at most one row per (key, brand)
+  --    pair — exactly what we want.
   execute 'alter table site_content
              add constraint site_content_key_brand_uniq
              unique nulls not distinct (key, brand_id)';
