@@ -112,6 +112,29 @@
     </div>
 
 
+    <!-- ── ANNOUNCEMENT BAR ──
+         The thin strip pinned above the nav on every page. Leave the
+         message blank to hide the bar entirely for this brand. -->
+    <section class="admin-panel" data-section="home.announcement">
+      <h2>Announcement Bar</h2>
+      <p class="help-text" style="margin-top:-0.25rem;margin-bottom:var(--space);">The thin strip that sits above the main nav on every page. Leave the message blank to hide it entirely for this brand.</p>
+      <div class="form-row">
+        <div class="field">
+          <label class="field-label" for="announce_message">Message (HTML allowed)</label>
+          <input class="input" id="announce_message" placeholder="Free shipping on orders over &lt;strong&gt;₱3,000&lt;/strong&gt;">
+          <p class="help-text">Supports simple HTML like <code>&lt;strong&gt;</code> for emphasis. Leave blank to hide the bar.</p>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label class="field-label" for="announce_link">Link (optional)</label>
+          <input class="input" id="announce_link" placeholder="/stores.html">
+          <p class="help-text">When set, the whole bar becomes a clickable link.</p>
+        </div>
+      </div>
+    </section>
+
+
     <!-- ── HERO ── -->
     <section class="admin-panel" data-section="home.hero">
       <h2>Hero</h2>
@@ -205,7 +228,8 @@
     // The shape of each section's JSONB blob. Matches /js/site-content.js
     // and the seed values in database/migrations/007_site_content.sql.
     // Adding a field here? Add it to the form too AND to those two files.
-    const HERO_FIELDS = ['eyebrow','headline','sub','cta_text','cta_link','image_url'];
+    const HERO_FIELDS         = ['eyebrow','headline','sub','cta_text','cta_link','image_url'];
+    const ANNOUNCEMENT_FIELDS = ['message','link'];
 
     // Three collection tiles. The key suffix matches the seed.
     const TILES = [
@@ -363,6 +387,18 @@
     // Keeping these next to each other so they stay in sync.
     // ─────────────────────────────────────────────────────────────────────
 
+    // ---- ANNOUNCEMENT BAR ----
+    function readAnnouncement() {
+      return {
+        message: v('announce_message'),
+        link:    v('announce_link'),
+      };
+    }
+    function writeAnnouncement(d = {}) {
+      set('announce_message', d.message);
+      set('announce_link',    d.link);
+    }
+
     // ---- HERO ----
     function readHero() {
       return {
@@ -456,6 +492,10 @@
         if (!state[key]) state[key] = { published: null, draft: null };
       }
 
+      // Populate the announcement bar fields.
+      const annSrc = state['home.announcement']?.draft || state['home.announcement']?.published || {};
+      writeAnnouncement(annSrc);
+
       // Populate the hero form. Prefer draft (admin's in-progress edits) if present.
       const heroSrc = state['home.hero']?.draft || state['home.hero']?.published || {};
       writeHero(heroSrc);
@@ -501,7 +541,12 @@
     }
 
     function allKeys() {
-      return ['home.hero', ...TILES.map((t) => t.key), ...EDITORIALS.map((e) => e.key)];
+      return [
+        'home.announcement',
+        'home.hero',
+        ...TILES.map((t) => t.key),
+        ...EDITORIALS.map((e) => e.key),
+      ];
     }
 
     function haveAnyDrafts() {
@@ -516,7 +561,8 @@
     // Read every section's current form state and return [{key, draft}, ...]
     function snapshotForm() {
       const rows = [];
-      rows.push({ key: 'home.hero', draft: readHero() });
+      rows.push({ key: 'home.announcement', draft: readAnnouncement() });
+      rows.push({ key: 'home.hero',         draft: readHero() });
       for (const t of TILES)      rows.push({ key: t.key, draft: readTile(t.key) });
       for (const e of EDITORIALS) rows.push({ key: e.key, draft: readEditorial(e.key) });
       return rows;
