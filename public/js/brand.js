@@ -105,13 +105,23 @@ export function getCurrentBrand() {
 }
 
 export function setBrand(slug) {
+  // No-op when the user clicks the already-active brand tab.
+  const prev = getCurrentBrand();
+  if (prev && prev.slug === slug) return prev;
+
   const brand = applyBrand(slug);
-  // Navigate to this brand's home only if we're currently on the OTHER brand's
-  // home — switching mid-flow (cart, product page) should stay on the page.
-  const path = window.location.pathname;
+
+  // Brand switching on a brand home jumps to the other brand's home.
+  // Everywhere else we reload so every brand-aware fetch on the page
+  // (shop products, announcement bar, site-content hero) re-runs with the
+  // newly-applied brand. Making one place reload is cheaper and more
+  // reliable than making every consumer subscribe to brand:change.
+  const path   = window.location.pathname;
   const atHome = path === '/' || /^\/[a-z]{2,4}\/?$/.test(path);
   if (atHome && brand.homePath !== path) {
     window.location.href = brand.homePath;
+  } else {
+    window.location.reload();
   }
   return brand;
 }
