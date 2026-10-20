@@ -33,13 +33,19 @@
 //   ?preview=1 still see the published version — RLS prevents anything else.
 // =============================================================================
 
-import { supabase } from '/lib/supabase.js';
+import { supabase }        from '/lib/supabase.js';
+import { getCurrentBrand } from '/js/brand.js';
 
 
 // ── Public API ──────────────────────────────────────────────────────────────
 
 // Reads every site_content row whose key starts with `prefix` (e.g. "home.")
 // and applies it to any [data-content-key] elements on the page.
+//
+// Multi-brand: fetches rows WHERE brand_id = <current brand's uuid>
+// OR brand_id IS NULL (global defaults). When both exist for the same key,
+// the brand-specific one wins — so Ducks and Rocwood can each have their
+// own hero while sharing a legal footer, say.
 //
 // Call from a page like:
 //   import { applySiteContent } from '/js/site-content.js';
@@ -48,26 +54,45 @@ import { supabase } from '/lib/supabase.js';
 // Returns the loaded content object so the caller can use it directly too.
 export async function applySiteContent(prefix = 'home.') {
   const usePreview = await shouldUsePreview();
+  const brandId    = await resolveCurrentBrandId();
 
   // Pull just the columns we need. Anonymous visitors don't have access to
   // `draft` (revoked at the SQL level), so we ask for it conditionally.
-  const cols = usePreview ? 'key, published, draft' : 'key, published';
+  const cols = usePreview
+    ? 'key, published, draft, brand_id'
+    : 'key, published, brand_id';
 
-  const { data, error } = await supabase
-    .from('site_content')
-    .select(cols)
-    .like('key', `${prefix}%`);
+  // Build the query. If we couldn't resolve a brand (shouldn't happen in
+  // practice; defensive), fall back to global-only rows so the page still
+  // paints something sensible.
+  let query = supabase.from('site_content').select(cols).like('key', `${prefix}%`);
+  if (brandId) {
+    // Rows for THIS brand OR global (brand_id is null).
+    query = query.or(`brand_id.eq.${brandId},brand_id.is.null`);
+  } else {
+    query = query.is('brand_id', null);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('[site-content] load failed:', error);
     return {};
   }
 
-  // Build { key → content } where content is draft (preview) or published.
-  const byKey = {};
+  // Build { key → content }, preferring the brand-specific row over any
+  // global row with the same key.
+  const byKey  = {};
+  const source = {}; // tracks whether byKey[k] came from brand-specific or global
   for (const row of (data || [])) {
     const content = (usePreview ? row.draft : row.published) || row.published || null;
-    if (content) byKey[row.key] = content;
+    if (!content) continue;
+    const isBrandRow = row.brand_id === brandId;
+    // Only overwrite if we don't already have a brand-specific row for this key.
+    if (!byKey[row.key] || (isBrandRow && source[row.key] !== 'brand')) {
+      byKey[row.key]  = content;
+      source[row.key] = isBrandRow ? 'brand' : 'global';
+    }
   }
 
   // Walk the DOM and apply.
@@ -80,6 +105,26 @@ export async function applySiteContent(prefix = 'home.') {
   );
 
   return byKey;
+}
+
+
+// Resolve the current brand's UUID. Cached in sessionStorage so repeat page
+// loads inside a tab don't re-fetch the brands table.
+async function resolveCurrentBrandId() {
+  const slug = getCurrentBrand().slug;
+  const cacheKey = 'brand_id_map';
+
+  try {
+    const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null');
+    if (cached && cached[slug]) return cached[slug];
+  } catch {}
+
+  const { data, error } = await supabase.from('brands').select('slug, id');
+  if (error || !data) return null;
+
+  const map = Object.fromEntries(data.map((b) => [b.slug, b.id]));
+  try { sessionStorage.setItem(cacheKey, JSON.stringify(map)); } catch {}
+  return map[slug] || null;
 }
 
 

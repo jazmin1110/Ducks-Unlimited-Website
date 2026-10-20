@@ -643,6 +643,7 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { adminBrandFilter } from '/js/brand.js';
 
     // ── Auth guard ──
     const { data: { session } } = await supabase.auth.getSession();
@@ -760,13 +761,23 @@
     async function loadInventory() {
       tableBody.innerHTML = '<tr><td colspan="6" class="table-state">Loading inventory…</td></tr>';
 
-      const { data, error } = await supabase
+      // Scope to the admin's chosen brand. Inventory lives on variants, but
+      // the brand lives on products — so we filter via the embedded join:
+      // variants -> products -> brands. The !inner tags drop variants whose
+      // product's brand doesn't match.
+      const brandFilter = adminBrandFilter();
+
+      let query = supabase
         .from('variants')
         .select(`
           id, color, size, sku,
-          products!inner ( id, name, category, is_active ),
+          products!inner ( id, name, category, is_active, brands!inner ( slug, name ) ),
           inventory ( channel, quantity, low_stock_threshold, updated_at )
         `);
+
+      if (brandFilter) query = query.eq('products.brands.slug', brandFilter);
+
+      const { data, error } = await query;
 
       if (error) {
         console.error(error);

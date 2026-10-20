@@ -1,0 +1,167 @@
+<!-- =============================================================================
+     Ducks Unlimited + Rocwood — Announcement Bar
+     =============================================================================
+     Static top strip above the brand switcher. One line, one message.
+     Rotating announcements lose attention (Baymard research), so this stays
+     single and static. Later: wire to site_content so the admin can edit it
+     without a code change.
+
+     To use on a page:
+       <div data-component="announcement-bar"></div>
+
+     Dismissible: a tiny × on the right stashes a flag in localStorage so the
+     bar stays hidden for 24 hours. Comes back the next day, so new messages
+     reach visitors who dismissed an old one.
+     ============================================================================= -->
+
+<!-- Hidden by default — the storefront script below unhides it only after
+     it has fetched the current brand's announcement message. This avoids a
+     flash of empty bar while Supabase responds. -->
+<div class="announcement-bar" data-announcement-bar hidden>
+  <div class="announcement-bar__inner">
+    <a class="announcement-bar__msg" data-announcement-link href="#">
+      <span data-announcement-msg><!-- filled from site_content.home.announcement.message --></span>
+    </a>
+    <button type="button" class="announcement-bar__close" aria-label="Dismiss">×</button>
+  </div>
+</div>
+
+<style>
+  .announcement-bar {
+    background: var(--color-primary);
+    color: #fff;
+    font-family: var(--font-body);
+  }
+
+  .announcement-bar__inner {
+    max-width: var(--container-max-wide);
+    margin: 0 auto;
+    padding: 0.55rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    position: relative;
+    font-size: 0.72rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .announcement-bar__msg {
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .announcement-bar__msg strong {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+
+  /* When there's no link, remove the pointer affordance so it reads as text. */
+  .announcement-bar__msg[href=""],
+  .announcement-bar__msg:not([href]) {
+    cursor: default;
+  }
+
+  a.announcement-bar__msg:hover { text-decoration: none; }
+
+  .announcement-bar__close {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.6);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    transition: color 0.15s;
+  }
+
+  .announcement-bar__close:hover { color: #fff; }
+
+  /* Dismissed state — stays collapsed until the stash expires (see JS below). */
+  .announcement-bar[hidden] { display: none; }
+
+  @media (max-width: 639px) {
+    .announcement-bar__inner {
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      padding-right: 2.25rem; /* leave room for the × */
+      text-align: center;
+    }
+  }
+</style>
+
+<script type="module">
+  // Fetch THIS BRAND's announcement from site_content and paint it. Empty
+  // message → stay hidden; non-empty → unhide. Keeping the bar hidden until
+  // we know what to show avoids a flash of empty strip on first paint.
+  import { supabase }           from '/lib/supabase.js';
+  import { getCurrentBrand }    from '/js/brand.js';
+
+  const DISMISS_KEY = 'announcement_dismissed_until';
+  const DISMISS_MS  = 24 * 60 * 60 * 1000; // 24 hours
+
+  const bar = document.querySelector('[data-announcement-bar]');
+  if (bar) {
+    const msgSlot = bar.querySelector('[data-announcement-msg]');
+    const linkEl  = bar.querySelector('[data-announcement-link]');
+
+    // Respect the dismiss stash — don't even fetch if the admin's message is
+    // staying hidden for this visitor until the 24h window ends.
+    let dismissed = false;
+    try {
+      const until = Number(localStorage.getItem(DISMISS_KEY));
+      if (until && Date.now() < until) dismissed = true;
+    } catch {}
+
+    // Dismiss wiring works whether or not the bar is populated.
+    bar.querySelector('.announcement-bar__close').addEventListener('click', () => {
+      bar.hidden = true;
+      try { localStorage.setItem(DISMISS_KEY, String(Date.now() + DISMISS_MS)); } catch {}
+    });
+
+    if (!dismissed) {
+      // One cheap query: this brand's announcement row, if any. Not using
+      // applySiteContent() because that lives on index.html only and we want
+      // the bar on every page.
+      const brandSlug = getCurrentBrand().slug;
+      try {
+        const { data, error } = await supabase
+          .from('site_content')
+          .select('published, brands!inner ( slug )')
+          .eq('key', 'home.announcement')
+          .eq('brands.slug', brandSlug)
+          .maybeSingle();
+
+        if (!error && data?.published) {
+          const content = data.published;
+          const msg     = content.message || '';
+          const link    = content.link    || '';
+
+          if (msg) {
+            // innerHTML OK: content originates from an authenticated admin
+            // via the homepage CMS, not from untrusted visitor input.
+            msgSlot.innerHTML = msg;
+
+            if (link) {
+              linkEl.setAttribute('href', link);
+            } else {
+              // No link — make the <a> inert so it doesn't look clickable.
+              linkEl.removeAttribute('href');
+            }
+
+            bar.hidden = false;
+          }
+        }
+      } catch (err) {
+        // Supabase unreachable (e.g. project paused): leave bar hidden rather
+        // than render an empty strip. Page still works.
+        console.debug('[announcement-bar] site_content fetch failed:', err);
+      }
+    }
+  }
+</script>

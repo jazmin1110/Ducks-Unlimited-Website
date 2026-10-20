@@ -90,6 +90,20 @@ export function addToCart(variantId, quantity, details = {}) {
   }
 
   writeCart(cart);
+
+  // Specific "something was added" event, in addition to the generic
+  // cart:change writeCart fires. Mini-cart listens for this so it only
+  // slides in on real adds, not on quantity-decrements or removals.
+  window.dispatchEvent(new CustomEvent('cart:add', {
+    detail: {
+      variantId,
+      quantity: qty,
+      productName:  details.productName  || '',
+      variantLabel: details.variantLabel || '',
+      price:        Number(details.price) || 0,
+      imageUrl:     details.imageUrl     || '',
+    },
+  }));
 }
 
 /**

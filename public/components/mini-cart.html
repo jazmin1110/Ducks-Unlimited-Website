@@ -1,0 +1,322 @@
+<!-- =============================================================================
+     Ducks Unlimited + Rocwood — Mini Cart (slide-in confirmation)
+     =============================================================================
+     Panel that slides in from the right when the customer adds something to
+     their cart. Shows what was just added + a running subtotal, with
+     "View Cart" and "Checkout" buttons. Dismisses on close click, backdrop
+     click, Esc, or after 6 seconds of no interaction.
+
+     Why not a modal: a modal hijacks the page. The mini cart just confirms
+     the add without pulling the customer out of browsing — Baymard shows
+     this lifts cart-add → checkout rates meaningfully.
+
+     Mounted via /js/components.js's recursive pass (slot lives inside
+     /components/nav.html).
+     ============================================================================= -->
+
+<div class="mini-cart" data-mini-cart hidden>
+  <div class="mini-cart__backdrop" data-mini-cart-backdrop></div>
+
+  <aside class="mini-cart__panel" role="dialog" aria-label="Added to bag">
+    <header class="mini-cart__head">
+      <span class="mini-cart__eyebrow">Added to bag</span>
+      <button type="button" class="mini-cart__close" aria-label="Close">×</button>
+    </header>
+
+    <!-- The latest item that was added. Filled by the script below. -->
+    <div class="mini-cart__latest" data-mini-cart-latest></div>
+
+    <div class="mini-cart__summary">
+      <div class="mini-cart__summary-row">
+        <span>Subtotal</span>
+        <strong data-mini-cart-subtotal>₱0.00</strong>
+      </div>
+      <small class="mini-cart__summary-note" data-mini-cart-count>0 items in your bag</small>
+    </div>
+
+    <div class="mini-cart__actions">
+      <a href="/cart.html"     class="mini-cart__btn mini-cart__btn--secondary">View Bag</a>
+      <a href="/checkout.html" class="mini-cart__btn mini-cart__btn--primary">Checkout</a>
+    </div>
+  </aside>
+</div>
+
+<style>
+  .mini-cart[hidden] { display: none; }
+
+  .mini-cart {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    pointer-events: none;
+  }
+
+  .mini-cart__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(26,26,26,0.35);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: auto;
+  }
+
+  .mini-cart.is-open .mini-cart__backdrop { opacity: 1; }
+
+  .mini-cart__panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: min(380px, 92vw);
+    background: var(--color-white);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.25rem;
+    box-shadow: -8px 0 32px rgba(0,0,0,0.15);
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1);
+    pointer-events: auto;
+  }
+
+  .mini-cart.is-open .mini-cart__panel { transform: translateX(0); }
+
+  .mini-cart__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border-light);
+  }
+
+  .mini-cart__eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+
+  .mini-cart__close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .mini-cart__close:hover { color: var(--color-text); }
+
+  /* ── The item that was just added ── */
+  .mini-cart__latest {
+    display: flex;
+    gap: 0.9rem;
+    align-items: flex-start;
+    padding: 0.5rem 0;
+  }
+
+  .mini-cart__thumb {
+    flex: 0 0 70px;
+    aspect-ratio: 3 / 4;
+    background: var(--color-bg-warm);
+    overflow: hidden;
+    border-radius: 2px;
+  }
+
+  .mini-cart__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .mini-cart__thumb--empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-light);
+    font-size: 0.7rem;
+  }
+
+  .mini-cart__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .mini-cart__name {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    color: var(--color-text);
+    line-height: 1.3;
+  }
+
+  .mini-cart__variant {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+  }
+
+  .mini-cart__meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--color-text);
+    margin-top: 0.15rem;
+  }
+
+  /* ── Summary ── */
+  .mini-cart__summary {
+    margin-top: auto;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-border-light);
+  }
+
+  .mini-cart__summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.9rem;
+    color: var(--color-text);
+  }
+
+  .mini-cart__summary-row strong {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .mini-cart__summary-note {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+  }
+
+  /* ── Actions ── */
+  .mini-cart__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .mini-cart__btn {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.8rem 1rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border: 1px solid var(--color-primary);
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+  }
+
+  .mini-cart__btn--secondary {
+    background: var(--color-white);
+    color: var(--color-primary);
+  }
+
+  .mini-cart__btn--secondary:hover {
+    background: var(--color-bg-warm);
+    text-decoration: none;
+  }
+
+  .mini-cart__btn--primary {
+    background: var(--color-primary);
+    color: var(--color-white);
+  }
+
+  .mini-cart__btn--primary:hover {
+    background: var(--color-primary-dark);
+    text-decoration: none;
+    color: var(--color-white);
+  }
+</style>
+
+<script type="module">
+  import { getCart, getCartTotal, getCartCount } from '/js/cart.js';
+
+  const mc = document.querySelector('[data-mini-cart]');
+  // Guard: this script runs via the components loader on every page, but
+  // only pages that mount the mini-cart component have the panel in DOM.
+  // Using an if-wrap because top-level `return` isn't valid in ES modules.
+  if (mc) {
+  const latestSlot    = mc.querySelector('[data-mini-cart-latest]');
+  const subtotalSlot  = mc.querySelector('[data-mini-cart-subtotal]');
+  const countSlot     = mc.querySelector('[data-mini-cart-count]');
+  const backdrop      = mc.querySelector('[data-mini-cart-backdrop]');
+  const closeBtn      = mc.querySelector('.mini-cart__close');
+
+  const PHP = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2 });
+  let autoDismissTimer = null;
+
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, (c) =>
+      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])
+    );
+  }
+
+  function renderLatest(detail) {
+    const total     = (Number(detail.price) || 0) * (Number(detail.quantity) || 1);
+    const thumbHtml = detail.imageUrl
+      ? `<img src="${esc(detail.imageUrl)}" alt="" />`
+      : `<span>No image</span>`;
+
+    latestSlot.innerHTML = `
+      <div class="mini-cart__thumb ${detail.imageUrl ? '' : 'mini-cart__thumb--empty'}">${thumbHtml}</div>
+      <div class="mini-cart__info">
+        <span class="mini-cart__name">${esc(detail.productName || 'Added to bag')}</span>
+        ${detail.variantLabel ? `<span class="mini-cart__variant">${esc(detail.variantLabel)}</span>` : ''}
+        <div class="mini-cart__meta">
+          <span>Qty ${Number(detail.quantity) || 1}</span>
+          <span>${PHP.format(total)}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function refreshSummary() {
+    subtotalSlot.textContent = PHP.format(getCartTotal());
+    const count = getCartCount();
+    countSlot.textContent = `${count} ${count === 1 ? 'item' : 'items'} in your bag`;
+  }
+
+  function open() {
+    mc.hidden = false;
+    // Rerun on the next frame so the transition fires from the hidden state.
+    requestAnimationFrame(() => mc.classList.add('is-open'));
+
+    clearTimeout(autoDismissTimer);
+    autoDismissTimer = setTimeout(close, 6000);
+  }
+
+  function close() {
+    mc.classList.remove('is-open');
+    setTimeout(() => { mc.hidden = true; }, 300); // match CSS transition
+    clearTimeout(autoDismissTimer);
+  }
+
+  // Opening on add
+  window.addEventListener('cart:add', (e) => {
+    renderLatest(e.detail || {});
+    refreshSummary();
+    open();
+  });
+
+  // Dismiss controls
+  closeBtn.addEventListener('click', close);
+  backdrop.addEventListener('click', close);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !mc.hidden) close();
+  });
+  } // end if (mc)
+</script>

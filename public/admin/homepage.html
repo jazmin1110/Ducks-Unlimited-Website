@@ -112,6 +112,29 @@
     </div>
 
 
+    <!-- ── ANNOUNCEMENT BAR ──
+         The thin strip pinned above the nav on every page. Leave the
+         message blank to hide the bar entirely for this brand. -->
+    <section class="admin-panel" data-section="home.announcement">
+      <h2>Announcement Bar</h2>
+      <p class="help-text" style="margin-top:-0.25rem;margin-bottom:var(--space);">The thin strip that sits above the main nav on every page. Leave the message blank to hide it entirely for this brand.</p>
+      <div class="form-row">
+        <div class="field">
+          <label class="field-label" for="announce_message">Message (HTML allowed)</label>
+          <input class="input" id="announce_message" placeholder="Free shipping on orders over &lt;strong&gt;₱3,000&lt;/strong&gt;">
+          <p class="help-text">Supports simple HTML like <code>&lt;strong&gt;</code> for emphasis. Leave blank to hide the bar.</p>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label class="field-label" for="announce_link">Link (optional)</label>
+          <input class="input" id="announce_link" placeholder="/stores.html">
+          <p class="help-text">When set, the whole bar becomes a clickable link.</p>
+        </div>
+      </div>
+    </section>
+
+
     <!-- ── HERO ── -->
     <section class="admin-panel" data-section="home.hero">
       <h2>Hero</h2>
@@ -194,6 +217,7 @@
     // =========================================================================
 
     import { supabase } from '/lib/supabase.js';
+    import { getAdminBrandSlug } from '/js/brand.js';
     import { mountImageUploader } from '/admin/js/image-uploader.js';
 
     // ── Auth guard ──
@@ -204,7 +228,8 @@
     // The shape of each section's JSONB blob. Matches /js/site-content.js
     // and the seed values in database/migrations/007_site_content.sql.
     // Adding a field here? Add it to the form too AND to those two files.
-    const HERO_FIELDS = ['eyebrow','headline','sub','cta_text','cta_link','image_url'];
+    const HERO_FIELDS         = ['eyebrow','headline','sub','cta_text','cta_link','image_url'];
+    const ANNOUNCEMENT_FIELDS = ['message','link'];
 
     // Three collection tiles. The key suffix matches the seed.
     const TILES = [
@@ -222,6 +247,35 @@
     // In-memory cache of every key's published + draft blobs. Keyed by `key`.
     // Updated as the admin types so we know what to upsert on Save Draft.
     const state = {}; // { 'home.hero': { published: {...}, draft: {...} }, ... }
+
+    // ── Resolve the admin's current brand ────────────────────────────────
+    // The homepage CMS is per-brand (migration 012). We can't edit without
+    // knowing which brand's rows we're reading/writing, so block editing
+    // while "All brands" is selected and tell the admin to pick one.
+    const activeBrandSlug = getAdminBrandSlug();
+    let activeBrandId = null;
+    if (activeBrandSlug === 'all') {
+      document.body.insertAdjacentHTML('afterbegin', `
+        <div style="background:#fff4d6; border-bottom:1px solid #e8d896; padding:0.85rem 1.25rem; text-align:center; font-family:'DM Sans',sans-serif; font-size:0.9rem; color:#5a4a1a;">
+          <strong>Pick a brand</strong> in the top bar (Ducks Unlimited or Rocwood) to edit its homepage. The homepage CMS edits one brand at a time.
+        </div>
+      `);
+      // Lock the form so nothing accidentally saves against a nullish brand.
+      const lock = () => document.querySelectorAll('button, input, textarea, select').forEach(el => {
+        if (!el.closest('[data-admin-nav]')) el.disabled = true;
+      });
+      // Run after DOM paint so admin-nav's own controls aren't disabled.
+      queueMicrotask(lock);
+      throw new Error('Homepage editing paused: no brand selected.');
+    } else {
+      const { data: brandRow, error: brandErr } = await supabase
+        .from('brands').select('id').eq('slug', activeBrandSlug).single();
+      if (brandErr || !brandRow) {
+        console.error('Could not resolve current brand:', brandErr);
+      } else {
+        activeBrandId = brandRow.id;
+      }
+    }
 
 
     // ─────────────────────────────────────────────────────────────────────
@@ -333,6 +387,18 @@
     // Keeping these next to each other so they stay in sync.
     // ─────────────────────────────────────────────────────────────────────
 
+    // ---- ANNOUNCEMENT BAR ----
+    function readAnnouncement() {
+      return {
+        message: v('announce_message'),
+        link:    v('announce_link'),
+      };
+    }
+    function writeAnnouncement(d = {}) {
+      set('announce_message', d.message);
+      set('announce_link',    d.link);
+    }
+
     // ---- HERO ----
     function readHero() {
       return {
@@ -401,10 +467,15 @@
     // ─────────────────────────────────────────────────────────────────────
 
     async function loadAll() {
+      // Fetch this brand's homepage rows only. We leave global rows
+      // (brand_id IS NULL) out of this editor — they belong to a future
+      // "shared defaults" screen; editing them here would silently blow
+      // away values that other brands rely on.
       const { data, error } = await supabase
         .from('site_content')
         .select('key, published, draft')
-        .like('key', 'home.%');
+        .like('key', 'home.%')
+        .eq('brand_id', activeBrandId);
 
       if (error) {
         setStatus('Could not load — see console', 'is-dirty');
@@ -420,6 +491,10 @@
       for (const key of allKeys()) {
         if (!state[key]) state[key] = { published: null, draft: null };
       }
+
+      // Populate the announcement bar fields.
+      const annSrc = state['home.announcement']?.draft || state['home.announcement']?.published || {};
+      writeAnnouncement(annSrc);
 
       // Populate the hero form. Prefer draft (admin's in-progress edits) if present.
       const heroSrc = state['home.hero']?.draft || state['home.hero']?.published || {};
@@ -466,7 +541,12 @@
     }
 
     function allKeys() {
-      return ['home.hero', ...TILES.map((t) => t.key), ...EDITORIALS.map((e) => e.key)];
+      return [
+        'home.announcement',
+        'home.hero',
+        ...TILES.map((t) => t.key),
+        ...EDITORIALS.map((e) => e.key),
+      ];
     }
 
     function haveAnyDrafts() {
@@ -481,7 +561,8 @@
     // Read every section's current form state and return [{key, draft}, ...]
     function snapshotForm() {
       const rows = [];
-      rows.push({ key: 'home.hero', draft: readHero() });
+      rows.push({ key: 'home.announcement', draft: readAnnouncement() });
+      rows.push({ key: 'home.hero',         draft: readHero() });
       for (const t of TILES)      rows.push({ key: t.key, draft: readTile(t.key) });
       for (const e of EDITORIALS) rows.push({ key: e.key, draft: readEditorial(e.key) });
       return rows;
@@ -493,14 +574,16 @@
 
       const rows = snapshotForm().map((r) => ({
         key:   r.key,
+        brand_id: activeBrandId,
         draft: r.draft,
         // Preserve existing published so we don't accidentally null it out.
         published: state[r.key]?.published ?? null,
         updated_by: session.user.id,
       }));
 
-      // Upsert all rows in one batch (PostgREST handles array bodies)
-      const { error } = await supabase.from('site_content').upsert(rows, { onConflict: 'key' });
+      // Upsert all rows in one batch. Conflict target is (key, brand_id)
+      // so we only overwrite THIS brand's rows (migration 012).
+      const { error } = await supabase.from('site_content').upsert(rows, { onConflict: 'key,brand_id' });
       if (error) {
         console.error(error);
         setStatus('Save failed — see console', 'is-dirty');
@@ -529,11 +612,12 @@
       // published. (Saving draft first ensures unsaved field changes also publish.)
       const rows = snapshotForm().map((r) => ({
         key:        r.key,
+        brand_id:   activeBrandId,
         draft:      r.draft,
         published:  r.draft,
         updated_by: session.user.id,
       }));
-      const { error } = await supabase.from('site_content').upsert(rows, { onConflict: 'key' });
+      const { error } = await supabase.from('site_content').upsert(rows, { onConflict: 'key,brand_id' });
       if (error) {
         console.error(error);
         setStatus('Publish failed — see console', 'is-dirty');
@@ -552,14 +636,15 @@
       if (!confirm('Discard your draft and revert the form to the published version?')) return;
       setStatus('Reverting…');
 
-      // Null out the draft column for every home.* row.
+      // Null out the draft column for every home.* row of THIS brand.
       const rows = allKeys().map((key) => ({
         key,
+        brand_id:   activeBrandId,
         draft:      null,
         published:  state[key]?.published ?? null,
         updated_by: session.user.id,
       }));
-      const { error } = await supabase.from('site_content').upsert(rows, { onConflict: 'key' });
+      const { error } = await supabase.from('site_content').upsert(rows, { onConflict: 'key,brand_id' });
       if (error) {
         console.error(error);
         setStatus('Revert failed — see console', 'is-dirty');
