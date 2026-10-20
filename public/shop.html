@@ -1162,10 +1162,16 @@
     import { toggleWishlist, isInWishlist } from '/js/wishlist.js';
     import { applySiteContent } from '/js/site-content.js';
 
-    // Pull per-brand page copy (title + subtitle) from site_content.shop.intro
-    // before anything else so later resets (e.g. clearing search) use the
-    // right text, not the HTML fallback.
+    // Pull per-brand page copy (title + subtitle) from site_content.shop.intro.
+    // applySiteContent is async — the page paints the HTML fallback first and
+    // the CMS value lands later. The site-content:applied event lets us
+    // re-run renderShopHeader so its captured "defaults" become the CMS
+    // values, not the fallback text.
     applySiteContent('shop.');
+    document.documentElement.addEventListener('site-content:applied', () => {
+      shopHeaderDefaults = null;    // force recapture from the now-updated DOM
+      if (typeof renderShopHeader === 'function') renderShopHeader();
+    });
 
     // ─────────────────────────────────────────────────────────────────
     // CONSTANTS
