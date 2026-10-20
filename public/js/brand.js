@@ -178,6 +178,24 @@ export function adminBrandFilter() {
 }
 
 
+// ─── Dynamic <title> tag per brand ─────────────────────────────────────────
+// Every page's <title> is authored as "Something — Ducks Unlimited". Rewrite
+// the trailing brand name to match the ACTIVE brand so a Rocwood visitor's
+// browser tab doesn't say "— Ducks Unlimited". Known-brand names are
+// matched explicitly so a page whose title happens to contain an em-dash
+// mid-sentence isn't mutilated.
+function applyBrandToTitle(brand) {
+  const names = Object.values(KNOWN_BRANDS).map(b => b.name);
+  const pattern = new RegExp('\\s+[—–-]\\s+(' + names.map(n => n.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|') + ')\\s*$');
+  const current = document.title || '';
+  if (pattern.test(current)) {
+    document.title = current.replace(pattern, ' — ' + brand.name);
+  }
+  // Pages whose title doesn't carry a brand suffix are left alone.
+}
+
+
 // ─── Run on load so the first paint already has the right brand ────────────
 
-applyBrand(resolveSlug());
+const _initialBrand = applyBrand(resolveSlug());
+applyBrandToTitle(_initialBrand);

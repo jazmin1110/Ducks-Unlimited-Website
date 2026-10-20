@@ -1023,10 +1023,13 @@
   <header class="shop-header">
     <div class="container">
       <p class="shop-header__eyebrow" id="shopEyebrow">The Collection</p>
-      <h1 id="shopHeading">Shop All</h1>
-      <p class="shop-header__sub" id="shopSubtitle">
-        Every piece is hand-finished in our Greenhills workshop —
-        Egyptian cotton, made to last.
+      <!-- Title + subtitle are per-brand editable via site_content.shop.intro
+           (migration 014). applySiteContent on page load fills them in; the
+           hardcoded values below are only the fallback when the CMS row is
+           missing or hasn't loaded yet. -->
+      <h1 id="shopHeading" data-content-key="shop.intro" data-content-field="title">Shop All</h1>
+      <p class="shop-header__sub" id="shopSubtitle" data-content-key="shop.intro" data-content-field="subtitle">
+        Every piece is hand-finished in our workshop — made to last.
       </p>
     </div>
   </header>
@@ -1157,6 +1160,12 @@
   <script type="module">
     import { supabase } from '/lib/supabase.js';
     import { toggleWishlist, isInWishlist } from '/js/wishlist.js';
+    import { applySiteContent } from '/js/site-content.js';
+
+    // Pull per-brand page copy (title + subtitle) from site_content.shop.intro
+    // before anything else so later resets (e.g. clearing search) use the
+    // right text, not the HTML fallback.
+    applySiteContent('shop.');
 
     // ─────────────────────────────────────────────────────────────────
     // CONSTANTS
@@ -1766,11 +1775,25 @@
 
     // Swap the page header copy when a search query is active so the page
     // reads as "Search results for X" instead of "Shop All".
+    //
+    // The "default" values are captured from the DOM on first call, AFTER
+    // applySiteContent has painted the CMS version. That way the reset path
+    // uses the brand's CMS copy, not the HTML fallback.
+    let shopHeaderDefaults = null;
     function renderShopHeader() {
       const eyebrow  = document.getElementById('shopEyebrow');
       const heading  = document.getElementById('shopHeading');
       const subtitle = document.getElementById('shopSubtitle');
       if (!eyebrow || !heading || !subtitle) return;
+
+      // Capture whatever the DOM shows right now as the brand's defaults.
+      if (!shopHeaderDefaults) {
+        shopHeaderDefaults = {
+          eyebrow:  eyebrow.textContent.trim(),
+          heading:  heading.textContent.trim(),
+          subtitle: subtitle.textContent.trim(),
+        };
+      }
 
       const q = state.filters.query;
       if (q) {
@@ -1778,9 +1801,9 @@
         heading.textContent  = `Results for "${q}"`;
         subtitle.textContent = 'Filter or sort below to refine your search.';
       } else {
-        eyebrow.textContent  = 'The Collection';
-        heading.textContent  = 'Shop All';
-        subtitle.textContent = 'Every piece is hand-finished in our Greenhills workshop — Egyptian cotton, made to last.';
+        eyebrow.textContent  = shopHeaderDefaults.eyebrow;
+        heading.textContent  = shopHeaderDefaults.heading;
+        subtitle.textContent = shopHeaderDefaults.subtitle;
       }
     }
 
