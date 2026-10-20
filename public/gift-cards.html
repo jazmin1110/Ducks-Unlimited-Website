@@ -68,6 +68,18 @@
       position: relative;
     }
 
+    /* Brand tagline, shown just under the brand name on the card. Hidden
+       automatically for brands with no tagline (Rocwood). */
+    .gc-preview__tagline {
+      font-size: 0.7rem;
+      font-style: italic;
+      color: var(--color-accent);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+      position: relative;
+    }
+
     .gc-preview__est {
       font-size: 0.7rem;
       font-style: italic;
@@ -244,19 +256,22 @@
 
     <section class="gc-hero">
       <p class="eyebrow">A gift, made to last</p>
-      <h1>Ducks Unlimited Gift Cards</h1>
+      <h1><span data-brand-name>Ducks Unlimited</span> Gift Cards</h1>
       <p class="gc-hero__sub">
-        For the people who appreciate a polo that lasts a decade. Delivered
+        For the people who appreciate pieces that last. Delivered
         digitally — pick any amount.
       </p>
     </section>
 
-    <!-- Live preview that updates as the form changes -->
+    <!-- Live preview that updates as the form changes. Brand name + tagline
+         swap per brand (/js/brand.js). Brands with no tagline (Rocwood)
+         have the tagline line hidden entirely. -->
     <div class="gc-preview" id="gcPreview">
-      <p class="gc-preview__brand">Ducks Unlimited</p>
-      <p class="gc-preview__est">Gift Card · est. 1995</p>
+      <p class="gc-preview__brand" data-brand-name>Ducks Unlimited</p>
+      <p class="gc-preview__tagline" data-brand-tagline>est. 1995</p>
+      <p class="gc-preview__est">Gift Card</p>
       <p class="gc-preview__amount" id="previewAmount">₱1,000</p>
-      <p class="gc-preview__label">To redeem at ducksunlimited.ph</p>
+      <p class="gc-preview__label">To redeem at checkout</p>
       <p class="gc-preview__to" id="previewTo">For someone who appreciates the craft.</p>
     </div>
 

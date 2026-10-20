@@ -178,6 +178,26 @@ export function adminBrandFilter() {
 }
 
 
+// ─── Dynamic brand-name text per brand ─────────────────────────────────────
+// Any element with [data-brand-name] gets its textContent replaced with the
+// current brand's name. [data-brand-tagline] gets the brand's tagline (and
+// is hidden entirely when the brand has none). This lets any page swap
+// hardcoded "Ducks Unlimited" occurrences without touching code.
+function applyBrandTextToDom(brand) {
+  document.querySelectorAll('[data-brand-name]').forEach((el) => {
+    el.textContent = brand.name;
+  });
+  document.querySelectorAll('[data-brand-tagline]').forEach((el) => {
+    if (brand.tagline) {
+      el.textContent = brand.tagline;
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+}
+
+
 // ─── Dynamic <title> tag per brand ─────────────────────────────────────────
 // Every page's <title> is authored as "Something — Ducks Unlimited". Rewrite
 // the trailing brand name to match the ACTIVE brand so a Rocwood visitor's
@@ -199,3 +219,13 @@ function applyBrandToTitle(brand) {
 
 const _initialBrand = applyBrand(resolveSlug());
 applyBrandToTitle(_initialBrand);
+
+// DOM might not be ready yet on first import; wait if so.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => applyBrandTextToDom(_initialBrand));
+} else {
+  applyBrandTextToDom(_initialBrand);
+}
+
+// Keep the DOM in sync if some other code switches brand mid-page.
+window.addEventListener('brand:change', (e) => applyBrandTextToDom(e.detail));
