@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
+  <title>Design — Admin · Ducks Unlimited</title>
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    /* =========================================================================
+       Admin Design page — a Shopify-style sections editor for the storefront.
+
+       Layout: a 2-column workspace below the shared admin-nav.
+         Left column  (320px): the section LIST — reorderable, with Add button.
+         Right column (fluid): the section FORM for the currently-selected row.
+                                Generated from /js/section-schemas.js — no
+                                hand-written forms per section type.
+
+       The sticky bar across the top holds Save Draft / Publish / Preview.
+       ======================================================================= */
+
+    body { background: var(--color-bg-warm); }
+
+    main.design-shell {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1rem;
+      padding: 1rem;
+      max-width: 1400px;
+      margin: 0 auto;
+      min-height: calc(100vh - 56px);
+    }
+
+    @media (max-width: 900px) {
+      main.design-shell { grid-template-columns: 1fr; }
+    }
+
+    /* Sticky top bar (page title + action buttons + status) */
+    .design-top {
+      position: sticky;
+      top: 56px;                 /* sits below the admin-nav */
+      z-index: 40;
+      background: var(--color-bg-warm);
+      border-bottom: 1px solid var(--color-border-light);
+      padding: .9rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      flex-wrap: wrap;
+    }
+    .design-top h1 {
+      font-family: var(--font-heading);
+      color: var(--color-primary);
+      font-size: 1.3rem;
+      margin: 0;
+    }
+    .design-top__page-select {
+      font-family: inherit;
+      font-size: .85rem;
+      padding: .35rem .5rem;
+      border: 1px solid var(--color-border-light);
+      background: #fff;
+    }
+    .design-top__spacer { flex: 1; }
+    .design-top__status {
+      font-size: .78rem;
+      color: var(--color-text-muted);
+      margin-right: .5rem;
+    }
+    .design-top__status.is-dirty { color: var(--color-warning); }
+    .design-top__status.is-saved { color: var(--color-success); }
+
+    .btn-primary, .btn-secondary, .btn-ghost {
+      font-family: inherit;
+      font-size: .82rem;
+      padding: .5rem 1rem;
+      border: 1px solid transparent;
+      cursor: pointer;
+      letter-spacing: .04em;
+    }
+    .btn-primary   { background: var(--color-primary); color: #fff; }
+    .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+    .btn-secondary { background: #fff; color: var(--color-primary); border-color: var(--color-primary); }
+    .btn-ghost     { background: transparent; color: var(--color-text-muted); border-color: transparent; }
+    .btn-ghost:hover { color: var(--color-primary); }
+
+    /* ── Left column: section list ── */
+    .section-list {
+      background: #fff;
+      border: 1px solid var(--color-border-light);
+      padding: 0;
+    }
+    .section-list__head {
+      padding: .75rem 1rem;
+      border-bottom: 1px solid var(--color-border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .section-list__head h2 {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      color: var(--color-primary);
+      margin: 0;
+    }
+    .section-list ul { list-style: none; margin: 0; padding: 0; }
+    .section-list li {
+      display: flex;
+      align-items: center;
+      padding: .6rem .75rem;
+      border-bottom: 1px solid var(--color-border-light);
+      cursor: pointer;
+      gap: .4rem;
+    }
+    .section-list li:hover    { background: var(--color-bg-warm); }
+    .section-list li.is-active { background: rgba(27,77,46,0.07); border-left: 3px solid var(--color-primary); padding-left: calc(.75rem - 3px); }
+    .section-list__name {
+      flex: 1;
+      font-size: .9rem;
+      color: var(--color-text);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .section-list__name small {
+      display: block;
+      font-size: .7rem;
+      color: var(--color-text-muted);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-top: .15rem;
+    }
+    .section-list__icon-btn {
+      background: none;
+      border: none;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      padding: .25rem .35rem;
+      font-size: .85rem;
+      line-height: 1;
+    }
+    .section-list__icon-btn:hover { color: var(--color-primary); }
+
+    /* Drag handle + drag/drop visual feedback */
+    .section-list__drag {
+      color: var(--color-text-muted);
+      cursor: grab;
+      padding: 0 .2rem;
+      font-size: .9rem;
+      user-select: none;
+      letter-spacing: -0.1em;
+    }
+    .section-list li[draggable="true"]:active .section-list__drag { cursor: grabbing; }
+    .section-list li.is-dragging    { opacity: .4; }
+    .section-list li.is-drop-target { border-top: 2px solid var(--color-primary); }
+
+    /* Theme button becomes "active" styling when the theme form is open */
+    .btn-ghost.is-active {
+      background: var(--color-primary);
+      color: #fff;
+      border-color: var(--color-primary);
+    }
+
+    .section-list__add {
+      padding: .75rem 1rem;
+      border-top: 1px solid var(--color-border-light);
+      background: var(--color-bg);
+    }
+    .section-list__add select {
+      width: 100%;
+      padding: .45rem;
+      font-size: .85rem;
+      font-family: inherit;
+      border: 1px solid var(--color-border-light);
+      background: #fff;
+    }
+
+    /* ── Right column: section form ── */
+    .section-form {
+      background: #fff;
+      border: 1px solid var(--color-border-light);
+      padding: 1.25rem;
+    }
+    .section-form__empty {
+      color: var(--color-text-muted);
+      padding: 3rem 1rem;
+      text-align: center;
+      font-style: italic;
+    }
+    .section-form h2 {
+      font-family: var(--font-heading);
+      font-size: 1.3rem;
+      color: var(--color-primary);
+      margin: 0 0 .25rem;
+    }
+    .section-form__desc {
+      font-size: .85rem;
+      color: var(--color-text-muted);
+      margin-bottom: 1.25rem;
+    }
+    .field { margin-bottom: 1rem; }
+    .field label {
+      display: block;
+      font-size: .78rem;
+      color: var(--color-text-muted);
+      letter-spacing: .05em;
+      margin-bottom: .3rem;
+    }
+    .field input[type=text],
+    .field input[type=url],
+    .field input[type=number],
+    .field textarea,
+    .field select {
+      width: 100%;
+      padding: .5rem .6rem;
+      font-family: inherit;
+      font-size: .9rem;
+      border: 1px solid var(--color-border-light);
+      background: #fff;
+    }
+    .field textarea { min-height: 90px; resize: vertical; }
+    .field input[type=color] { height: 38px; width: 70px; border: 1px solid var(--color-border-light); padding: 2px; }
+    .field input[type=range] { width: 100%; }
+    .field__range-value { font-size: .78rem; color: var(--color-text-muted); margin-left: .5rem; }
+    .field__image-preview {
+      margin-top: .4rem;
+      max-width: 160px;
+      max-height: 100px;
+      background: var(--color-bg);
+      border: 1px solid var(--color-border-light);
+      object-fit: cover;
+    }
+
+    /* Blocks UI (nested inside sections like category-tiles) */
+    .blocks {
+      border: 1px dashed var(--color-border-light);
+      padding: .75rem;
+      margin-top: 1rem;
+    }
+    .blocks__head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: .5rem;
+    }
+    .blocks__head h3 {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      color: var(--color-primary);
+      margin: 0;
+    }
+    .block {
+      background: var(--color-bg-warm);
+      padding: .75rem;
+      margin-bottom: .5rem;
+      border-left: 3px solid var(--color-accent);
+    }
+    .block__head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: .5rem;
+    }
+    .block__title { font-size: .82rem; font-weight: 600; color: var(--color-primary); }
+    .block__controls button {
+      background: none; border: none; cursor: pointer; color: var(--color-text-muted);
+      font-size: .85rem; padding: 0 .25rem;
+    }
+    .block__controls button:hover { color: var(--color-primary); }
+  </style>
+</head>
+
+<body>
+
+  <!-- Shared admin nav mounted by /js/components.js -->
+  <div data-component="admin-nav"></div>
+
+  <!-- Sticky action bar (page selector + Save / Publish / Preview) -->
+  <div class="design-top">
+    <h1>Design</h1>
+    <select class="design-top__page-select" data-page-select>
+      <option value="home">Homepage</option>
+    </select>
+    <button type="button" class="btn-ghost" data-theme-btn title="Edit global colors and fonts">🎨 Theme</button>
+    <div class="design-top__spacer"></div>
+    <span class="design-top__status" data-status></span>
+    <a class="btn-secondary" data-preview-btn href="/preview-home.html?preview=1" target="_blank" rel="noopener">Preview ↗</a>
+    <button class="btn-secondary" data-save-draft-btn type="button">Save Draft</button>
+    <button class="btn-primary"   data-publish-btn    type="button">Publish</button>
+  </div>
+
+  <main class="design-shell">
+
+    <!-- LEFT: section list -->
+    <aside class="section-list">
+      <div class="section-list__head">
+        <h2>Sections</h2>
+        <span style="font-size:.72rem; color:var(--color-text-muted); letter-spacing:.1em; text-transform:uppercase;" data-brand-label></span>
+      </div>
+      <ul data-section-list></ul>
+      <div class="section-list__add">
+        <label style="font-size:.75rem; color:var(--color-text-muted); margin-bottom:.3rem; display:block;">+ Add section</label>
+        <select data-add-section>
+          <option value="">Choose a section type…</option>
+        </select>
+      </div>
+    </aside>
+
+    <!-- RIGHT: section form (filled by JS when a section is selected) -->
+    <section class="section-form" data-section-form>
+      <div class="section-form__empty">Select a section on the left to edit its content.</div>
+    </section>
+
+  </main>
+
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/admin/js/design.js"></script>
+</body>
+</html>
