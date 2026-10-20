@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
+  <title>Homepage preview · Ducks Unlimited</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    /* Minimal shell — the sections bring their own styling. We just mount them. */
+    body { margin: 0; background: var(--color-bg-warm, #F5F0E8); }
+
+    /* Thin preview banner so no one mistakes this for the live homepage.
+       Shown only to admin-signed-in viewers (hidden by JS otherwise). */
+    .preview-banner {
+      position: sticky; top: 0; z-index: 100;
+      background: #1A1A1A; color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .78rem;
+      padding: .55rem 1rem;
+      display: flex; gap: .75rem; align-items: center; justify-content: center;
+      letter-spacing: .08em; text-transform: uppercase;
+      display: none;
+    }
+    .preview-banner a { color: #C9A84C; }
+    .preview-banner.is-shown { display: flex; }
+  </style>
+</head>
+<body>
+
+  <!-- Preview banner (shown only to signed-in admins) -->
+  <div class="preview-banner" data-preview-banner>
+    Preview · <span data-preview-mode></span> ·
+    <a href="/admin/design.html">Back to editor</a> ·
+    <a href="/" target="_blank" rel="noopener">Open live site ↗</a>
+  </div>
+
+  <!-- The sections mount point. renderPageSections() paints into this. -->
+  <div id="sections"></div>
+
+  <!-- Standard footer (reuse the component if the site mounts it this way) -->
+  <div data-component="footer"></div>
+
+  <!-- Mount shared components (nav, footer, etc.) -->
+  <script type="module" src="/js/components.js"></script>
+
+  <!-- Render page sections from the DB -->
+  <script type="module">
+    import { renderPageSections } from '/js/sections-render.js';
+    import { supabase }           from '/lib/supabase.js';
+
+    (async function () {
+      const params  = new URLSearchParams(location.search);
+      const preview = params.get('preview') === '1';
+
+      // Show the "Preview" banner only if an admin is signed in — anonymous
+      // visitors shouldn't see the banner even if they land here with ?preview=1.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const banner = document.querySelector('[data-preview-banner]');
+        banner.classList.add('is-shown');
+        document.querySelector('[data-preview-mode]').textContent =
+          preview ? 'editing a draft' : 'published view';
+      }
+
+      const container = document.getElementById('sections');
+      await renderPageSections('home', container);
+    })().catch((err) => {
+      console.error('[preview-home] render failed:', err);
+      document.getElementById('sections').innerHTML =
+        '<p style="padding:2rem; text-align:center; color:#a33;">Preview failed to load. Check the console.</p>';
+    });
+  </script>
+</body>
+</html>
