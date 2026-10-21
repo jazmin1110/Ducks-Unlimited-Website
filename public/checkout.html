@@ -275,6 +275,21 @@
         top: 80px;
       }
     }
+
+    /* ── Account bits (sign-in prompt, save-address checkbox) ── */
+    .checkout-account {
+      background: var(--color-bg-warm);
+      border: 1px solid var(--color-border-light);
+      padding: 0.85rem 1rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: var(--space-md);
+    }
+    .checkout-account:empty { display: none; }
+    .checkout-account a { color: var(--color-primary); text-decoration: underline; text-underline-offset: 3px; }
+    .check-row { display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.9rem; cursor: pointer; }
+    .check-row input { width: 18px; height: 18px; margin-top: 0.15rem; accent-color: var(--color-primary); }
+    .check-row[hidden] { display: none; }
   </style>
 </head>
 <body>
@@ -305,6 +320,8 @@
   <script type="module">
     import { supabase } from '/lib/supabase.js';
     import { getCart, clearCart } from '/js/cart.js';
+    import { getCurrentUser, getAccessToken } from '/js/auth.js';
+    import { fillProvinceSelect } from '/js/ph-locations.js';
 
     // ─────────────────────────────────────────────────────────────────
     // CONSTANTS
@@ -325,6 +342,8 @@
       cart: [],        // localStorage cart items
       stockMap: {},    // variantId → fresh data { stock, name, price, image, etc }
       submitting: false,
+      user: null,      // signed-in customer, or null for guest checkout
+      addresses: [],   // their saved addresses (default first)
     };
 
     // ─────────────────────────────────────────────────────────────────
@@ -477,6 +496,10 @@
               <!-- Banner shown if the API call fails -->
               <div class="form-banner" id="formBanner" role="alert"></div>
 
+              <!-- Guest: "Have an account? Sign in" · Signed in: "Checking out as …"
+                   Guest checkout always works — an account is never required. -->
+              <div class="checkout-account" id="checkoutAccount"></div>
+
               <section class="form-section">
                 <h2>Contact</h2>
 
@@ -506,13 +529,26 @@
               <section class="form-section">
                 <h2>Shipping Address</h2>
 
+                <!-- Saved-address picker — only shown to signed-in customers
+                     who have addresses (filled in by prefillFromAccount()) -->
+                <div class="field" id="savedAddrWrap" hidden>
+                  <label class="field-label" for="savedAddr">Ship to a saved address</label>
+                  <select class="select" id="savedAddr"></select>
+                </div>
+
                 <div class="field">
                   <label class="field-label field-required" for="address">Street Address</label>
                   <input class="input" type="text" id="address" name="address"
                          autocomplete="street-address"
-                         placeholder="House/unit no., street, barangay"
+                         placeholder="House/unit no., building, street"
                          required />
                   <span class="field-error">Please enter your street address.</span>
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="barangay">Barangay</label>
+                  <input class="input" type="text" id="barangay" name="barangay"
+                         autocomplete="address-level3" />
                 </div>
 
                 <div class="form-row two-col">
@@ -524,8 +560,8 @@
                   </div>
                   <div class="field">
                     <label class="field-label field-required" for="province">Province</label>
-                    <input class="input" type="text" id="province" name="province"
-                           autocomplete="address-level1" required />
+                    <select class="select" id="province" name="province"
+                            autocomplete="address-level1" required></select>
                     <span class="field-error">Required.</span>
                   </div>
                 </div>
@@ -540,6 +576,12 @@
                     <span class="field-error">4-digit ZIP.</span>
                   </div>
                 </div>
+
+                <!-- Signed-in only: save this address to their account -->
+                <label class="check-row" id="saveAddrRow" hidden style="margin-top:var(--space);">
+                  <input type="checkbox" id="saveAddr" name="saveAddr" checked />
+                  <span>Save this address to my account</span>
+                </label>
               </section>
 
               <section class="form-section">
@@ -593,7 +635,86 @@
         </form>
       `;
 
+      fillProvinceSelect(document.getElementById('province'));
       wireFormEvents();
+      prefillFromAccount();
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // ACCOUNT PREFILL — signed-in customers shouldn't retype anything
+    // ─────────────────────────────────────────────────────────────────
+
+    function fillAddress(a) {
+      const form = document.getElementById('checkoutForm');
+      form.address.value  = [a.line1, a.line2].filter(Boolean).join(', ');
+      form.barangay.value = a.barangay ?? '';
+      form.city.value     = a.city ?? '';
+      fillProvinceSelect(form.province, a.province ?? '');
+      form.zip.value      = a.postal_code ?? '';
+      if (a.phone && !form.phone.value) form.phone.value = a.phone;
+      // Already saved — no need to offer saving it again
+      document.getElementById('saveAddrRow').hidden = true;
+      document.getElementById('saveAddr').checked = false;
+    }
+
+    async function prefillFromAccount() {
+      const box = document.getElementById('checkoutAccount');
+
+      if (!state.user) {
+        box.innerHTML = `Have an account? <a href="/auth/sign-in.html?next=/checkout.html">Sign in</a>
+          for faster checkout — or continue as a guest.`;
+        return;
+      }
+
+      box.innerHTML = `Checking out as <strong>${escapeHtml(state.user.email)}</strong>.
+        This order will appear in <a href="/account/orders.html">My Orders</a>.`;
+
+      const form = document.getElementById('checkoutForm');
+      form.email.value = state.user.email;
+
+      const [{ data: profile }, { data: addresses }] = await Promise.all([
+        supabase.from('customer_profiles').select('display_name, phone').eq('id', state.user.id).maybeSingle(),
+        supabase.from('customer_addresses').select('*')
+          .order('is_default', { ascending: false }).order('created_at', { ascending: false }),
+      ]);
+
+      state.addresses = addresses ?? [];
+      const def = state.addresses[0];
+
+      if (!form.name.value)  form.name.value  = def?.recipient_name || profile?.display_name || '';
+      if (!form.phone.value) form.phone.value = profile?.phone || '';
+
+      if (def) {
+        fillAddress(def);
+      } else {
+        // No saved addresses yet — offer to save this one
+        document.getElementById('saveAddrRow').hidden = false;
+      }
+
+      if (state.addresses.length > 1) {
+        const sel = document.getElementById('savedAddr');
+        sel.innerHTML = state.addresses.map(a => `
+          <option value="${escapeHtml(a.id)}">${escapeHtml(
+            [a.label, a.recipient_name, a.line1, a.city].filter(Boolean).join(' · ')
+          )}</option>`).join('') + '<option value="">A new address…</option>';
+        document.getElementById('savedAddrWrap').hidden = false;
+
+        sel.addEventListener('change', () => {
+          const a = state.addresses.find(x => x.id === sel.value);
+          if (a) { form.name.value = a.recipient_name; form.phone.value = a.phone; fillAddress(a); return; }
+          // "A new address…" → clear the address fields and offer to save it
+          for (const f of ['address', 'barangay', 'city', 'zip']) form[f].value = '';
+          fillProvinceSelect(form.province);
+          document.getElementById('saveAddrRow').hidden = false;
+          document.getElementById('saveAddr').checked = true;
+          form.address.focus();
+        });
+      }
+
+      // Typing a different address by hand → offer to save it
+      for (const f of ['address', 'city', 'zip']) {
+        form[f].addEventListener('input', () => { document.getElementById('saveAddrRow').hidden = false; });
+      }
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -703,6 +824,7 @@
           },
           shipping: {
             address:  data.address,
+            barangay: data.barangay || '',
             city:     data.city,
             province: data.province,
             zip:      data.zip,
@@ -711,9 +833,15 @@
         };
 
         try {
+          // Signed-in customers send their token so the server links the
+          // order to their account (it shows up in My Orders).
+          const headers = { 'Content-Type': 'application/json' };
+          const token = state.user ? await getAccessToken() : null;
+          if (token) headers.Authorization = `Bearer ${token}`;
+
           const res = await fetch('/api/create-payment', {
             method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body:    JSON.stringify(payload),
           });
           const result = await res.json();
@@ -733,6 +861,29 @@
           // Clear the cart — the order is recorded server-side now.
           // If payment fails, the customer can rebuild the cart from /shop.html.
           clearCart();
+
+          // Remember the order for the confirmation / tracking pages (this tab only).
+          try {
+            sessionStorage.setItem('du:lastOrder', JSON.stringify({
+              orderNumber: result.orderNumber,
+              email:       data.email.trim().toLowerCase(),
+            }));
+          } catch { /* private browsing — the pages still work, just less pre-filled */ }
+
+          // Save the address to their account if they asked to
+          if (state.user && data.saveAddr && !document.getElementById('saveAddrRow').hidden) {
+            await supabase.from('customer_addresses').insert({
+              user_id:        state.user.id,
+              recipient_name: data.name.trim(),
+              phone:          data.phone.replace(/[\s\-]/g, ''),
+              line1:          data.address.trim(),
+              barangay:       data.barangay?.trim() || null,
+              city:           data.city.trim(),
+              province:       data.province,
+              postal_code:    data.zip.trim(),
+              is_default:     state.addresses.length === 0,
+            }).then(({ error }) => { if (error) console.warn('Could not save address:', error); });
+          }
 
           // Hand off to PayMongo. After payment, PayMongo redirects to
           // /order-confirmation.html?order=<order_number> (configured via
@@ -761,6 +912,7 @@
       }
 
       state.cart = getCart();
+      state.user = await getCurrentUser();
 
       if (state.cart.length === 0) {
         renderEmpty('empty');

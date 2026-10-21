@@ -4,11 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Wishlist — Ducks Unlimited</title>
+  <meta name="robots" content="noindex" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
   <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/account.css" />
 
   <style>
     .wishlist-back {
@@ -98,35 +100,9 @@
     }
 
     @media (min-width: 768px) {
-      .wishlist-grid { grid-template-columns: repeat(4, 1fr); gap: 2rem 1.5rem; }
+      .wishlist-grid { grid-template-columns: repeat(3, 1fr); gap: 2rem 1.5rem; }
     }
 
-    /* ── Signed-out gate panel ─────────────────────────────────────────── */
-    .signed-out-gate {
-      max-width: 480px;
-      margin: var(--space-2xl) auto;
-      text-align: center;
-    }
-    .signed-out-gate__panel {
-      background: var(--color-white);
-      border: 1px solid var(--color-border-light);
-      padding: var(--space-xl) var(--space-md);
-    }
-    .signed-out-gate__sub {
-      color: var(--color-text-muted);
-      margin: var(--space-sm) auto var(--space-md);
-      max-width: 32ch;
-    }
-    .signed-out-gate__actions {
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-      margin-top: var(--space);
-    }
-    @media (min-width: 480px) {
-      .signed-out-gate__actions { flex-direction: row; justify-content: center; }
-      .signed-out-gate__actions .btn { min-width: 160px; }
-    }
   </style>
 </head>
 <body>
@@ -135,36 +111,22 @@
 
   <main class="container account-shell">
 
-    <!-- Shown when the visitor is NOT signed in. -->
-    <div id="signedOutView" class="signed-out-gate" hidden>
-      <div class="signed-out-gate__panel">
-        <p class="eyebrow">Saved Pieces</p>
-        <h1>You're not signed in</h1>
-        <p class="signed-out-gate__sub">
-          Sign in to view your wishlist, or create an account to start saving pieces for later.
-        </p>
-        <div class="signed-out-gate__actions">
-          <a class="btn btn-primary"      href="/auth/sign-in.html" data-cta="sign-in">Sign In</a>
-          <a class="btn btn-outline-dark" href="/auth/sign-up.html" data-cta="sign-up">Create Account</a>
+    <div id="signedOutView" class="signed-out-gate" hidden
+         data-title="Your wishlist"
+         data-text="Sign in to see pieces you've saved on any device."></div>
+
+    <div id="signedInView" class="account-layout" hidden>
+      <nav class="account-nav" data-account-nav aria-label="Account menu"></nav>
+
+      <section>
+        <p class="eyebrow">My Account</p>
+        <h1 class="account-title">Wishlist</h1>
+        <p class="account-subtitle" id="wlCount"></p>
+
+        <div id="wlContent">
+          <!-- Filled by script below -->
         </div>
-      </div>
-    </div>
-
-    <!-- Real page content — shown when signed in. -->
-    <div id="signedInView">
-
-      <a href="/account/" class="wishlist-back">← Back to account</a>
-
-      <div class="account-header">
-        <p class="eyebrow">Saved Pieces</p>
-        <h1>My Wishlist</h1>
-        <p class="account-header__sub" id="wlCount"></p>
-      </div>
-
-      <div id="wlContent">
-        <!-- Filled by script below -->
-      </div>
-
+      </section>
     </div><!-- /#signedInView -->
 
   </main>
@@ -176,11 +138,13 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
-    import { gateAccountPage } from '/js/auth.js';
+    import { initAccountPage } from '/js/account.js';
     import { getWishlist, removeFromWishlist } from '/js/wishlist.js';
 
-    const user = await gateAccountPage();
-    if (!user) return; // signed-out panel is shown; nothing else to do
+    // A bare `return` at the top level of a module is a syntax error (it was
+    // breaking this page), so the page logic only runs when someone is signed in.
+    const user = await initAccountPage('wishlist');
+    if (user) {
 
     const content = document.getElementById('wlContent');
     const countEl = document.getElementById('wlCount');
@@ -286,6 +250,7 @@
     }
 
     load();
+    } // end if (user)
   </script>
 
 </body>

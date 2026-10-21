@@ -5,7 +5,7 @@
 //   {
 //     items:    [{ variantId, quantity }],
 //     customer: { name, email, phone },
-//     shipping: { address, city, province, zip },
+//     shipping: { address, barangay, city, province, zip },
 //     notes:    string (optional)
 //   }
 //
@@ -23,6 +23,8 @@
 // Inventory is NOT decremented here — that happens only after the webhook
 // confirms successful payment.
 // =============================================================================
+
+import { getUserFromRequest } from './_lib/supabase-admin.js';
 
 const SHIPPING_FEE_PHP = 150;
 
@@ -131,6 +133,12 @@ export default async function handler(req, res) {
   try {
     const { items, customer, shipping, notes } = req.body;
 
+    // ── Who is checking out? ──
+    // If the browser sent a signed-in customer's token, the order is linked
+    // to their account (orders.user_id) so it shows up under My Orders.
+    // Guests (no token) still check out normally — user_id stays null.
+    const user = await getUserFromRequest(req);
+
     // ── Re-fetch variants for authoritative pricing + stock check ──
     // Building the IN filter for the REST API:
     //   variants?id=in.(uuid1,uuid2)
@@ -178,6 +186,7 @@ export default async function handler(req, res) {
     // ── Combine shipping fields into the single shipping_address column ──
     const shippingStr = [
       shipping.address.trim(),
+      shipping.barangay?.trim() ? `Brgy. ${shipping.barangay.trim()}` : null,
       shipping.city.trim(),
       shipping.province.trim(),
       shipping.zip.trim(),
@@ -188,6 +197,7 @@ export default async function handler(req, res) {
     const orderInsert = await supabase('orders', {
       method: 'POST',
       body: JSON.stringify([{
+        user_id:            user?.id ?? null,
         customer_name:      customer.name.trim(),
         customer_email:     customer.email.trim().toLowerCase(),
         customer_phone:     String(customer.phone).replace(/[\s\-]/g, ''),

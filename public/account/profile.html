@@ -3,140 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Personal Details — Ducks Unlimited</title>
+  <title>Account Details — Ducks Unlimited</title>
+  <meta name="robots" content="noindex" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
   <link rel="stylesheet" href="/css/style.css" />
-
-  <style>
-    .profile-back {
-      display: inline-block;
-      font-size: 0.78rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--color-text-muted);
-      text-decoration: none;
-      margin-bottom: var(--space-md);
-    }
-    .profile-back:hover { color: var(--color-primary); }
-
-    .profile-form {
-      max-width: 600px;
-      margin: 0 auto;
-      background: var(--color-white);
-      padding: var(--space-lg);
-      border: 1px solid var(--color-border-light);
-    }
-
-    .profile-form .row { display: grid; gap: var(--space); grid-template-columns: 1fr; margin-bottom: var(--space); }
-
-    .field-label-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.5rem;
-      margin-bottom: 0.35rem;
-    }
-
-    /* Inline "Saved ✓" / "Couldn't save" indicators next to each field label */
-    .field-saved, .field-error {
-      font-size: 0.7rem;
-      letter-spacing: 0.04em;
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-    .field-saved.is-visible { opacity: 1; color: var(--color-primary); }
-    .field-error { color: var(--color-error); opacity: 1; }
-
-    /* Help text under fields (e.g. the email read-only note) */
-    .field-help {
-      font-size: 0.75rem;
-      color: var(--color-text-muted);
-      margin-top: 0.4rem;
-    }
-
-    /* Disabled email field looks intentionally inert, not broken */
-    .input[disabled] {
-      background: var(--color-bg-warm);
-      color: var(--color-text-muted);
-      cursor: not-allowed;
-    }
-
-    /* Checkbox row for marketing opt-in */
-    .check-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.6rem;
-      padding: 0.75rem;
-      background: var(--color-bg-warm);
-      border: 1px solid var(--color-border-light);
-      cursor: pointer;
-    }
-    .check-row input { margin-top: 0.2rem; }
-    .check-row__text {
-      font-size: 0.9rem;
-      color: var(--color-text);
-      line-height: 1.45;
-    }
-    .check-row__sub {
-      display: block;
-      font-size: 0.78rem;
-      color: var(--color-text-muted);
-      margin-top: 0.2rem;
-    }
-
-    .profile-addresses-link {
-      max-width: 600px;
-      margin: var(--space) auto 0;
-      text-align: center;
-    }
-
-    /* Header above the Default Shipping Address form */
-    .profile-section-header {
-      max-width: 600px;
-      margin: var(--space-xl) auto var(--space);
-      text-align: left;
-    }
-    .profile-section-header h2 {
-      font-family: var(--font-heading, serif);
-      font-size: 1.6rem;
-      margin: 0 0 0.35rem;
-      color: var(--color-text);
-    }
-
-    @media (min-width: 600px) {
-      .profile-form .row.cols-2 { grid-template-columns: 1fr 1fr; }
-    }
-
-    /* ── Signed-out gate panel ─────────────────────────────────────────── */
-    .signed-out-gate {
-      max-width: 480px;
-      margin: var(--space-2xl) auto;
-      text-align: center;
-    }
-    .signed-out-gate__panel {
-      background: var(--color-white);
-      border: 1px solid var(--color-border-light);
-      padding: var(--space-xl) var(--space-md);
-    }
-    .signed-out-gate__sub {
-      color: var(--color-text-muted);
-      margin: var(--space-sm) auto var(--space-md);
-      max-width: 32ch;
-    }
-    .signed-out-gate__actions {
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-      margin-top: var(--space);
-    }
-    @media (min-width: 480px) {
-      .signed-out-gate__actions { flex-direction: row; justify-content: center; }
-      .signed-out-gate__actions .btn { min-width: 160px; }
-    }
-  </style>
+  <link rel="stylesheet" href="/css/account.css" />
 </head>
 <body>
 
@@ -144,238 +18,130 @@
 
   <main class="container account-shell">
 
-    <!-- Shown when the visitor is NOT signed in. -->
-    <div id="signedOutView" class="signed-out-gate" hidden>
-      <div class="signed-out-gate__panel">
-        <p class="eyebrow">Profile</p>
-        <h1>You're not signed in</h1>
-        <p class="signed-out-gate__sub">
-          Sign in to view your personal details, or create an account to start saving them.
-        </p>
-        <div class="signed-out-gate__actions">
-          <a class="btn btn-primary"      href="/auth/sign-in.html" data-cta="sign-in">Sign In</a>
-          <a class="btn btn-outline-dark" href="/auth/sign-up.html" data-cta="sign-up">Create Account</a>
-        </div>
-      </div>
-    </div>
+    <div id="signedOutView" class="signed-out-gate" hidden
+         data-title="Account details"
+         data-text="Sign in to update your details, password and email preferences."></div>
 
-    <!-- Real page content — shown when signed in. -->
-    <div id="signedInView">
+    <div id="signedInView" class="account-layout" hidden>
+      <nav class="account-nav" data-account-nav aria-label="Account menu"></nav>
 
-      <a href="/account/" class="profile-back">← Back to account</a>
+      <section>
+        <p class="eyebrow">My Account</p>
+        <h1 class="account-title">Account Details</h1>
+        <p class="account-subtitle">Saved addresses are on the <a href="/account/addresses.html">Addresses</a> page.</p>
 
-      <div class="account-header">
-        <p class="eyebrow">Profile</p>
-        <h1>Personal Details</h1>
-        <p class="account-header__sub">Changes save automatically as you go.</p>
-      </div>
+        <!-- ── 1. Personal details ─────────────────────────────────────── -->
+        <form class="panel" id="detailsForm" novalidate>
+          <h2 class="panel__title" style="margin-bottom:var(--space);">Personal details</h2>
 
-      <!--
-        Profile form. Every field auto-saves on the `change` event (fires on
-        blur/Enter for text/date inputs and on toggle for checkboxes — not on
-        every keystroke). Each field has its own [data-saved-for] and
-        [data-error-for] span so the feedback is local to whichever field
-        the customer just edited.
-      -->
-      <form class="profile-form" id="profileForm" autocomplete="on">
-
-        <!-- Display Name -->
-        <div class="row">
-          <div class="field">
-            <div class="field-label-row">
-              <label class="field-label" for="display_name">Display Name</label>
-              <span class="field-saved" data-saved-for="display_name">Saved ✓</span>
-              <span class="field-error" data-error-for="display_name" hidden>Couldn't save</span>
+          <div class="form-grid form-grid--2">
+            <div class="field">
+              <label class="field-label" for="display_name">Name</label>
+              <input class="input" type="text" id="display_name" name="display_name" autocomplete="name" />
             </div>
-            <input class="input" type="text" id="display_name" name="display_name"
-                   autocomplete="name" placeholder="What should we call you?" />
-          </div>
-        </div>
-
-        <!-- Email (read-only) -->
-        <div class="row">
-          <div class="field">
-            <label class="field-label" for="email">Email</label>
-            <input class="input" type="email" id="email" name="email" disabled />
-            <p class="field-help">To change your email, contact support.</p>
-          </div>
-        </div>
-
-        <!-- Phone + Birthday -->
-        <div class="row cols-2">
-          <div class="field">
-            <div class="field-label-row">
-              <label class="field-label" for="phone">Phone</label>
-              <span class="field-saved" data-saved-for="phone">Saved ✓</span>
-              <span class="field-error" data-error-for="phone" hidden>Couldn't save</span>
+            <div class="field">
+              <label class="field-label" for="phone">Mobile number</label>
+              <input class="input" type="tel" id="phone" name="phone" autocomplete="tel"
+                     inputmode="tel" placeholder="09XX XXX XXXX" />
+              <span class="field-error-msg" id="phoneError" hidden>Please enter a PH mobile number, e.g. 09171234567.</span>
             </div>
-            <input class="input" type="tel" id="phone" name="phone"
-                   autocomplete="tel" placeholder="09xx xxx xxxx" />
-          </div>
-
-          <div class="field">
-            <div class="field-label-row">
-              <label class="field-label" for="birthday">Birthday</label>
-              <span class="field-saved" data-saved-for="birthday">Saved ✓</span>
-              <span class="field-error" data-error-for="birthday" hidden>Couldn't save</span>
+            <div class="field">
+              <label class="field-label" for="birthday">Birthday <span class="text-light" style="text-transform:none; letter-spacing:0;">(optional)</span></label>
+              <input class="input" type="date" id="birthday" name="birthday" autocomplete="bday" />
             </div>
-            <input class="input" type="date" id="birthday" name="birthday" />
-          </div>
-        </div>
-
-        <!-- Gender -->
-        <div class="row">
-          <div class="field">
-            <div class="field-label-row">
-              <label class="field-label" for="gender">Gender</label>
-              <span class="field-saved" data-saved-for="gender">Saved ✓</span>
-              <span class="field-error" data-error-for="gender" hidden>Couldn't save</span>
+            <div class="field">
+              <label class="field-label" for="gender">Gender <span class="text-light" style="text-transform:none; letter-spacing:0;">(optional)</span></label>
+              <select class="select" id="gender" name="gender">
+                <option value="">—</option>
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+                <option value="prefer_not_to_say">Prefer not to say</option>
+              </select>
             </div>
-            <select class="input" id="gender" name="gender">
-              <option value="">— Select —</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="prefer_not_to_say">Prefer not to say</option>
-            </select>
           </div>
-        </div>
 
-        <!-- Marketing opt-in -->
-        <div class="row">
-          <label class="check-row" for="marketing_opt_in">
-            <input type="checkbox" id="marketing_opt_in" name="marketing_opt_in" />
-            <span class="check-row__text">
-              Send me promos and lookbook updates.
-              <span class="check-row__sub">
-                We'll only email you about new collections, sales, and the occasional birthday treat. Unsubscribe anytime.
-              </span>
-              <span class="field-saved" data-saved-for="marketing_opt_in" style="margin-left:0;">Saved ✓</span>
-              <span class="field-error" data-error-for="marketing_opt_in" hidden style="margin-left:0;">Couldn't save</span>
-            </span>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="detailsSave">Save Details</button>
+            <span class="form-status" id="detailsStatus" role="status"></span>
+          </div>
+        </form>
+
+        <!-- ── 2. Email preferences ────────────────────────────────────── -->
+        <div class="panel">
+          <h2 class="panel__title" style="margin-bottom:var(--space);">Email preferences</h2>
+          <label class="check-row" style="margin-bottom:0.25rem;">
+            <input type="checkbox" id="marketing_opt_in" />
+            <span>Send me new arrivals, sales and members-only offers.</span>
           </label>
+          <span class="form-status" id="marketingStatus" role="status"></span>
+          <p class="panel__text" style="margin:0.5rem 0 0; font-size:0.82rem;">
+            Order and shipping emails are always sent — they're about purchases you've made.
+          </p>
         </div>
 
-      </form>
+        <!-- ── 3. Sign-in & security ───────────────────────────────────── -->
+        <div class="panel">
+          <h2 class="panel__title" style="margin-bottom:var(--space);">Sign-in &amp; security</h2>
 
-      <!--
-        Default Shipping Address. Auto-saves to `customer_addresses` (the same
-        table that powers /account/addresses.html). On first save we insert a
-        row with is_default=true; subsequent saves update that same row.
-      -->
-      <div class="profile-section-header">
-        <h2>Default Shipping Address</h2>
-        <p class="account-header__sub">Used to pre-fill checkout. You can add more addresses on the Addresses page.</p>
-      </div>
-
-      <form class="profile-form" id="addressForm" autocomplete="on">
-
-        <!-- Recipient Name -->
-        <div class="row">
-          <div class="field">
-            <div class="field-label-row">
-              <label class="field-label" for="addr_recipient_name">Recipient Name</label>
-              <span class="field-saved" data-saved-for="recipient_name">Saved ✓</span>
-              <span class="field-error" data-error-for="recipient_name" hidden>Couldn't save</span>
+          <form id="emailForm" novalidate>
+            <div class="field">
+              <label class="field-label" for="email">Email</label>
+              <input class="input" type="email" id="email" name="email" autocomplete="email" />
+              <span class="field-hint" id="emailHint">This is your sign-in email and where order updates go.</span>
             </div>
-            <input class="input" type="text" id="addr_recipient_name" name="recipient_name"
-                   autocomplete="name" placeholder="Full name for the package" />
-          </div>
+            <div class="form-actions" style="margin-top:0;">
+              <button type="submit" class="btn btn-outline-dark btn-sm" id="emailSave">Change Email</button>
+              <span class="form-status" id="emailStatus" role="status"></span>
+            </div>
+          </form>
+
+          <hr style="border:0; border-top:1px solid var(--color-border-light); margin:var(--space-md) 0;" />
+
+          <form id="passwordForm" novalidate>
+            <div class="field">
+              <label class="field-label" for="newPassword">New password</label>
+              <div class="password-wrap">
+                <input class="input" type="password" id="newPassword" autocomplete="new-password" minlength="8" />
+                <button type="button" class="password-toggle" data-toggle-password="newPassword" aria-label="Show password">Show</button>
+              </div>
+              <span class="field-hint">At least 8 characters, with a letter and a number.</span>
+            </div>
+            <div class="form-actions" style="margin-top:0;">
+              <button type="submit" class="btn btn-outline-dark btn-sm" id="passwordSave">Update Password</button>
+              <span class="form-status" id="passwordStatus" role="status"></span>
+            </div>
+          </form>
+
+          <hr style="border:0; border-top:1px solid var(--color-border-light); margin:var(--space-md) 0;" />
+
+          <p class="panel__text" style="margin-bottom:0.5rem;">Signed in on a shared or lost phone?</p>
+          <button type="button" class="btn btn-ghost btn-sm" id="signOutEverywhere" style="padding-left:0;">Sign out on all devices</button>
         </div>
 
-        <!-- Phone -->
-        <div class="row">
-          <div class="field">
-            <div class="field-label-row">
-              <label class="field-label" for="addr_phone">Phone</label>
-              <span class="field-saved" data-saved-for="addr_phone">Saved ✓</span>
-              <span class="field-error" data-error-for="addr_phone" hidden>Couldn't save</span>
-            </div>
-            <input class="input" type="tel" id="addr_phone" name="addr_phone"
-                   autocomplete="tel" placeholder="09xx xxx xxxx" />
-          </div>
+        <!-- ── 4. Delete account ───────────────────────────────────────── -->
+        <div class="panel panel--danger">
+          <h2 class="panel__title" style="margin-bottom:0.4rem;">Delete account</h2>
+          <p class="panel__text">
+            This permanently deletes your login, saved addresses, wishlist and details.
+            Past orders are kept for our records (as required for tax), but are no longer linked to you.
+          </p>
+          <details>
+            <summary style="cursor:pointer; font-size:0.88rem; color:var(--color-error);">I want to delete my account</summary>
+            <form id="deleteForm" style="margin-top:var(--space);" novalidate>
+              <div class="field">
+                <label class="field-label" for="deleteConfirm">Type DELETE to confirm</label>
+                <input class="input" type="text" id="deleteConfirm" autocomplete="off" autocapitalize="characters" />
+              </div>
+              <div class="form-actions" style="margin-top:0;">
+                <button type="submit" class="btn btn-sm" id="deleteBtn"
+                        style="background:var(--color-error); color:#fff; border-color:var(--color-error);">Delete My Account</button>
+                <span class="form-status is-error" id="deleteStatus" role="status"></span>
+              </div>
+            </form>
+          </details>
         </div>
-
-        <!-- Line 1 -->
-        <div class="row">
-          <div class="field">
-            <div class="field-label-row">
-              <label class="field-label" for="addr_line1">Address Line 1</label>
-              <span class="field-saved" data-saved-for="line1">Saved ✓</span>
-              <span class="field-error" data-error-for="line1" hidden>Couldn't save</span>
-            </div>
-            <input class="input" type="text" id="addr_line1" name="line1"
-                   autocomplete="address-line1" placeholder="House #, Street" />
-          </div>
-        </div>
-
-        <!-- Line 2 -->
-        <div class="row">
-          <div class="field">
-            <div class="field-label-row">
-              <label class="field-label" for="addr_line2">Address Line 2 <span class="field-help" style="margin:0;">(optional)</span></label>
-              <span class="field-saved" data-saved-for="line2">Saved ✓</span>
-              <span class="field-error" data-error-for="line2" hidden>Couldn't save</span>
-            </div>
-            <input class="input" type="text" id="addr_line2" name="line2"
-                   autocomplete="address-line2" placeholder="Subdivision, Building, Unit" />
-          </div>
-        </div>
-
-        <!-- Barangay + City -->
-        <div class="row cols-2">
-          <div class="field">
-            <div class="field-label-row">
-              <label class="field-label" for="addr_barangay">Barangay</label>
-              <span class="field-saved" data-saved-for="barangay">Saved ✓</span>
-              <span class="field-error" data-error-for="barangay" hidden>Couldn't save</span>
-            </div>
-            <input class="input" type="text" id="addr_barangay" name="barangay" />
-          </div>
-
-          <div class="field">
-            <div class="field-label-row">
-              <label class="field-label" for="addr_city">City / Municipality</label>
-              <span class="field-saved" data-saved-for="city">Saved ✓</span>
-              <span class="field-error" data-error-for="city" hidden>Couldn't save</span>
-            </div>
-            <input class="input" type="text" id="addr_city" name="city"
-                   autocomplete="address-level2" />
-          </div>
-        </div>
-
-        <!-- Province + Postal -->
-        <div class="row cols-2">
-          <div class="field">
-            <div class="field-label-row">
-              <label class="field-label" for="addr_province">Province</label>
-              <span class="field-saved" data-saved-for="province">Saved ✓</span>
-              <span class="field-error" data-error-for="province" hidden>Couldn't save</span>
-            </div>
-            <input class="input" type="text" id="addr_province" name="province"
-                   autocomplete="address-level1" />
-          </div>
-
-          <div class="field">
-            <div class="field-label-row">
-              <label class="field-label" for="addr_postal_code">Postal Code</label>
-              <span class="field-saved" data-saved-for="postal_code">Saved ✓</span>
-              <span class="field-error" data-error-for="postal_code" hidden>Couldn't save</span>
-            </div>
-            <input class="input" type="text" id="addr_postal_code" name="postal_code"
-                   autocomplete="postal-code" inputmode="numeric" />
-          </div>
-        </div>
-
-      </form>
-
-      <!-- Link to the separate addresses page so customers know where to manage shipping -->
-      <div class="profile-addresses-link">
-        <a class="btn btn-outline-dark" href="/account/addresses.html">
-          Manage Multiple Addresses →
-        </a>
-      </div>
-
-    </div><!-- /#signedInView -->
+      </section>
+    </div>
 
   </main>
 
@@ -386,230 +152,169 @@
   <script type="module" src="/js/wishlist.js"></script>
 
   <script type="module">
-    // =========================================================================
-    // Profile page — auto-save customer_profiles fields on change.
-    // =========================================================================
-    // - `gateAccountPage()` toggles between #signedOutView and #signedInView,
-    //   so we early-return if the visitor isn't signed in.
-    // - On load we read the row from `customer_profiles` and pre-fill the form.
-    //   The signup trigger from migration 003 creates this row automatically,
-    //   but we defensively `insert` if it's missing (in case a customer was
-    //   created before that trigger existed).
-    // - Each field listens to `change` (not `input`) so we save on blur/Enter
-    //   instead of every keystroke. That's "not chatty" and keeps the "Saved ✓"
-    //   indicator from flickering.
-    // =========================================================================
     import { supabase } from '/lib/supabase.js';
-    import { gateAccountPage } from '/js/auth.js';
+    import { initAccountPage } from '/js/account.js';
+    import { updateEmail, updatePassword, friendlyAuthError, getAccessToken } from '/js/auth.js';
 
-    const user = await gateAccountPage();
-    if (!user) return; // signed-out panel is shown; nothing else to do
+    const PHONE_RE = /^(09\d{9}|\+639\d{9})$/;
 
-    // Grab field references once so the listeners read clean
-    const displayNameEl = document.getElementById('display_name');
-    const emailEl       = document.getElementById('email');
-    const phoneEl       = document.getElementById('phone');
-    const birthdayEl    = document.getElementById('birthday');
-    const genderEl      = document.getElementById('gender');
-    const marketingEl   = document.getElementById('marketing_opt_in');
+    // Small helper: show a message next to a Save button, fade it after a bit
+    function status(id, text, isError = false) {
+      const el = document.getElementById(id);
+      el.textContent = text;
+      el.classList.toggle('is-error', isError);
+      if (!isError && text) setTimeout(() => { if (el.textContent === text) el.textContent = ''; }, 3000);
+    }
 
-    // Email is read-only — pull it straight from the auth user
-    emailEl.value = user.email ?? '';
+    async function main() {
+      const user = await initAccountPage('profile');
+      if (!user) return;
 
-    // ── Load existing profile (or create an empty row if missing) ──────────
-    async function loadProfile() {
-      const { data, error } = await supabase
+      // ── Load profile (create the row if an older account doesn't have one) ──
+      let { data: profile } = await supabase
         .from('customer_profiles')
         .select('display_name, phone, birthday, gender, marketing_opt_in')
         .eq('id', user.id)
         .maybeSingle();
 
-      if (error) {
-        console.error('Could not load profile:', error);
-        return;
-      }
-
-      // Defensive: if no row exists yet (older account predates the trigger),
-      // create one so subsequent updates have something to update.
-      if (!data) {
+      if (!profile) {
         await supabase.from('customer_profiles').insert({ id: user.id });
-        return;
+        profile = {};
       }
 
-      displayNameEl.value = data.display_name ?? '';
-      phoneEl.value       = data.phone        ?? '';
-      birthdayEl.value    = data.birthday     ?? '';
-      genderEl.value      = data.gender       ?? '';
-      marketingEl.checked = !!data.marketing_opt_in;
-    }
+      const f = document.getElementById('detailsForm');
+      f.display_name.value = profile.display_name ?? '';
+      f.phone.value        = profile.phone ?? '';
+      f.birthday.value     = profile.birthday ?? '';
+      f.gender.value       = profile.gender ?? '';
+      document.getElementById('marketing_opt_in').checked = !!profile.marketing_opt_in;
 
-    await loadProfile();
+      // Don't allow future birthdays
+      f.birthday.max = new Date().toISOString().slice(0, 10);
 
-    // ── Save one column to the current user's profile ──────────────────────
-    // Shows the "Saved ✓" indicator on success, or an inline error otherwise.
-    async function saveField(column, value) {
-      const indicator = document.querySelector(`[data-saved-for="${column}"]`);
-      const errorEl   = document.querySelector(`[data-error-for="${column}"]`);
+      // ── 1. Save personal details ──
+      f.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const phone = f.phone.value.replace(/[\s-]/g, '');
+        const phoneError = document.getElementById('phoneError');
+        phoneError.hidden = !phone || PHONE_RE.test(phone);
+        if (!phoneError.hidden) { f.phone.focus(); return; }
 
-      if (errorEl) errorEl.hidden = true;
+        const btn = document.getElementById('detailsSave');
+        btn.disabled = true;
 
-      const { error } = await supabase
-        .from('customer_profiles')
-        .update({ [column]: value, updated_at: new Date().toISOString() })
-        .eq('id', user.id);
+        const { error } = await supabase.from('customer_profiles').update({
+          display_name: f.display_name.value.trim() || null,
+          phone:        phone || null,
+          birthday:     f.birthday.value || null,
+          gender:       f.gender.value || null,
+          updated_at:   new Date().toISOString(),
+        }).eq('id', user.id);
 
-      if (error) {
-        console.error(`Profile save failed for ${column}:`, error);
-        if (errorEl) errorEl.hidden = false;
-        return;
+        btn.disabled = false;
+        if (error) { console.error(error); status('detailsStatus', 'Could not save. Please try again.', true); return; }
+        status('detailsStatus', 'Saved ✓');
+      });
+
+      // ── 2. Marketing checkbox saves instantly ──
+      document.getElementById('marketing_opt_in').addEventListener('change', async (e) => {
+        const { error } = await supabase.from('customer_profiles')
+          .update({ marketing_opt_in: e.target.checked, updated_at: new Date().toISOString() })
+          .eq('id', user.id);
+        if (error) { e.target.checked = !e.target.checked; status('marketingStatus', 'Could not save.', true); return; }
+        status('marketingStatus', e.target.checked ? 'Subscribed ✓' : 'Unsubscribed ✓');
+      });
+
+      // ── 3a. Change email ──
+      const emailForm = document.getElementById('emailForm');
+      emailForm.email.value = user.email ?? '';
+      if (user.new_email) {
+        document.getElementById('emailHint').textContent =
+          `Waiting for you to confirm ${user.new_email} — check that inbox for our link.`;
       }
+      emailForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = emailForm.email.value.trim();
+        if (email.toLowerCase() === (user.email || '').toLowerCase()) { status('emailStatus', 'That\'s already your email.'); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { status('emailStatus', 'Please enter a valid email.', true); return; }
 
-      if (indicator) {
-        indicator.classList.add('is-visible');
-        setTimeout(() => indicator.classList.remove('is-visible'), 2000);
-      }
-    }
+        const btn = document.getElementById('emailSave');
+        btn.disabled = true;
+        const { error } = await updateEmail(email);
+        btn.disabled = false;
+        if (error) { status('emailStatus', friendlyAuthError(error), true); return; }
+        document.getElementById('emailHint').textContent =
+          `We sent a confirmation link to ${email}. Your email changes once you tap it.`;
+        status('emailStatus', 'Check your inbox ✓');
+      });
 
-    // ── Wire each field to auto-save on `change` ───────────────────────────
-    // Empty strings are stored as NULL so the DB doesn't carry around blanks.
-    displayNameEl.addEventListener('change', (e) => {
-      saveField('display_name', e.target.value.trim() || null);
-    });
-    phoneEl.addEventListener('change', (e) => {
-      saveField('phone', e.target.value.trim() || null);
-    });
-    birthdayEl.addEventListener('change', (e) => {
-      saveField('birthday', e.target.value || null);
-    });
-    genderEl.addEventListener('change', (e) => {
-      saveField('gender', e.target.value || null);
-    });
-    marketingEl.addEventListener('change', (e) => {
-      saveField('marketing_opt_in', e.target.checked);
-    });
+      // ── 3b. Change password ──
+      const pwForm = document.getElementById('passwordForm');
+      pwForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const pw = document.getElementById('newPassword').value;
+        if (pw.length < 8 || !/[a-z]/i.test(pw) || !/\d/.test(pw)) {
+          status('passwordStatus', 'Use at least 8 characters with a letter and a number.', true);
+          return;
+        }
+        const btn = document.getElementById('passwordSave');
+        btn.disabled = true;
+        const { error } = await updatePassword(pw);
+        btn.disabled = false;
+        if (error) { status('passwordStatus', friendlyAuthError(error), true); return; }
+        document.getElementById('newPassword').value = '';
+        status('passwordStatus', 'Password updated ✓');
+      });
 
-    // Prevent the form from accidentally submitting on Enter (no submit button,
-    // but pressing Enter in a single-input form still triggers submit in browsers).
-    document.getElementById('profileForm').addEventListener('submit', (e) => e.preventDefault());
+      document.querySelectorAll('[data-toggle-password]').forEach((b) => {
+        b.addEventListener('click', () => {
+          const input = document.getElementById(b.dataset.togglePassword);
+          const show = input.type === 'password';
+          input.type = show ? 'text' : 'password';
+          b.textContent = show ? 'Hide' : 'Show';
+        });
+      });
 
-    // =========================================================================
-    // Default Shipping Address — auto-save to customer_addresses
-    // =========================================================================
-    // Mirrors the same per-field auto-save pattern above, but writes to the
-    // user's default address row in customer_addresses. First save inserts a
-    // row with is_default=true (after clearing any other default); subsequent
-    // saves update that same row.
-    // =========================================================================
+      // ── 3c. Sign out everywhere ──
+      document.getElementById('signOutEverywhere').addEventListener('click', async () => {
+        if (!confirm('Sign out on every phone and computer, including this one?')) return;
+        await supabase.auth.signOut({ scope: 'global' });
+        window.location.href = '/auth/sign-in.html';
+      });
 
-    const addrFields = {
-      recipient_name: document.getElementById('addr_recipient_name'),
-      phone:          document.getElementById('addr_phone'),
-      line1:          document.getElementById('addr_line1'),
-      line2:          document.getElementById('addr_line2'),
-      barangay:       document.getElementById('addr_barangay'),
-      city:           document.getElementById('addr_city'),
-      province:       document.getElementById('addr_province'),
-      postal_code:    document.getElementById('addr_postal_code'),
-    };
+      // ── 4. Delete account ──
+      document.getElementById('deleteForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const typed = document.getElementById('deleteConfirm').value.trim().toUpperCase();
+        if (typed !== 'DELETE') { status('deleteStatus', 'Please type DELETE to confirm.', true); return; }
 
-    // Mapping from DB column → indicator key (phone clashes with the profile's
-    // own phone indicator, so we suffix it as `addr_phone` in the DOM).
-    const indicatorKey = {
-      recipient_name: 'recipient_name',
-      phone:          'addr_phone',
-      line1:          'line1',
-      line2:          'line2',
-      barangay:       'barangay',
-      city:           'city',
-      province:       'province',
-      postal_code:    'postal_code',
-    };
+        const btn = document.getElementById('deleteBtn');
+        btn.disabled = true;
+        btn.textContent = 'Deleting…';
 
-    let addressId = null; // populated after load or first insert
+        try {
+          const res = await fetch('/api/delete-account', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${await getAccessToken()}`,
+            },
+            body: JSON.stringify({ confirm: 'DELETE' }),
+          });
+          const result = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(result.error || 'Could not delete your account.');
 
-    async function loadAddress() {
-      const { data, error } = await supabase
-        .from('customer_addresses')
-        .select('id, recipient_name, phone, line1, line2, barangay, city, province, postal_code')
-        .eq('user_id', user.id)
-        .eq('is_default', true)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Could not load default address:', error);
-        return;
-      }
-      if (!data) return; // no default address yet — fields stay empty
-
-      addressId = data.id;
-      for (const [col, el] of Object.entries(addrFields)) {
-        el.value = data[col] ?? '';
-      }
-    }
-
-    await loadAddress();
-
-    // Save one column to the user's default address. Inserts a new row on the
-    // first edit (after clearing any other is_default=true rows so the partial
-    // unique index isn't violated).
-    async function saveAddressField(column, value) {
-      const key       = indicatorKey[column];
-      const indicator = document.querySelector(`[data-saved-for="${key}"]`);
-      const errorEl   = document.querySelector(`[data-error-for="${key}"]`);
-
-      if (errorEl) errorEl.hidden = true;
-
-      let error;
-      if (addressId) {
-        ({ error } = await supabase
-          .from('customer_addresses')
-          .update({ [column]: value, updated_at: new Date().toISOString() })
-          .eq('id', addressId));
-      } else {
-        // First save — clear any stale defaults, then insert this one as default.
-        await supabase
-          .from('customer_addresses')
-          .update({ is_default: false })
-          .eq('user_id', user.id)
-          .eq('is_default', true);
-
-        const { data, error: insertErr } = await supabase
-          .from('customer_addresses')
-          .insert({
-            user_id: user.id,
-            is_default: true,
-            country: 'PH',
-            label: 'Home',
-            [column]: value,
-          })
-          .select('id')
-          .single();
-
-        error = insertErr;
-        if (data) addressId = data.id;
-      }
-
-      if (error) {
-        console.error(`Address save failed for ${column}:`, error);
-        if (errorEl) errorEl.hidden = false;
-        return;
-      }
-
-      if (indicator) {
-        indicator.classList.add('is-visible');
-        setTimeout(() => indicator.classList.remove('is-visible'), 2000);
-      }
-    }
-
-    // Wire each address field to auto-save on `change` (blur/Enter).
-    for (const [col, el] of Object.entries(addrFields)) {
-      el.addEventListener('change', (e) => {
-        saveAddressField(col, e.target.value.trim() || null);
+          await supabase.auth.signOut();
+          window.location.href = '/?account=deleted';
+        } catch (err) {
+          status('deleteStatus', err.message, true);
+          btn.disabled = false;
+          btn.textContent = 'Delete My Account';
+        }
       });
     }
 
-    // Prevent Enter from submitting the address form.
-    document.getElementById('addressForm').addEventListener('submit', (e) => e.preventDefault());
+    main();
   </script>
 
 </body>

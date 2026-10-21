@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Track Your Order — Ducks Unlimited</title>
+  <meta name="description" content="Check the status of your Ducks Unlimited order with your order number and email." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/account.css" />
+</head>
+<body>
+
+  <div data-component="nav"></div>
+
+  <!-- Guest order tracking. No account needed — just the order number from
+       the confirmation email/page and the email used at checkout.
+       Signed-in customers can also use this to add a guest order to their account. -->
+  <main class="track-shell">
+
+    <div class="track-hero">
+      <p class="eyebrow">Order status</p>
+      <h1>Track Your Order</h1>
+      <p>Enter your order number (it starts with DU-) and the email you used at checkout.</p>
+    </div>
+
+    <form class="panel track-form" id="trackForm" novalidate>
+      <div class="auth-error span-2" id="formError" role="alert" hidden></div>
+
+      <div class="field">
+        <label class="field-label" for="orderNumber">Order number</label>
+        <input class="input" id="orderNumber" name="orderNumber" placeholder="DU-00012"
+               autocapitalize="characters" autocomplete="off" required />
+      </div>
+      <div class="field">
+        <label class="field-label" for="email">Email</label>
+        <input class="input" type="email" id="email" name="email" autocomplete="email"
+               inputmode="email" autocapitalize="off" required />
+      </div>
+      <div class="span-2">
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Track Order</button>
+      </div>
+      <p class="auth-legal span-2" id="signInHint" style="margin-top:var(--space-sm);">
+        Have an account? <a href="/auth/sign-in.html?next=/account/orders.html">Sign in</a> to see all your orders.
+      </p>
+    </form>
+
+    <div id="result"></div>
+
+  </main>
+
+  <div data-component="footer"></div>
+
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+  <script type="module" src="/js/wishlist.js"></script>
+
+  <script type="module">
+    import { getCurrentUser, getAccessToken } from '/js/auth.js';
+    import {
+      escapeHtml, formatPrice, formatDate, orderStatus,
+      renderTimeline, renderOrderItems, wireCopyButtons,
+    } from '/js/account.js';
+
+    const form      = document.getElementById('trackForm');
+    const errorBox  = document.getElementById('formError');
+    const submitBtn = document.getElementById('submitBtn');
+    const result    = document.getElementById('result');
+    const params    = new URLSearchParams(location.search);
+
+    const user = await getCurrentUser();
+    if (user) {
+      document.getElementById('signInHint').innerHTML =
+        'Signed in. <a href="/account/orders.html">See all your orders</a>';
+    }
+
+    // Values saved by checkout right before going to PayMongo (same tab only)
+    let lastOrder = null;
+    try { lastOrder = JSON.parse(sessionStorage.getItem('du:lastOrder') || 'null'); } catch {}
+
+    if (params.get('order')) form.orderNumber.value = params.get('order');
+    else if (lastOrder?.orderNumber) form.orderNumber.value = lastOrder.orderNumber;
+    // Prefer the email from the order they just placed; else their account email
+    form.email.value = lastOrder?.email || user?.email || '';
+
+    wireCopyButtons(result);
+
+    async function lookup({ claim = false } = {}) {
+      errorBox.hidden = true;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Looking up…';
+
+      const headers = { 'Content-Type': 'application/json' };
+      const token = user ? await getAccessToken() : null;
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      try {
+        const res = await fetch('/api/track-order', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            orderNumber: form.orderNumber.value,
+            email:       form.email.value,
+            claim,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
+        renderOrder(data.order, { justClaimed: claim });
+      } catch (err) {
+        result.innerHTML = '';
+        errorBox.textContent = err.message;
+        errorBox.hidden = false;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Track Order';
+      }
+    }
+
+    function renderOrder(o, { justClaimed }) {
+      const s = orderStatus(o);
+      const subtotal = o.items.reduce((sum, it) => sum + it.price * it.quantity, 0);
+
+      // What account-related prompt to show under the order
+      let accountBox = '';
+      if (o.linkedToYou) {
+        accountBox = `
+          <div class="auth-success">${justClaimed ? 'Added to your account ✓ ' : ''}
+            This order is in <a href="/account/orders.html">My Orders</a>.</div>`;
+      } else if (user && !o.hasAccount) {
+        accountBox = `
+          <div class="panel">
+            <h2 class="panel__title" style="margin-bottom:0.4rem;">Add this order to your account?</h2>
+            <p class="panel__text">It'll show up in My Orders so you won't need to look it up again.</p>
+            <button type="button" class="btn btn-primary btn-sm" id="claimBtn">Add to My Account</button>
+          </div>`;
+      } else if (!user && !o.hasAccount) {
+        accountBox = `
+          <div class="account-cta">
+            <h2>Track it without typing this again</h2>
+            <p>Create an account and this order — plus every future one — will be waiting in My Orders.</p>
+            <a class="btn" href="/auth/sign-up.html?next=${encodeURIComponent('/track-order.html?claim=1')}">Create Account</a>
+          </div>`;
+      }
+
+      result.innerHTML = `
+        <div class="panel">
+          <p class="eyebrow">Order #${escapeHtml(o.orderNumber)} · Placed ${escapeHtml(formatDate(o.createdAt))}</p>
+          <h2 class="account-title" style="font-size:2rem;">${escapeHtml(s.label)}</h2>
+          ${renderTimeline(o)}
+        </div>
+        ${accountBox}
+        <div class="panel">
+          <h2 class="panel__title" style="margin-bottom:0.5rem;">Items</h2>
+          ${renderOrderItems(o.items)}
+          <div class="order-totals">
+            <div class="order-totals__row"><span>Subtotal</span><span>${formatPrice(subtotal)}</span></div>
+            <div class="order-totals__row"><span>Shipping</span><span>${formatPrice(Math.max(0, o.total - subtotal))}</span></div>
+            <div class="order-totals__row order-totals__row--total"><span>Total</span><span>${formatPrice(o.total)}</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <dl class="kv"><div><dt>Shipping to</dt><dd>${escapeHtml(o.firstName)} · ${escapeHtml(o.shipTo)}</dd></div></dl>
+          <p class="panel__text" style="margin:var(--space) 0 0;">
+            Questions? <a href="/customer-service/help.html">Contact us</a> with your order number.
+          </p>
+        </div>
+      `;
+
+      document.getElementById('claimBtn')?.addEventListener('click', () => lookup({ claim: true }));
+      result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!form.orderNumber.value.trim() || !form.email.value.trim()) {
+        errorBox.textContent = 'Please enter both your order number and email.';
+        errorBox.hidden = false;
+        return;
+      }
+      lookup();
+    });
+
+    // Came back from "Create Account" on the confirmation page → add the
+    // order to the new account automatically.
+    if (params.get('claim') === '1' && user && form.orderNumber.value && form.email.value) {
+      lookup({ claim: true });
+    } else if (form.orderNumber.value && form.email.value && (params.get('order') || lastOrder)) {
+      lookup();
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order Details — Ducks Unlimited</title>
+  <meta name="robots" content="noindex" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/account.css" />
+</head>
+<body>
+
+  <div data-component="nav"></div>
+
+  <!-- One order: tracking timeline, items, address, totals.
+       URL: /account/order.html?id=<order uuid> -->
+  <main class="container account-shell">
+
+    <div id="signedOutView" class="signed-out-gate" hidden
+         data-title="Order details"
+         data-text="Sign in to see this order. Checked out as a guest? Use Track Order instead."></div>
+
+    <div id="signedInView" class="account-layout" hidden>
+      <nav class="account-nav" data-account-nav aria-label="Account menu"></nav>
+
+      <section id="orderRoot">
+        <a href="/account/orders.html" class="back-link">← All orders</a>
+        <p class="panel__text">Loading…</p>
+      </section>
+    </div>
+
+  </main>
+
+  <div data-component="footer"></div>
+
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+  <script type="module" src="/js/wishlist.js"></script>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+    import {
+      initAccountPage, escapeHtml, formatPrice, formatDate,
+      orderFromRow, orderStatus, renderTimeline, renderOrderItems,
+      wireCopyButtons, ORDER_SELECT,
+    } from '/js/account.js';
+
+    async function main() {
+      const user = await initAccountPage('orders');
+      if (!user) return;
+
+      const root = document.getElementById('orderRoot');
+      const id   = new URLSearchParams(location.search).get('id');
+
+      const notFound = `
+        <a href="/account/orders.html" class="back-link">← All orders</a>
+        <div class="panel empty-state">
+          <h2>Order not found</h2>
+          <p>This order isn't on your account. If you checked out as a guest, look it up with Track Order.</p>
+          <a class="btn btn-primary" href="/track-order.html">Track an Order</a>
+        </div>`;
+
+      if (!id) { root.innerHTML = notFound; return; }
+
+      const { data, error } = await supabase
+        .from('orders').select(ORDER_SELECT).eq('id', id).maybeSingle();
+
+      if (error || !data) { root.innerHTML = notFound; return; }
+
+      const o = orderFromRow(data);
+      const s = orderStatus(o);
+      const subtotal = o.items.reduce((sum, it) => sum + it.price * it.quantity, 0);
+      document.title = `Order #${o.orderNumber} — Ducks Unlimited`;
+
+      root.innerHTML = `
+        <a href="/account/orders.html" class="back-link">← All orders</a>
+
+        <p class="eyebrow">Order #${escapeHtml(o.orderNumber)}</p>
+        <h1 class="account-title">${escapeHtml(s.label)}</h1>
+        <p class="account-subtitle">Placed ${escapeHtml(formatDate(o.createdAt))}</p>
+
+        <div class="panel">${renderTimeline(o)}</div>
+
+        <div class="panel">
+          <h2 class="panel__title" style="margin-bottom:0.5rem;">Items</h2>
+          ${renderOrderItems(o.items)}
+          <div class="order-totals">
+            <div class="order-totals__row"><span>Subtotal</span><span>${formatPrice(subtotal)}</span></div>
+            <div class="order-totals__row"><span>Shipping</span><span>${formatPrice(Math.max(0, o.total - subtotal))}</span></div>
+            <div class="order-totals__row order-totals__row--total"><span>Total</span><span>${formatPrice(o.total)}</span></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <dl class="kv">
+            <div><dt>Shipping to</dt><dd>${escapeHtml(o.shippingAddress)}</dd></div>
+          </dl>
+        </div>
+
+        <div class="panel">
+          <h2 class="panel__title" style="margin-bottom:0.4rem;">Need help with this order?</h2>
+          <p class="panel__text">Have your order number <strong>#${escapeHtml(o.orderNumber)}</strong> ready.</p>
+          <div class="form-actions" style="margin-top:0;">
+            <a class="btn btn-outline-dark btn-sm" href="/customer-service/help.html">Contact Us</a>
+            <a class="btn btn-ghost btn-sm" href="/customer-service/returns.html">Returns &amp; Exchanges</a>
+          </div>
+        </div>
+      `;
+
+      wireCopyButtons(root);
+    }
+
+    main();
+  </script>
+
+</body>
+</html>

@@ -4,59 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Account — Ducks Unlimited</title>
+  <meta name="robots" content="noindex" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
   <link rel="stylesheet" href="/css/style.css" />
-
-  <style>
-    .signout-row { text-align: center; margin-top: var(--space-2xl); }
-    .signout-btn {
-      background: none;
-      border: none;
-      color: var(--color-text-muted);
-      font-family: var(--font-body);
-      font-size: 0.78rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      cursor: pointer;
-      padding: 0.5rem 1rem;
-      text-decoration: underline;
-      text-underline-offset: 4px;
-    }
-    .signout-btn:hover { color: var(--color-primary); }
-
-    /* ── Signed-out gate panel ──────────────────────────────────────────
-       Shown when a visitor hits an /account/* page without being signed in.
-       Replaces the old auto-redirect with a friendly CTA so they can either
-       sign in or create an account. */
-    .signed-out-gate {
-      max-width: 480px;
-      margin: var(--space-2xl) auto;
-      text-align: center;
-    }
-    .signed-out-gate__panel {
-      background: var(--color-white);
-      border: 1px solid var(--color-border-light);
-      padding: var(--space-xl) var(--space-md);
-    }
-    .signed-out-gate__sub {
-      color: var(--color-text-muted);
-      margin: var(--space-sm) auto var(--space-md);
-      max-width: 32ch;
-    }
-    .signed-out-gate__actions {
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-      margin-top: var(--space);
-    }
-    @media (min-width: 480px) {
-      .signed-out-gate__actions { flex-direction: row; justify-content: center; }
-      .signed-out-gate__actions .btn { min-width: 160px; }
-    }
-  </style>
+  <link rel="stylesheet" href="/css/account.css" />
 </head>
 <body>
 
@@ -64,69 +18,52 @@
 
   <main class="container account-shell">
 
-    <!-- Shown when the visitor is NOT signed in. gateAccountPage() in auth.js
-         toggles between this and #signedInView based on session state. -->
-    <div id="signedOutView" class="signed-out-gate" hidden>
-      <div class="signed-out-gate__panel">
+    <!-- Filled in by initAccountPage() when nobody is signed in -->
+    <div id="signedOutView" class="signed-out-gate" hidden></div>
+
+    <div id="signedInView" class="account-layout" hidden>
+      <nav class="account-nav" data-account-nav aria-label="Account menu"></nav>
+
+      <section>
         <p class="eyebrow">My Account</p>
-        <h1>You're not signed in</h1>
-        <p class="signed-out-gate__sub">
-          Sign in to view your account, or create one in under a minute.
-        </p>
-        <div class="signed-out-gate__actions">
-          <a class="btn btn-primary"      href="/auth/sign-in.html" data-cta="sign-in">Sign In</a>
-          <a class="btn btn-outline-dark" href="/auth/sign-up.html" data-cta="sign-up">Create Account</a>
+        <h1 class="account-title" id="greeting">Welcome back</h1>
+        <p class="account-subtitle" id="emailLine"></p>
+
+        <div class="auth-success" id="flash" hidden></div>
+
+        <!-- Quick counts — each one is a link -->
+        <div class="stat-row">
+          <a class="stat" href="/account/orders.html"><span class="stat__num" id="statOrders">–</span><span class="stat__label">Orders</span></a>
+          <a class="stat" href="/account/wishlist.html"><span class="stat__num" id="statWishlist">–</span><span class="stat__label">Wishlist</span></a>
+          <a class="stat" href="/account/addresses.html"><span class="stat__num" id="statAddresses">–</span><span class="stat__label">Addresses</span></a>
         </div>
-      </div>
-    </div>
 
-    <!-- Real page content — shown when signed in. -->
-    <div id="signedInView">
+        <!-- Most recent order with live status — the #1 reason people log in -->
+        <div class="panel" id="latestPanel">
+          <div class="panel__head">
+            <h2 class="panel__title">Latest order</h2>
+            <a class="panel__link" href="/account/orders.html">All orders</a>
+          </div>
+          <div id="latestOrder"><p class="panel__text">Loading…</p></div>
+        </div>
 
-      <div class="account-header">
-        <p class="eyebrow">My Account</p>
-        <h1 id="greeting">Welcome back</h1>
-        <p class="account-header__sub" id="emailLine"></p>
-      </div>
+        <!-- Default address + profile gaps -->
+        <div class="panel">
+          <div class="panel__head">
+            <h2 class="panel__title">Shipping to</h2>
+            <a class="panel__link" href="/account/addresses.html">Manage</a>
+          </div>
+          <div id="defaultAddress"><p class="panel__text">Loading…</p></div>
+        </div>
 
-      <div class="account-grid">
-
-        <a class="account-card" href="/account/orders.html">
-          <span class="account-card__label">Orders</span>
-          <h3>Order History</h3>
-          <p>Track your past purchases and view your order details.</p>
-        </a>
-
-        <a class="account-card" href="/account/wishlist.html">
-          <span class="account-card__label">Wishlist</span>
-          <h3>My Wishlist</h3>
-          <p>Pieces you've saved to come back to later.</p>
-        </a>
-
-        <a class="account-card" href="/account/addresses.html">
-          <span class="account-card__label">Addresses</span>
-          <h3>Shipping Addresses</h3>
-          <p>Manage saved addresses for faster checkout.</p>
-        </a>
-
-        <a class="account-card" href="/account/profile.html">
-          <span class="account-card__label">Profile</span>
-          <h3>Personal Details</h3>
-          <p>Update your name, phone, birthday, and email preferences.</p>
-        </a>
-
-        <a class="account-card" href="/customer-service/help.html">
-          <span class="account-card__label">Support</span>
-          <h3>Help &amp; Contact</h3>
-          <p>Questions about an order or product? We're here to help.</p>
-        </a>
-
-      </div>
-
-      <div class="signout-row">
-        <button type="button" class="signout-btn" id="signOutBtn">Sign Out</button>
-      </div>
-
+        <div class="panel" id="completePanel" hidden>
+          <div class="panel__head">
+            <h2 class="panel__title">Finish your profile</h2>
+          </div>
+          <p class="panel__text" id="completeText"></p>
+          <a class="btn btn-outline-dark btn-sm" href="/account/profile.html">Add Details</a>
+        </div>
+      </section>
     </div>
 
   </main>
@@ -138,21 +75,107 @@
   <script type="module" src="/js/wishlist.js"></script>
 
   <script type="module">
-    import { gateAccountPage, signOut } from '/js/auth.js';
+    import { supabase } from '/lib/supabase.js';
+    import {
+      initAccountPage, escapeHtml, formatPrice, formatDate,
+      orderFromRow, orderStatus, ORDER_SELECT,
+    } from '/js/account.js';
 
-    const user = await gateAccountPage();
-    if (!user) return; // signed-out panel is shown; nothing else to do
+    // Wrapped in a function so we can `return` early (a bare `return` at the
+    // top of a module script is a syntax error and breaks the whole page).
+    async function main() {
+      const user = await initAccountPage('overview');
+      if (!user) return;
 
-    // Personalize greeting using display_name (set during sign-up) or fall
-    // back to the first part of the email so it never reads "Welcome , null"
-    const name = user.user_metadata?.display_name || user.email?.split('@')[0] || 'there';
-    document.getElementById('greeting').textContent = `Welcome back, ${name}.`;
-    document.getElementById('emailLine').textContent = user.email;
+      document.getElementById('emailLine').textContent = user.email;
 
-    document.getElementById('signOutBtn').addEventListener('click', async () => {
-      await signOut();
-      window.location.href = '/';
-    });
+      // One-off message after a password reset
+      if (new URLSearchParams(location.search).get('password') === 'updated') {
+        const flash = document.getElementById('flash');
+        flash.textContent = 'Your password has been updated.';
+        flash.hidden = false;
+      }
+
+      // Load everything at once (in parallel) so the page fills in quickly
+      const [profileRes, ordersRes, wishRes, addrRes] = await Promise.all([
+        supabase.from('customer_profiles').select('display_name, phone, birthday').eq('id', user.id).maybeSingle(),
+        supabase.from('orders').select(ORDER_SELECT, { count: 'exact' }).order('created_at', { ascending: false }).limit(1),
+        supabase.from('wishlists').select('id', { count: 'exact', head: true }),
+        supabase.from('customer_addresses').select('*').order('is_default', { ascending: false }),
+      ]);
+
+      // ── Greeting ──
+      const profile = profileRes.data || {};
+      const name = profile.display_name || user.user_metadata?.display_name;
+      document.getElementById('greeting').textContent = name ? `Hi, ${name.split(' ')[0]}` : 'Welcome back';
+
+      // ── Counts ──
+      document.getElementById('statOrders').textContent    = ordersRes.count ?? 0;
+      document.getElementById('statWishlist').textContent  = wishRes.count ?? 0;
+      document.getElementById('statAddresses').textContent = addrRes.data?.length ?? 0;
+
+      // ── Latest order ──
+      const latestEl = document.getElementById('latestOrder');
+      const row = ordersRes.data?.[0];
+      if (ordersRes.error) {
+        latestEl.innerHTML = '<p class="panel__text">Could not load your orders. Please refresh.</p>';
+      } else if (!row) {
+        latestEl.innerHTML = `
+          <p class="panel__text">No orders yet. When you place one, you'll be able to track it here.</p>
+          <a class="btn btn-primary btn-sm" href="/shop.html">Start Shopping</a>
+          <p class="panel__text" style="margin-top:var(--space);">
+            Ordered as a guest before? <a href="/track-order.html">Find it and add it to your account</a>.
+          </p>`;
+      } else {
+        const o = orderFromRow(row);
+        const s = orderStatus(o);
+        const thumbs = o.items.slice(0, 4).map(it =>
+          `<span>${it.image ? `<img src="${escapeHtml(it.image)}" alt="" loading="lazy" />` : ''}</span>`).join('');
+        latestEl.innerHTML = `
+          <a class="order-card" href="/account/order.html?id=${encodeURIComponent(o.id)}" style="margin:0;">
+            <div class="order-card__top">
+              <div>
+                <div class="order-card__num">#${escapeHtml(o.orderNumber)}</div>
+                <div class="order-card__date">Placed ${escapeHtml(formatDate(o.createdAt))}</div>
+              </div>
+              <span class="order-status order-status--${s.key}">${escapeHtml(s.label)}</span>
+            </div>
+            <div class="order-card__thumbs">${thumbs}</div>
+            <div class="order-card__bottom">
+              <span>${o.items.length} ${o.items.length === 1 ? 'item' : 'items'} · <strong>${formatPrice(o.total)}</strong></span>
+              <span class="order-card__cta">Track →</span>
+            </div>
+          </a>`;
+      }
+
+      // ── Default address ──
+      const addrEl = document.getElementById('defaultAddress');
+      const a = addrRes.data?.[0];
+      if (!a) {
+        addrEl.innerHTML = `
+          <p class="panel__text">No saved address yet. Add one and checkout fills it in for you.</p>
+          <a class="btn btn-outline-dark btn-sm" href="/account/addresses.html?new=1">Add Address</a>`;
+      } else {
+        addrEl.innerHTML = `
+          <p class="panel__text" style="color:var(--color-text); margin:0;">
+            <strong style="font-weight:500;">${escapeHtml(a.recipient_name)}</strong><br />
+            ${escapeHtml(a.line1)}${a.line2 ? ', ' + escapeHtml(a.line2) : ''}<br />
+            ${a.barangay ? escapeHtml(a.barangay) + ', ' : ''}${escapeHtml(a.city)}, ${escapeHtml(a.province)} ${escapeHtml(a.postal_code || '')}<br />
+            <span style="color:var(--color-text-muted);">${escapeHtml(a.phone)}</span>
+          </p>`;
+      }
+
+      // ── Nudge to fill missing profile details (not required, just helpful) ──
+      const missing = [];
+      if (!profile.phone)    missing.push('mobile number');
+      if (!profile.birthday) missing.push('birthday');
+      if (missing.length) {
+        document.getElementById('completeText').textContent = `Add your ${missing.join(' and ')}.`;
+        document.getElementById('completePanel').hidden = false;
+      }
+    }
+
+    main();
   </script>
 
 </body>

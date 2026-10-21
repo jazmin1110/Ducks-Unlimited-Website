@@ -4,11 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sign In — Ducks Unlimited</title>
+  <meta name="robots" content="noindex" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
   <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/account.css" />
 </head>
 <body>
 
@@ -17,35 +19,60 @@
   <main class="auth-shell">
     <div class="auth-card">
 
-      <p class="eyebrow">Welcome back</p>
-      <h1>Sign In</h1>
-      <p class="auth-card__sub">
-        Sign in to view your wishlist, track orders, and save your shipping details.
-      </p>
+      <!-- ── Step 1: the sign-in form ── -->
+      <div id="formView">
+        <p class="eyebrow">Welcome back</p>
+        <h1>Sign In</h1>
+        <p class="auth-card__sub">Track orders, check out faster, and see your wishlist on any device.</p>
 
-      <form class="auth-form" id="signInForm" novalidate>
+        <form class="auth-form" id="signInForm" novalidate>
+          <div class="auth-error" id="formError" role="alert" hidden></div>
 
-        <div class="auth-error" id="formError" hidden></div>
+          <div class="field">
+            <label class="field-label" for="email">Email</label>
+            <input class="input" type="email" id="email" name="email"
+                   autocomplete="email" inputmode="email" autocapitalize="off" required />
+          </div>
 
-        <div class="field">
-          <label class="field-label" for="email">Email</label>
-          <input class="input" type="email" id="email" name="email"
-                 autocomplete="email" required />
+          <div class="field">
+            <div class="field-label-row">
+              <label class="field-label" for="password">Password</label>
+              <a href="/auth/forgot-password.html" id="forgotLink">Forgot password?</a>
+            </div>
+            <div class="password-wrap">
+              <input class="input" type="password" id="password" name="password"
+                     autocomplete="current-password" required />
+              <button type="button" class="password-toggle" data-toggle-password="password"
+                      aria-label="Show password">Show</button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Sign In</button>
+        </form>
+
+        <div class="auth-divider">or</div>
+
+        <p style="font-size:0.9rem; color:var(--color-text-muted); margin:0;">
+          No password? <button type="button" class="link-btn" id="magicBtn">Email me a sign-in link</button>
+        </p>
+
+        <div class="auth-card__alt">
+          New to <span data-brand-name>Ducks Unlimited</span>?
+          <a href="/auth/sign-up.html" id="signUpLink">Create an account</a>
+          <br />
+          <span style="display:inline-block; margin-top:0.5rem;">
+            Checked out as a guest? <a href="/track-order.html">Track an order</a>
+          </span>
         </div>
+      </div>
 
-        <div class="field">
-          <label class="field-label" for="password">Password</label>
-          <input class="input" type="password" id="password" name="password"
-                 autocomplete="current-password" required minlength="6" />
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
-          Sign In
-        </button>
-      </form>
-
-      <div class="auth-card__alt">
-        New to <span data-brand-name>Ducks Unlimited</span>? <a href="/auth/sign-up.html" id="signUpLink">Create an account</a>
+      <!-- ── Step 2: shown after we email a sign-in link ── -->
+      <div id="sentView" class="auth-sent" hidden>
+        <div class="auth-sent__icon" aria-hidden="true">✉</div>
+        <h1>Check your inbox</h1>
+        <p>We sent a sign-in link to <strong id="sentEmail"></strong>.
+           Open it on this device to sign in. It may take a minute — check Spam or Promotions too.</p>
+        <p><button type="button" class="link-btn" id="backBtn">Use a different email</button></p>
       </div>
 
     </div>
@@ -58,58 +85,96 @@
   <script type="module" src="/js/wishlist.js"></script>
 
   <script type="module">
-    import { signIn, getCurrentUser } from '/js/auth.js';
+    import { signIn, sendMagicLink, getCurrentUser, friendlyAuthError, safeNext } from '/js/auth.js';
 
-    // If already signed in, bounce to the account dashboard (or ?next= URL)
-    const params = new URLSearchParams(window.location.search);
-    const nextUrl = params.get('next') || '/account/';
+    // Where to go after signing in. ?next= is set by account pages and checkout.
+    const params  = new URLSearchParams(window.location.search);
+    const nextUrl = safeNext(params.get('next'));
 
-    (async () => {
-      const user = await getCurrentUser();
-      if (user) window.location.href = nextUrl;
-    })();
+    // Already signed in? Skip straight to where they were going.
+    getCurrentUser().then((user) => { if (user) window.location.replace(nextUrl); });
 
-    // Preserve `?next=` on the sign-up link so users keep their target page
-    const signUpLink = document.getElementById('signUpLink');
+    // Keep ?next= when switching to the sign-up page
     if (params.get('next')) {
-      signUpLink.href = `/auth/sign-up.html?next=${encodeURIComponent(params.get('next'))}`;
+      document.getElementById('signUpLink').href =
+        `/auth/sign-up.html?next=${encodeURIComponent(nextUrl)}`;
     }
 
-    const form        = document.getElementById('signInForm');
-    const errorBox    = document.getElementById('formError');
-    const submitBtn   = document.getElementById('submitBtn');
+    // Pre-fill the email if we were sent here with one (e.g. "Sign in instead?")
+    const form = document.getElementById('signInForm');
+    if (params.get('email')) form.email.value = params.get('email');
 
-    function showError(msg) {
-      errorBox.textContent = msg;
-      errorBox.hidden = false;
-    }
+    const errorBox  = document.getElementById('formError');
+    const submitBtn = document.getElementById('submitBtn');
+    const magicBtn  = document.getElementById('magicBtn');
 
+    function showError(msg) { errorBox.textContent = msg; errorBox.hidden = false; }
+
+    // Show / hide password
+    document.querySelectorAll('[data-toggle-password]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById(btn.dataset.togglePassword);
+        const show  = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        btn.textContent = show ? 'Hide' : 'Show';
+        btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      });
+    });
+
+    // Carry the typed email over to "Forgot password?"
+    document.getElementById('forgotLink').addEventListener('click', (e) => {
+      const email = form.email.value.trim();
+      if (email) e.currentTarget.href = `/auth/forgot-password.html?email=${encodeURIComponent(email)}`;
+    });
+
+    // ── Password sign in ──
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       errorBox.hidden = true;
 
       const email    = form.email.value.trim();
       const password = form.password.value;
-
-      if (!email || !password) {
-        showError('Please enter your email and password.');
-        return;
-      }
+      if (!email || !password) { showError('Please enter your email and password.'); return; }
 
       submitBtn.disabled = true;
       submitBtn.textContent = 'Signing in…';
 
-      const { user, error } = await signIn({ email, password });
+      const { error } = await signIn({ email, password });
 
       if (error) {
-        showError(error.message || 'Sign in failed. Please try again.');
+        showError(friendlyAuthError(error));
         submitBtn.disabled = false;
         submitBtn.textContent = 'Sign In';
         return;
       }
-
-      // Success — go to next URL
       window.location.href = nextUrl;
+    });
+
+    // ── Email me a sign-in link (no password needed) ──
+    magicBtn.addEventListener('click', async () => {
+      errorBox.hidden = true;
+      const email = form.email.value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showError('Type your email above first, then tap "Email me a sign-in link".');
+        form.email.focus();
+        return;
+      }
+
+      magicBtn.disabled = true;
+      const { error } = await sendMagicLink(email, nextUrl);
+      magicBtn.disabled = false;
+
+      if (error) { showError(friendlyAuthError(error)); return; }
+
+      document.getElementById('sentEmail').textContent = email;
+      document.getElementById('formView').hidden = true;
+      document.getElementById('sentView').hidden = false;
+    });
+
+    document.getElementById('backBtn').addEventListener('click', () => {
+      document.getElementById('sentView').hidden = true;
+      document.getElementById('formView').hidden = false;
+      form.email.focus();
     });
   </script>
 

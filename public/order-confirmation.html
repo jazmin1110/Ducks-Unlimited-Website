@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thank You — Ducks Unlimited</title>
+  <meta name="robots" content="noindex" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/account.css" />
+</head>
+<body>
+
+  <div data-component="nav"></div>
+
+  <!-- PayMongo sends shoppers here after paying:
+         /order-confirmation.html?order=DU-00012
+       (set as the success URL in api/create-payment.js).
+       Works without JavaScript too — the static thank-you message below
+       always shows; the script adds live order details on top. -->
+  <main class="track-shell">
+
+    <div class="track-hero">
+      <div class="auth-sent__icon" aria-hidden="true">✓</div>
+      <p class="eyebrow">Thank you</p>
+      <h1 id="heading">Your order is in</h1>
+      <p id="intro">
+        We've received your order<span id="orderNumLine"></span>.
+        You'll find the details below — keep your order number handy if you contact us.
+      </p>
+    </div>
+
+    <div id="result"></div>
+
+    <div id="fallback" class="panel" style="text-align:center;">
+      <p class="panel__text">Want to check on it later?</p>
+      <a class="btn btn-primary" id="trackLink" href="/track-order.html">Track Your Order</a>
+      <a class="btn btn-ghost" href="/shop.html">Continue Shopping</a>
+    </div>
+
+  </main>
+
+  <div data-component="footer"></div>
+
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+  <script type="module" src="/js/wishlist.js"></script>
+
+  <script type="module">
+    import { getCurrentUser, getAccessToken } from '/js/auth.js';
+    import {
+      escapeHtml, formatPrice, renderTimeline, renderOrderItems, wireCopyButtons,
+    } from '/js/account.js';
+
+    const orderNumber = new URLSearchParams(location.search).get('order') || '';
+    const result = document.getElementById('result');
+
+    if (orderNumber) {
+      document.getElementById('orderNumLine').innerHTML = `, <strong>#${escapeHtml(orderNumber)}</strong>`;
+      document.getElementById('trackLink').href = `/track-order.html?order=${encodeURIComponent(orderNumber)}`;
+    }
+
+    // Saved by checkout right before it sent the shopper to PayMongo
+    let lastOrder = null;
+    try { lastOrder = JSON.parse(sessionStorage.getItem('du:lastOrder') || 'null'); } catch {}
+
+    const user  = await getCurrentUser();
+    const email = (lastOrder?.orderNumber === orderNumber && lastOrder?.email) || user?.email || '';
+
+    wireCopyButtons(result);
+
+    async function fetchOrder() {
+      const headers = { 'Content-Type': 'application/json' };
+      const token = user ? await getAccessToken() : null;
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch('/api/track-order', {
+        method: 'POST', headers, body: JSON.stringify({ orderNumber, email }),
+      });
+      if (!res.ok) return null;
+      return (await res.json()).order;
+    }
+
+    function render(o) {
+      const subtotal = o.items.reduce((sum, it) => sum + it.price * it.quantity, 0);
+
+      if (o.firstName) document.getElementById('heading').textContent = `Thank you, ${o.firstName}`;
+
+      // Post-purchase is the best moment to offer an account (Baymard):
+      // they've already typed everything, so it's one password away.
+      let accountBox = '';
+      if (o.linkedToYou) {
+        accountBox = `<div class="auth-success">This order is saved in <a href="/account/orders.html">My Orders</a> — track it anytime.</div>`;
+      } else if (!user) {
+        accountBox = `
+          <div class="account-cta">
+            <h2>Save your details for next time</h2>
+            <p>Create a password and you're done — this order will be in My Orders with live tracking,
+               and your address will be ready for your next checkout.</p>
+            <a class="btn" href="/auth/sign-up.html?next=${encodeURIComponent('/track-order.html?claim=1')}">Create Account</a>
+          </div>`;
+      }
+
+      result.innerHTML = `
+        <div class="panel">${renderTimeline(o)}</div>
+        ${accountBox}
+        <div class="panel">
+          <h2 class="panel__title" style="margin-bottom:0.5rem;">Order summary</h2>
+          ${renderOrderItems(o.items)}
+          <div class="order-totals">
+            <div class="order-totals__row"><span>Subtotal</span><span>${formatPrice(subtotal)}</span></div>
+            <div class="order-totals__row"><span>Shipping</span><span>${formatPrice(Math.max(0, o.total - subtotal))}</span></div>
+            <div class="order-totals__row order-totals__row--total"><span>Total</span><span>${formatPrice(o.total)}</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <dl class="kv"><div><dt>Shipping to</dt><dd>${escapeHtml(o.shipTo)}</dd></div></dl>
+        </div>
+      `;
+    }
+
+    if (orderNumber && email) {
+      let order = await fetchOrder();
+      if (order) render(order);
+
+      // PayMongo's "paid" webhook can arrive a few seconds after the redirect.
+      // Re-check a few times so the page flips from "Awaiting payment" to "Paid".
+      let tries = 0;
+      while (order && order.paymentStatus === 'pending' && tries < 6) {
+        await new Promise(r => setTimeout(r, 3000));
+        order = await fetchOrder();
+        if (order) render(order);
+        tries++;
+      }
+    }
+  </script>
+
+</body>
+</html>

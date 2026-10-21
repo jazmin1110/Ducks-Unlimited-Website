@@ -4,11 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Create Account — Ducks Unlimited</title>
+  <meta name="robots" content="noindex" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
   <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/account.css" />
 </head>
 <body>
 
@@ -17,42 +19,78 @@
   <main class="auth-shell">
     <div class="auth-card">
 
-      <p class="eyebrow">Join the Family</p>
-      <h1>Create Account</h1>
-      <p class="auth-card__sub">
-        Save your favorites, track orders, and check out faster next time.
-      </p>
+      <div id="formView">
+        <p class="eyebrow">Join the family</p>
+        <h1>Create Account</h1>
 
-      <form class="auth-form" id="signUpForm" novalidate>
+        <!-- Short and to the point: say what the account is FOR. Only 3 fields.
+             (Penshoppe asks for 11 required fields up front — birthday, gender,
+             province… — which is a big reason people give up on sign-up.
+             Customers can add those later in Account Details.) -->
+        <ul class="auth-perks">
+          <li>Track every order, from packing to your door</li>
+          <li>Check out faster with saved addresses</li>
+          <li>Keep your wishlist on your phone and laptop</li>
+        </ul>
 
-        <div class="auth-error" id="formError" hidden></div>
+        <form class="auth-form" id="signUpForm" novalidate>
+          <div class="auth-error" id="formError" role="alert" hidden></div>
 
-        <div class="field">
-          <label class="field-label" for="displayName">Name</label>
-          <input class="input" type="text" id="displayName" name="displayName"
-                 autocomplete="name" required />
+          <div class="field">
+            <label class="field-label" for="displayName">First name</label>
+            <input class="input" type="text" id="displayName" name="displayName"
+                   autocomplete="given-name" autocapitalize="words" required />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="email">Email</label>
+            <input class="input" type="email" id="email" name="email"
+                   autocomplete="email" inputmode="email" autocapitalize="off" required />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="password">Password</label>
+            <div class="password-wrap">
+              <input class="input" type="password" id="password" name="password"
+                     autocomplete="new-password" required minlength="8"
+                     aria-describedby="pwRules" />
+              <button type="button" class="password-toggle" data-toggle-password="password"
+                      aria-label="Show password">Show</button>
+            </div>
+            <ul class="pw-rules" id="pwRules">
+              <li data-rule="length">At least 8 characters</li>
+              <li data-rule="mix">Includes a letter and a number</li>
+            </ul>
+          </div>
+
+          <!-- Unticked by default — the PH Data Privacy Act requires opt-in
+               consent for marketing to be a clear, active choice. -->
+          <label class="check-row">
+            <input type="checkbox" id="marketing" name="marketing" />
+            <span>Email me about new arrivals, sales and members-only offers. You can unsubscribe anytime.</span>
+          </label>
+
+          <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Create Account</button>
+
+          <p class="auth-legal">
+            By creating an account you agree to our
+            <a href="/customer-service/terms.html">Terms of Use</a> and
+            <a href="/customer-service/privacy.html">Privacy Policy</a>.
+          </p>
+        </form>
+
+        <div class="auth-card__alt">
+          Already have an account? <a href="/auth/sign-in.html" id="signInLink">Sign in</a>
         </div>
+      </div>
 
-        <div class="field">
-          <label class="field-label" for="email">Email</label>
-          <input class="input" type="email" id="email" name="email"
-                 autocomplete="email" required />
-        </div>
-
-        <div class="field">
-          <label class="field-label" for="password">Password</label>
-          <input class="input" type="password" id="password" name="password"
-                 autocomplete="new-password" required minlength="6" />
-          <span class="field-hint">At least 6 characters.</span>
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
-          Create Account
-        </button>
-      </form>
-
-      <div class="auth-card__alt">
-        Already have an account? <a href="/auth/sign-in.html" id="signInLink">Sign in</a>
+      <!-- Shown when Supabase has "Confirm email" turned on -->
+      <div id="sentView" class="auth-sent" hidden>
+        <div class="auth-sent__icon" aria-hidden="true">✉</div>
+        <h1>Confirm your email</h1>
+        <p>We sent a link to <strong id="sentEmail"></strong>. Tap it to finish creating your account.
+           Can't find it? Check Spam or Promotions.</p>
+        <p><a href="/auth/sign-in.html">Back to sign in</a></p>
       </div>
 
     </div>
@@ -65,30 +103,54 @@
   <script type="module" src="/js/wishlist.js"></script>
 
   <script type="module">
-    import { signUp, getCurrentUser } from '/js/auth.js';
+    import { signUp, getCurrentUser, friendlyAuthError, safeNext } from '/js/auth.js';
 
-    const params = new URLSearchParams(window.location.search);
-    const nextUrl = params.get('next') || '/account/';
+    const params  = new URLSearchParams(window.location.search);
+    const nextUrl = safeNext(params.get('next'));
 
-    (async () => {
-      const user = await getCurrentUser();
-      if (user) window.location.href = nextUrl;
-    })();
+    getCurrentUser().then((user) => { if (user) window.location.replace(nextUrl); });
 
-    // Preserve `?next=` on the sign-in link
     if (params.get('next')) {
       document.getElementById('signInLink').href =
-        `/auth/sign-in.html?next=${encodeURIComponent(params.get('next'))}`;
+        `/auth/sign-in.html?next=${encodeURIComponent(nextUrl)}`;
     }
 
     const form      = document.getElementById('signUpForm');
     const errorBox  = document.getElementById('formError');
     const submitBtn = document.getElementById('submitBtn');
 
-    function showError(msg) {
-      errorBox.textContent = msg;
-      errorBox.hidden = false;
+    // Pre-fill from the order confirmation page ("Save your details — create
+    // an account") so the shopper doesn't retype what they just entered.
+    if (params.get('email')) form.email.value = params.get('email');
+    if (params.get('name'))  form.displayName.value = params.get('name');
+
+    function showError(html) { errorBox.innerHTML = html; errorBox.hidden = false; }
+
+    // Show / hide password
+    document.querySelectorAll('[data-toggle-password]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById(btn.dataset.togglePassword);
+        const show  = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        btn.textContent = show ? 'Hide' : 'Show';
+      });
+    });
+
+    // Live password checklist
+    const RULES = {
+      length: (pw) => pw.length >= 8,
+      mix:    (pw) => /[a-z]/i.test(pw) && /\d/.test(pw),
+    };
+    function checkRules(pw) {
+      let ok = true;
+      for (const [rule, test] of Object.entries(RULES)) {
+        const pass = test(pw);
+        document.querySelector(`[data-rule="${rule}"]`).classList.toggle('is-ok', pass);
+        ok = ok && pass;
+      }
+      return ok;
     }
+    form.password.addEventListener('input', () => checkRules(form.password.value));
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -98,29 +160,37 @@
       const email       = form.email.value.trim();
       const password    = form.password.value;
 
-      if (!displayName || !email || !password) {
-        showError('Please fill in all fields.');
-        return;
-      }
-      if (password.length < 6) {
-        showError('Password must be at least 6 characters.');
-        return;
-      }
+      if (!displayName) { showError('Please enter your first name.'); form.displayName.focus(); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('Please enter a valid email address.'); form.email.focus(); return; }
+      if (!checkRules(password)) { showError('Please choose a password with at least 8 characters, including a letter and a number.'); form.password.focus(); return; }
 
       submitBtn.disabled = true;
       submitBtn.textContent = 'Creating account…';
 
-      const { user, error } = await signUp({ email, password, displayName });
+      const { needsConfirmation, error } = await signUp({
+        email, password, displayName, marketingOptIn: form.marketing.checked,
+      });
 
       if (error) {
-        showError(error.message || 'Sign up failed. Please try again.');
+        const msg = friendlyAuthError(error);
+        // Existing account → offer a one-tap way to sign in with that email
+        if (msg.includes('already exists')) {
+          showError(`${msg} <a href="/auth/sign-in.html?email=${encodeURIComponent(email)}&next=${encodeURIComponent(nextUrl)}">Sign in</a>`);
+        } else {
+          errorBox.textContent = msg; errorBox.hidden = false;
+        }
         submitBtn.disabled = false;
         submitBtn.textContent = 'Create Account';
         return;
       }
 
-      // Email confirmation is disabled in Supabase, so a successful signUp
-      // returns a live session — bounce straight to the account page.
+      if (needsConfirmation) {
+        document.getElementById('sentEmail').textContent = email;
+        document.getElementById('formView').hidden = true;
+        document.getElementById('sentView').hidden = false;
+        return;
+      }
+
       window.location.href = nextUrl;
     });
   </script>

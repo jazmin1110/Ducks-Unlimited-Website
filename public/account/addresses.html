@@ -3,176 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shipping Addresses — Ducks Unlimited</title>
+  <title>Addresses — Ducks Unlimited</title>
+  <meta name="robots" content="noindex" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
   <link rel="stylesheet" href="/css/style.css" />
-
-  <style>
-    .addr-back {
-      display: inline-block;
-      font-size: 0.78rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--color-text-muted);
-      text-decoration: none;
-      margin-bottom: var(--space-md);
-    }
-    .addr-back:hover { color: var(--color-primary); }
-
-    .addr-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: var(--space);
-      max-width: 800px;
-      margin: 0 auto var(--space-lg);
-    }
-
-    .addr-card {
-      background: var(--color-white);
-      border: 1px solid var(--color-border-light);
-      padding: var(--space-md);
-      position: relative;
-    }
-
-    .addr-card--default { border-color: var(--color-primary); }
-
-    .addr-card__label {
-      font-size: 0.7rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--color-accent);
-      margin-bottom: 0.4rem;
-    }
-
-    .addr-card__name {
-      font-family: var(--font-heading);
-      font-size: 1.15rem;
-      font-weight: 600;
-      color: var(--color-primary);
-      margin-bottom: 0.3rem;
-    }
-
-    .addr-card__lines {
-      color: var(--color-text);
-      font-size: 0.92rem;
-      line-height: 1.55;
-      margin-bottom: var(--space);
-    }
-
-    .addr-card__phone {
-      color: var(--color-text-muted);
-      font-size: 0.85rem;
-      margin-bottom: var(--space);
-    }
-
-    .addr-card__actions {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      padding-top: 0.75rem;
-      border-top: 1px solid var(--color-border-light);
-    }
-
-    .addr-card__btn {
-      background: none;
-      border: none;
-      font-size: 0.72rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--color-text-muted);
-      cursor: pointer;
-      padding: 0.4rem 0;
-      text-decoration: underline;
-      text-underline-offset: 3px;
-      font-family: var(--font-body);
-    }
-
-    .addr-card__btn:hover { color: var(--color-primary); }
-    .addr-card__btn--danger:hover { color: var(--color-error); }
-
-    .addr-default-badge {
-      position: absolute;
-      top: var(--space-md);
-      right: var(--space-md);
-      font-size: 0.65rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--color-primary);
-      border: 1px solid var(--color-primary);
-      padding: 0.25rem 0.55rem;
-      border-radius: var(--radius-pill);
-    }
-
-    .addr-empty {
-      text-align: center;
-      padding: var(--space-xl) var(--space-md);
-      max-width: 480px;
-      margin: 0 auto;
-      color: var(--color-text-muted);
-    }
-
-    /* Add / Edit form */
-    .addr-form {
-      max-width: 600px;
-      margin: 0 auto;
-      background: var(--color-white);
-      padding: var(--space-lg);
-      border: 1px solid var(--color-border-light);
-    }
-
-    .addr-form h2 {
-      font-family: var(--font-heading);
-      font-size: 1.4rem;
-      color: var(--color-primary);
-      margin-bottom: var(--space);
-    }
-
-    .addr-form .row { display: grid; gap: var(--space); grid-template-columns: 1fr; }
-
-    .addr-form .actions {
-      display: flex;
-      gap: var(--space-sm);
-      justify-content: flex-end;
-      margin-top: var(--space);
-    }
-
-    .add-btn-wrap { text-align: center; margin-bottom: var(--space-md); }
-
-    @media (min-width: 768px) {
-      .addr-grid { grid-template-columns: repeat(2, 1fr); }
-      .addr-form .row.cols-2 { grid-template-columns: 1fr 1fr; }
-    }
-
-    /* ── Signed-out gate panel ─────────────────────────────────────────── */
-    .signed-out-gate {
-      max-width: 480px;
-      margin: var(--space-2xl) auto;
-      text-align: center;
-    }
-    .signed-out-gate__panel {
-      background: var(--color-white);
-      border: 1px solid var(--color-border-light);
-      padding: var(--space-xl) var(--space-md);
-    }
-    .signed-out-gate__sub {
-      color: var(--color-text-muted);
-      margin: var(--space-sm) auto var(--space-md);
-      max-width: 32ch;
-    }
-    .signed-out-gate__actions {
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-      margin-top: var(--space);
-    }
-    @media (min-width: 480px) {
-      .signed-out-gate__actions { flex-direction: row; justify-content: center; }
-      .signed-out-gate__actions .btn { min-width: 160px; }
-    }
-  </style>
+  <link rel="stylesheet" href="/css/account.css" />
 </head>
 <body>
 
@@ -180,111 +18,85 @@
 
   <main class="container account-shell">
 
-    <!-- Shown when the visitor is NOT signed in. gateAccountPage() in auth.js
-         toggles between this and #signedInView based on session state. -->
-    <div id="signedOutView" class="signed-out-gate" hidden>
-      <div class="signed-out-gate__panel">
-        <p class="eyebrow">Shipping</p>
-        <h1>You're not signed in</h1>
-        <p class="signed-out-gate__sub">
-          Sign in to view your saved addresses, or create an account to start saving them.
-        </p>
-        <div class="signed-out-gate__actions">
-          <a class="btn btn-primary"      href="/auth/sign-in.html" data-cta="sign-in">Sign In</a>
-          <a class="btn btn-outline-dark" href="/auth/sign-up.html" data-cta="sign-up">Create Account</a>
-        </div>
-      </div>
+    <div id="signedOutView" class="signed-out-gate" hidden
+         data-title="Saved addresses"
+         data-text="Sign in to save addresses — checkout fills them in for you."></div>
+
+    <div id="signedInView" class="account-layout" hidden>
+      <nav class="account-nav" data-account-nav aria-label="Account menu"></nav>
+
+      <section>
+        <p class="eyebrow">My Account</p>
+        <h1 class="account-title">Addresses</h1>
+        <p class="account-subtitle" id="addrSub">Your default address is filled in automatically at checkout.</p>
+
+        <div class="addr-grid" id="addrGrid"></div>
+
+        <!-- Add / edit form (hidden until needed) -->
+        <form class="panel" id="addrForm" style="margin-top:var(--space);" hidden novalidate>
+          <h2 class="panel__title" id="formTitle" style="margin-bottom:var(--space);">New address</h2>
+          <div class="auth-error" id="addrError" role="alert" hidden></div>
+          <input type="hidden" id="addrId" />
+
+          <div class="form-grid form-grid--2">
+            <div class="field">
+              <label class="field-label field-required" for="recipient_name">Full name</label>
+              <input class="input" id="recipient_name" name="recipient_name" autocomplete="name" required />
+            </div>
+            <div class="field">
+              <label class="field-label field-required" for="phone">Mobile number</label>
+              <input class="input" type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel"
+                     placeholder="09XX XXX XXXX" required />
+            </div>
+            <div class="field span-2">
+              <label class="field-label field-required" for="line1">House / unit no., building, street</label>
+              <input class="input" id="line1" name="line1" autocomplete="address-line1" required />
+            </div>
+            <div class="field span-2">
+              <label class="field-label" for="line2">Subdivision, village or landmark <span class="text-light" style="text-transform:none; letter-spacing:0;">(optional)</span></label>
+              <input class="input" id="line2" name="line2" autocomplete="address-line2"
+                     placeholder="e.g. near Greenhills Shopping Center" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="barangay">Barangay</label>
+              <input class="input" id="barangay" name="barangay" autocomplete="address-level3" />
+            </div>
+            <div class="field">
+              <label class="field-label field-required" for="city">City / municipality</label>
+              <input class="input" id="city" name="city" autocomplete="address-level2" required />
+            </div>
+            <div class="field">
+              <label class="field-label field-required" for="province">Province</label>
+              <select class="select" id="province" name="province" autocomplete="address-level1" required></select>
+            </div>
+            <div class="field">
+              <label class="field-label field-required" for="postal_code">ZIP code</label>
+              <input class="input" id="postal_code" name="postal_code" autocomplete="postal-code"
+                     inputmode="numeric" maxlength="4" required />
+            </div>
+            <div class="field">
+              <label class="field-label" for="label">Label <span class="text-light" style="text-transform:none; letter-spacing:0;">(optional)</span></label>
+              <select class="select" id="label" name="label">
+                <option value="">—</option>
+                <option>Home</option>
+                <option>Office</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="check-row" style="margin-top:var(--space-sm);">
+            <input type="checkbox" id="is_default" name="is_default" />
+            <span>Use as my default shipping address</span>
+          </label>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="saveBtn">Save Address</button>
+            <button type="button" class="btn btn-ghost" id="cancelBtn">Cancel</button>
+          </div>
+        </form>
+      </section>
     </div>
-
-    <!-- Real page content — shown when signed in. -->
-    <div id="signedInView">
-
-    <a href="/account/" class="addr-back">← Back to account</a>
-
-    <div class="account-header">
-      <p class="eyebrow">Shipping</p>
-      <h1>Saved Addresses</h1>
-      <p class="account-header__sub" id="addrSub">Loading…</p>
-    </div>
-
-    <div class="add-btn-wrap">
-      <button type="button" class="btn btn-outline-dark" id="addBtn">+ Add New Address</button>
-    </div>
-
-    <div class="addr-grid" id="addrGrid"></div>
-
-    <!-- Add/Edit form (hidden until "Add" or "Edit" is clicked) -->
-    <form class="addr-form" id="addrForm" hidden>
-      <h2 id="formTitle">New Address</h2>
-      <input type="hidden" name="id" id="addrId" />
-
-      <div class="row">
-        <div class="field">
-          <label class="field-label" for="label">Label (e.g. Home, Office)</label>
-          <input class="input" type="text" id="label" name="label" />
-        </div>
-      </div>
-
-      <div class="row cols-2">
-        <div class="field">
-          <label class="field-label" for="recipient_name">Recipient Name *</label>
-          <input class="input" type="text" id="recipient_name" name="recipient_name" required />
-        </div>
-        <div class="field">
-          <label class="field-label" for="phone">Phone *</label>
-          <input class="input" type="tel" id="phone" name="phone" required />
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="field">
-          <label class="field-label" for="line1">Address Line 1 *</label>
-          <input class="input" type="text" id="line1" name="line1" required />
-        </div>
-        <div class="field">
-          <label class="field-label" for="line2">Address Line 2</label>
-          <input class="input" type="text" id="line2" name="line2" />
-        </div>
-      </div>
-
-      <div class="row cols-2">
-        <div class="field">
-          <label class="field-label" for="barangay">Barangay</label>
-          <input class="input" type="text" id="barangay" name="barangay" />
-        </div>
-        <div class="field">
-          <label class="field-label" for="city">City *</label>
-          <input class="input" type="text" id="city" name="city" required />
-        </div>
-      </div>
-
-      <div class="row cols-2">
-        <div class="field">
-          <label class="field-label" for="province">Province *</label>
-          <input class="input" type="text" id="province" name="province" required />
-        </div>
-        <div class="field">
-          <label class="field-label" for="postal_code">Postal Code</label>
-          <input class="input" type="text" id="postal_code" name="postal_code" />
-        </div>
-      </div>
-
-      <div class="field">
-        <label class="filter-check" style="cursor:pointer; display:inline-flex; align-items:center; gap:0.5rem;">
-          <input type="checkbox" id="is_default" name="is_default" />
-          <span>Set as default shipping address</span>
-        </label>
-      </div>
-
-      <div class="auth-error" id="addrError" hidden></div>
-
-      <div class="actions">
-        <button type="button" class="btn btn-ghost" id="cancelBtn">Cancel</button>
-        <button type="submit" class="btn btn-primary" id="saveBtn">Save</button>
-      </div>
-    </form>
-
-    </div><!-- /#signedInView -->
 
   </main>
 
@@ -296,185 +108,158 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
-    import { gateAccountPage } from '/js/auth.js';
+    import { initAccountPage, escapeHtml } from '/js/account.js';
+    import { fillProvinceSelect } from '/js/ph-locations.js';
 
-    const user = await gateAccountPage();
-    if (!user) return; // signed-out panel is shown; nothing else to do
+    const PHONE_RE = /^(09\d{9}|\+639\d{9})$/;
+    const FIELDS = ['label', 'recipient_name', 'phone', 'line1', 'line2', 'barangay', 'city', 'province', 'postal_code'];
 
-    const grid       = document.getElementById('addrGrid');
-    const sub        = document.getElementById('addrSub');
-    const form       = document.getElementById('addrForm');
-    const formTitle  = document.getElementById('formTitle');
-    const addBtn     = document.getElementById('addBtn');
-    const cancelBtn  = document.getElementById('cancelBtn');
-    const errorBox   = document.getElementById('addrError');
-    const saveBtn    = document.getElementById('saveBtn');
+    async function main() {
+      const user = await initAccountPage('addresses');
+      if (!user) return;
 
-    function escapeHtml(s) {
-      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
+      const grid      = document.getElementById('addrGrid');
+      const form      = document.getElementById('addrForm');
+      const errorBox  = document.getElementById('addrError');
+      const saveBtn   = document.getElementById('saveBtn');
+      let addresses   = [];
 
-    function showError(msg) { errorBox.textContent = msg; errorBox.hidden = false; }
-    function clearError()   { errorBox.hidden = true; }
+      function showError(msg) { errorBox.textContent = msg; errorBox.hidden = false; }
 
-    function resetForm() {
-      form.reset();
-      document.getElementById('addrId').value = '';
-      formTitle.textContent = 'New Address';
-      clearError();
-    }
+      function openForm(a = null) {
+        form.reset();
+        errorBox.hidden = true;
+        document.getElementById('addrId').value = a?.id ?? '';
+        document.getElementById('formTitle').textContent = a ? 'Edit address' : 'New address';
+        for (const f of FIELDS) if (f !== 'province') form[f].value = a?.[f] ?? '';
+        fillProvinceSelect(form.province, a?.province ?? '');
+        // First address is always the default
+        form.is_default.checked = a ? !!a.is_default : addresses.length === 0;
+        form.hidden = false;
+        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        form.recipient_name.focus({ preventScroll: true });
+      }
+      function closeForm() { form.hidden = true; }
 
-    function showForm() { form.hidden = false; addBtn.hidden = true; form.scrollIntoView({ behavior: 'smooth' }); }
-    function hideForm() { form.hidden = true;  addBtn.hidden = false; resetForm(); }
+      function render() {
+        const cards = addresses.map(a => `
+          <div class="addr-card${a.is_default ? ' addr-card--default' : ''}">
+            ${a.is_default ? '<span class="addr-card__badge">Default</span>' : ''}
+            ${a.label ? `<div class="addr-card__label">${escapeHtml(a.label)}</div>` : ''}
+            <div class="addr-card__name">${escapeHtml(a.recipient_name)}</div>
+            <div class="addr-card__lines">
+              ${escapeHtml(a.line1)}${a.line2 ? '<br />' + escapeHtml(a.line2) : ''}<br />
+              ${a.barangay ? escapeHtml(a.barangay) + ', ' : ''}${escapeHtml(a.city)}<br />
+              ${escapeHtml(a.province)}${a.postal_code ? ' ' + escapeHtml(a.postal_code) : ''}
+            </div>
+            <div class="addr-card__phone">${escapeHtml(a.phone)}</div>
+            <div class="addr-card__actions">
+              <button type="button" class="addr-card__btn" data-edit="${escapeHtml(a.id)}">Edit</button>
+              ${!a.is_default ? `<button type="button" class="addr-card__btn" data-default="${escapeHtml(a.id)}">Set as default</button>` : ''}
+              <button type="button" class="addr-card__btn addr-card__btn--danger" data-delete="${escapeHtml(a.id)}">Remove</button>
+            </div>
+          </div>`).join('');
 
-    function renderAddresses(rows) {
-      if (!rows || rows.length === 0) {
-        sub.textContent = '';
-        grid.innerHTML = `
-          <div class="addr-empty">
-            No saved addresses yet. Add one to speed up checkout.
-          </div>
-        `;
-        return;
+        grid.innerHTML = cards + `<button type="button" class="addr-add" data-add>+ Add a new address</button>`;
       }
 
-      sub.textContent = `${rows.length} ${rows.length === 1 ? 'address' : 'addresses'}`;
-
-      grid.innerHTML = rows.map(a => `
-        <div class="addr-card${a.is_default ? ' addr-card--default' : ''}" data-id="${escapeHtml(a.id)}">
-          ${a.is_default ? '<span class="addr-default-badge">Default</span>' : ''}
-          ${a.label ? `<div class="addr-card__label">${escapeHtml(a.label)}</div>` : ''}
-          <div class="addr-card__name">${escapeHtml(a.recipient_name)}</div>
-          <div class="addr-card__lines">
-            ${escapeHtml(a.line1)}${a.line2 ? '<br />' + escapeHtml(a.line2) : ''}<br />
-            ${a.barangay ? escapeHtml(a.barangay) + ', ' : ''}${escapeHtml(a.city)}, ${escapeHtml(a.province)}${a.postal_code ? ' ' + escapeHtml(a.postal_code) : ''}
-          </div>
-          <div class="addr-card__phone">${escapeHtml(a.phone)}</div>
-          <div class="addr-card__actions">
-            <button type="button" class="addr-card__btn" data-edit="${escapeHtml(a.id)}">Edit</button>
-            ${!a.is_default
-              ? `<button type="button" class="addr-card__btn" data-default="${escapeHtml(a.id)}">Make Default</button>`
-              : ''}
-            <button type="button" class="addr-card__btn addr-card__btn--danger" data-delete="${escapeHtml(a.id)}">Delete</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    let addresses = [];
-
-    async function load() {
-      const { data, error } = await supabase
-        .from('customer_addresses')
-        .select('*')
-        .order('is_default', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error(error);
-        grid.innerHTML = '<div class="addr-empty">Could not load addresses.</div>';
-        return;
+      async function load() {
+        const { data, error } = await supabase
+          .from('customer_addresses').select('*')
+          .order('is_default', { ascending: false })
+          .order('created_at', { ascending: false });
+        if (error) { console.error(error); grid.innerHTML = '<p class="panel__text">Could not load addresses. Please refresh.</p>'; return; }
+        addresses = data ?? [];
+        render();
       }
-      addresses = data ?? [];
-      renderAddresses(addresses);
-    }
 
-    addBtn.addEventListener('click', () => { resetForm(); showForm(); });
-    cancelBtn.addEventListener('click', hideForm);
+      // Only one default is allowed (database rule), so clear the old one first.
+      async function clearDefault(exceptId) {
+        let q = supabase.from('customer_addresses').update({ is_default: false })
+          .eq('user_id', user.id).eq('is_default', true);
+        if (exceptId) q = q.neq('id', exceptId);
+        return q;
+      }
 
-    // Edit / delete / make default — delegated
-    grid.addEventListener('click', async (e) => {
-      const editBtn    = e.target.closest('[data-edit]');
-      const deleteBtn  = e.target.closest('[data-delete]');
-      const defaultBtn = e.target.closest('[data-default]');
+      grid.addEventListener('click', async (e) => {
+        if (e.target.closest('[data-add]')) { openForm(); return; }
 
-      if (editBtn) {
-        const id = editBtn.getAttribute('data-edit');
-        const a  = addresses.find(x => x.id === id);
-        if (!a) return;
-        document.getElementById('addrId').value = a.id;
-        for (const f of ['label','recipient_name','phone','line1','line2','barangay','city','province','postal_code']) {
-          form[f].value = a[f] ?? '';
+        const editId = e.target.closest('[data-edit]')?.dataset.edit;
+        if (editId) { openForm(addresses.find(a => a.id === editId)); return; }
+
+        const delId = e.target.closest('[data-delete]')?.dataset.delete;
+        if (delId) {
+          if (!confirm('Remove this address?')) return;
+          const removed = addresses.find(a => a.id === delId);
+          const { error } = await supabase.from('customer_addresses').delete().eq('id', delId);
+          if (error) { alert('Could not remove address.'); return; }
+          // If the default was removed, promote the next one so checkout still pre-fills
+          const next = addresses.find(a => a.id !== delId);
+          if (removed?.is_default && next) {
+            await supabase.from('customer_addresses').update({ is_default: true }).eq('id', next.id);
+          }
+          await load();
+          return;
         }
-        form.is_default.checked = !!a.is_default;
-        formTitle.textContent = 'Edit Address';
-        clearError();
-        showForm();
-        return;
-      }
 
-      if (deleteBtn) {
-        if (!confirm('Delete this address?')) return;
-        const id = deleteBtn.getAttribute('data-delete');
-        const { error } = await supabase.from('customer_addresses').delete().eq('id', id);
-        if (error) { alert('Could not delete address.'); console.error(error); return; }
+        const defId = e.target.closest('[data-default]')?.dataset.default;
+        if (defId) {
+          await clearDefault(defId);
+          const { error } = await supabase.from('customer_addresses').update({ is_default: true }).eq('id', defId);
+          if (error) { alert('Could not update default.'); return; }
+          await load();
+        }
+      });
+
+      document.getElementById('cancelBtn').addEventListener('click', closeForm);
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorBox.hidden = true;
+
+        const id = document.getElementById('addrId').value;
+        const payload = {
+          label:          form.label.value || null,
+          recipient_name: form.recipient_name.value.trim(),
+          phone:          form.phone.value.replace(/[\s-]/g, ''),
+          line1:          form.line1.value.trim(),
+          line2:          form.line2.value.trim() || null,
+          barangay:       form.barangay.value.trim() || null,
+          city:           form.city.value.trim(),
+          province:       form.province.value,
+          postal_code:    form.postal_code.value.trim(),
+          is_default:     form.is_default.checked,
+          updated_at:     new Date().toISOString(),
+        };
+
+        if (!payload.recipient_name || !payload.line1 || !payload.city || !payload.province) {
+          showError('Please fill in all required fields.'); return;
+        }
+        if (!PHONE_RE.test(payload.phone)) { showError('Please enter a PH mobile number, e.g. 09171234567.'); form.phone.focus(); return; }
+        if (!/^\d{4}$/.test(payload.postal_code)) { showError('Please enter a 4-digit ZIP code.'); form.postal_code.focus(); return; }
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving…';
+
+        if (payload.is_default) await clearDefault(id || null);
+
+        const { error } = id
+          ? await supabase.from('customer_addresses').update(payload).eq('id', id)
+          : await supabase.from('customer_addresses').insert({ ...payload, user_id: user.id });
+
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Address';
+
+        if (error) { console.error(error); showError('Could not save this address. Please try again.'); return; }
+        closeForm();
         await load();
-        return;
-      }
+      });
 
-      if (defaultBtn) {
-        const id = defaultBtn.getAttribute('data-default');
-        // Clear the current default first to keep the unique-default index happy
-        await supabase.from('customer_addresses').update({ is_default: false }).eq('is_default', true);
-        const { error } = await supabase.from('customer_addresses').update({ is_default: true }).eq('id', id);
-        if (error) { alert('Could not update default.'); console.error(error); return; }
-        await load();
-      }
-    });
-
-    // Save (insert or update)
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      clearError();
-
-      const id = document.getElementById('addrId').value;
-      const payload = {
-        label:          form.label.value.trim() || null,
-        recipient_name: form.recipient_name.value.trim(),
-        phone:          form.phone.value.trim(),
-        line1:          form.line1.value.trim(),
-        line2:          form.line2.value.trim() || null,
-        barangay:       form.barangay.value.trim() || null,
-        city:           form.city.value.trim(),
-        province:       form.province.value.trim(),
-        postal_code:    form.postal_code.value.trim() || null,
-        is_default:     form.is_default.checked,
-      };
-
-      if (!payload.recipient_name || !payload.phone || !payload.line1 || !payload.city || !payload.province) {
-        showError('Please fill in all required fields.');
-        return;
-      }
-
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving…';
-
-      // If this row is being marked default, clear any existing default first
-      if (payload.is_default) {
-        await supabase.from('customer_addresses')
-          .update({ is_default: false })
-          .eq('is_default', true)
-          .neq('id', id || '00000000-0000-0000-0000-000000000000');
-      }
-
-      let error;
-      if (id) {
-        ({ error } = await supabase.from('customer_addresses').update(payload).eq('id', id));
-      } else {
-        ({ error } = await supabase.from('customer_addresses').insert({ ...payload, user_id: user.id }));
-      }
-
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'Save';
-
-      if (error) { showError(error.message || 'Could not save address.'); return; }
-
-      hideForm();
       await load();
-    });
+      if (new URLSearchParams(location.search).get('new') === '1') openForm();
+    }
 
-    load();
+    main();
   </script>
 
 </body>

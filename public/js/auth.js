@@ -39,18 +39,102 @@ export async function signIn({ email, password }) {
   return { user: data?.user ?? null, error };
 }
 
-export async function signUp({ email, password, displayName }) {
+export async function signUp({ email, password, displayName, marketingOptIn = false }) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { display_name: displayName ?? null } },
+    options: {
+      data: { display_name: displayName ?? null, marketing_opt_in: !!marketingOptIn },
+      // Where the "confirm your email" link lands, if confirmation is turned on
+      emailRedirectTo: `${window.location.origin}/account/`,
+    },
   });
-  return { user: data?.user ?? null, error };
+  // When "Confirm email" is ON in Supabase, signUp succeeds but returns no
+  // session — the customer has to click the link in their inbox first.
+  return {
+    user: data?.user ?? null,
+    needsConfirmation: !error && !data?.session,
+    error,
+  };
+}
+
+// Passwordless option: emails a one-click sign-in link (Everlane / Shopify
+// style). Also creates the account if this email is new.
+export async function sendMagicLink(email, next = '/account/') {
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: `${window.location.origin}${safeNext(next)}` },
+  });
+  return { error };
+}
+
+// "Forgot password?" — emails a link to /auth/reset-password.html
+export async function sendPasswordReset(email) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/auth/reset-password.html`,
+  });
+  return { error };
+}
+
+// Sets a new password for the signed-in user (also used after a reset link)
+export async function updatePassword(password) {
+  const { error } = await supabase.auth.updateUser({ password });
+  return { error };
+}
+
+// Changes the login email. Supabase sends a confirmation link to the new
+// address; the change only takes effect after it's clicked.
+export async function updateEmail(email) {
+  const { error } = await supabase.auth.updateUser(
+    { email },
+    { emailRedirectTo: `${window.location.origin}/account/profile.html` },
+  );
+  return { error };
+}
+
+// Access token for calling our own /api endpoints as this customer
+export async function getAccessToken() {
+  const session = await getSession();
+  return session?.access_token ?? null;
 }
 
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
   return { error };
+}
+
+// ── Friendly error messages ─────────────────────────────────────────────────
+// Supabase errors are written for developers ("Invalid login credentials").
+// This turns the common ones into plain language for shoppers.
+
+export function friendlyAuthError(error) {
+  const msg  = String(error?.message || '').toLowerCase();
+  const code = error?.code || '';
+  if (code === 'invalid_credentials' || msg.includes('invalid login'))
+    return 'That email and password don\'t match. Try again, or reset your password.';
+  if (code === 'email_not_confirmed' || msg.includes('not confirmed'))
+    return 'Please confirm your email first — check your inbox for our link.';
+  if (code === 'user_already_exists' || msg.includes('already registered'))
+    return 'An account with this email already exists. Sign in instead?';
+  if (code === 'weak_password' || msg.includes('password should'))
+    return 'Please choose a stronger password (at least 8 characters).';
+  if (code === 'over_email_send_rate_limit' || msg.includes('rate limit') || msg.includes('security purposes'))
+    return 'Too many attempts. Please wait a minute and try again.';
+  if (code === 'same_password')
+    return 'Your new password must be different from the old one.';
+  if (msg.includes('failed to fetch') || msg.includes('network'))
+    return 'We couldn\'t reach the server. Check your connection and try again.';
+  return error?.message || 'Something went wrong. Please try again.';
+}
+
+// ── Safe redirect target ────────────────────────────────────────────────────
+// Only allow ?next= values that point back into this site ("/account/…"),
+// never "https://evil.com" or "//evil.com".
+
+export function safeNext(value, fallback = '/account/') {
+  const v = String(value || '');
+  if (v.startsWith('/') && !v.startsWith('//') && !v.startsWith('/\\')) return v;
+  return fallback;
 }
 
 // ── Auth state subscription ─────────────────────────────────────────────────
