@@ -25,8 +25,13 @@
 // =============================================================================
 
 import { getUserFromRequest } from './_lib/supabase-admin.js';
+import { createMayaCheckout } from './_lib/maya.js';
 
 const SHIPPING_FEE_PHP = 150;
+
+// Which payment company handles checkout. Set PAYMENT_PROVIDER=maya in the
+// environment to send shoppers to Maya's card page instead of PayMongo.
+const PAYMENT_PROVIDER = (process.env.PAYMENT_PROVIDER || 'paymongo').toLowerCase();
 
 // Centavos — PayMongo amounts are in the smallest currency unit (1 PHP = 100 centavos)
 function toCentavos(amount) {
@@ -144,7 +149,7 @@ export default async function handler(req, res) {
     //   variants?id=in.(uuid1,uuid2)
     const idsParam = items.map(i => i.variantId).join(',');
     const variants = await supabase(
-      `variants?id=in.(${idsParam})&select=id,color,size,price_override,products!inner(base_price,is_active),inventory(channel,quantity)`
+      `variants?id=in.(${idsParam})&select=id,color,size,price_override,products!inner(name,base_price,is_active,brand_id),inventory(channel,quantity)`
     );
 
     // Every item must resolve to an active variant with enough stock
@@ -180,6 +185,20 @@ export default async function handler(req, res) {
       });
     }
 
+    // ── Which brand is this order for? ──
+    // Every order belongs to one brand (it decides the DU-/RW- order number),
+    // so it comes from the products in the cart. Mixed-brand carts are rare;
+    // we ask the shopper to check out each brand separately.
+    const brandIds = [...new Set(
+      items.map(it => variants.find(x => x.id === it.variantId)?.products?.brand_id)
+    )];
+    if (brandIds.length !== 1 || !brandIds[0]) {
+      return res.status(400).json({
+        error: 'Your bag has items from more than one brand. Please check out each brand separately.',
+      });
+    }
+    const brandId = brandIds[0];
+
     const shippingFee = SHIPPING_FEE_PHP;
     const total = subtotal + shippingFee;
 
@@ -197,6 +216,7 @@ export default async function handler(req, res) {
     const orderInsert = await supabase('orders', {
       method: 'POST',
       body: JSON.stringify([{
+        brand_id:           brandId,
         user_id:            user?.id ?? null,
         customer_name:      customer.name.trim(),
         customer_email:     customer.email.trim().toLowerCase(),
@@ -220,10 +240,74 @@ export default async function handler(req, res) {
       ),
     });
 
-    // ── Create the PayMongo payment link ──
     const siteUrl = (process.env.SITE_URL || '').replace(/\/$/, '');
     const successUrl = `${siteUrl}/order-confirmation.html?order=${encodeURIComponent(order.order_number)}`;
     const failedUrl  = `${siteUrl}/checkout.html?status=failed`;
+
+    // ── Maya: create a hosted card checkout and stop here ──
+    if (PAYMENT_PROVIDER === 'maya') {
+      const [firstName, ...rest] = customer.name.trim().split(/\s+/);
+      const address = {
+        line1:       shipping.address.trim(),
+        line2:       shipping.barangay?.trim() || '',
+        city:        shipping.city.trim(),
+        state:       shipping.province.trim(),
+        zipCode:     shipping.zip.trim(),
+        countryCode: 'PH',
+      };
+
+      let checkout;
+      try {
+        checkout = await createMayaCheckout({
+          // The order's UUID is our reference number. /api/maya-verify uses it
+          // later to ask Maya whether this exact order was paid.
+          referenceNumber: order.id,
+          total,
+          shippingFee,
+          buyer: {
+            firstName,
+            lastName: rest.join(' ') || firstName,
+            contact:  { email: customer.email.trim(), phone: String(customer.phone).replace(/[\s\-]/g, '') },
+            billingAddress:  address,
+            shippingAddress: address,
+          },
+          items: variants
+            .filter(v => orderItemsToInsert.some(oi => oi.variant_id === v.id))
+            .map(v => {
+              const oi = orderItemsToInsert.find(x => x.variant_id === v.id);
+              return {
+                name:        [v.products.name, v.color, v.size].filter(Boolean).join(' · '),
+                quantity:    oi.quantity,
+                amount:      { value: oi.price_at_purchase },
+                totalAmount: { value: oi.price_at_purchase * oi.quantity },
+              };
+            }),
+          redirect: {
+            // provider=maya tells the confirmation page to ask Maya for the result
+            success: `${successUrl}&provider=maya`,
+            failure: failedUrl,
+            cancel:  `${siteUrl}/checkout.html?status=cancelled`,
+          },
+        });
+      } catch (err) {
+        console.error('Maya error:', err);
+        await supabase(`orders?id=eq.${order.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ payment_status: 'failed' }),
+        }).catch(() => {});
+        return res.status(502).json({ error: 'Could not start card payment. Please try again.' });
+      }
+
+      if (!checkout?.redirectUrl) throw new Error('Maya response missing redirectUrl');
+
+      return res.status(200).json({
+        orderId:     order.id,
+        orderNumber: order.order_number,
+        paymentUrl:  checkout.redirectUrl,
+      });
+    }
+
+    // ── Create the PayMongo payment link ──
 
     let paymongoLink;
     try {

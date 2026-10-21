@@ -121,6 +121,20 @@
       `;
     }
 
+    // Maya sends shoppers back with ?provider=maya. Maya has no instant
+    // webhook to us here, so we ask our server to check with Maya directly.
+    // (Runs before fetchOrder so the page shows "Paid" straight away.)
+    const isMaya = new URLSearchParams(location.search).get('provider') === 'maya';
+    async function verifyMaya() {
+      if (!isMaya || !orderNumber) return;
+      await fetch('/api/maya-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderNumber }),
+      }).catch(() => {});
+    }
+    await verifyMaya();
+
     if (orderNumber && email) {
       let order = await fetchOrder();
       if (order) render(order);
@@ -130,6 +144,7 @@
       let tries = 0;
       while (order && order.paymentStatus === 'pending' && tries < 6) {
         await new Promise(r => setTimeout(r, 3000));
+        await verifyMaya();
         order = await fetchOrder();
         if (order) render(order);
         tries++;

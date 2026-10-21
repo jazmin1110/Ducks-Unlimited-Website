@@ -905,7 +905,7 @@
     async function init() {
       // ── Handle redirect from a failed PayMongo payment ──
       const params = new URLSearchParams(window.location.search);
-      if (params.get('status') === 'failed') {
+      if (params.get('status') === 'failed' || params.get('status') === 'cancelled') {
         // Don't clear the cart — let the customer try again
         document.getElementById('checkoutSubheader').innerHTML =
           '<span style="color: var(--color-error);">Payment was not completed. You can try again below.</span>';
