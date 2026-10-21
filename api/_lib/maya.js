@@ -63,12 +63,17 @@ export async function createMayaCheckout({ referenceNumber, total, shippingFee, 
   return JSON.parse(text);
 }
 
-// ── Look up the payments made for one of our reference numbers ──
-// Returns an array of Maya payment objects (usually 0 or 1). A successful
-// card payment has status 'PAYMENT_SUCCESS'.
-export async function getMayaPaymentsByReference(referenceNumber) {
+// ── Look up one checkout to see whether it was paid ──
+// checkoutId is the id Maya gave us when we created the checkout (saved on
+// the order as payment_reference). Uses the SECRET key, so the answer comes
+// straight from Maya and can't be faked by the browser.
+// Useful fields in the reply:
+//   paymentStatus           'PAYMENT_SUCCESS' once paid
+//   requestReferenceNumber  our order's UUID
+//   totalAmount.amount      the amount charged
+export async function getMayaCheckout(checkoutId) {
   const res = await fetch(
-    `${mayaBaseUrl()}/payments/v1/payment-rrns/${encodeURIComponent(referenceNumber)}`,
+    `${mayaBaseUrl()}/checkout/v1/checkouts/${encodeURIComponent(checkoutId)}`,
     {
       headers: {
         'Authorization': basicAuth(process.env.MAYA_SECRET_KEY),
@@ -76,12 +81,7 @@ export async function getMayaPaymentsByReference(referenceNumber) {
       },
     }
   );
-
-  // 404 just means "no payment has been made for this reference yet"
-  if (res.status === 404) return [];
-
   const text = await res.text();
-  if (!res.ok) throw new Error(`Maya payment lookup: ${res.status} ${text}`);
-  const data = JSON.parse(text);
-  return Array.isArray(data) ? data : [data];
+  if (!res.ok) throw new Error(`Maya checkout lookup: ${res.status} ${text}`);
+  return JSON.parse(text);
 }

@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { supabaseAdmin } from './_lib/supabase-admin.js';
-import { getMayaPaymentsByReference, isMayaSandbox } from './_lib/maya.js';
+import { getMayaCheckout, isMayaSandbox } from './_lib/maya.js';
 
 // Accepts "DU-00012", "du00012", "DU 12" → "DU-00012" (same as track-order)
 function normalizeOrderNumber(raw) {
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
   try {
     const orders = await supabaseAdmin(
       `orders?order_number=eq.${encodeURIComponent(orderNumber)}` +
-      `&select=id,total_amount,payment_status,internal_notes,order_items(variant_id,quantity)`
+      `&select=id,total_amount,payment_status,payment_reference,internal_notes,order_items(variant_id,quantity)`
     );
     const order = orders?.[0];
     if (!order) return res.status(404).json({ error: 'Order not found.' });
@@ -77,23 +77,23 @@ export default async function handler(req, res) {
     // Already done — nothing to check
     if (order.payment_status === 'paid') return res.status(200).json({ paymentStatus: 'paid' });
 
-    // We used the order's UUID as Maya's reference number (see create-payment.js)
-    const payments = await getMayaPaymentsByReference(order.id);
+    // The Maya checkout id was saved on the order by create-payment.js
+    if (!order.payment_reference) return res.status(200).json({ paymentStatus: 'pending' });
+    const checkout = await getMayaCheckout(order.payment_reference);
 
-    // A real success must also be for the full order amount
-    const success = payments.find(p =>
-      (p.isPaid === true || p.status === 'PAYMENT_SUCCESS') &&
-      Math.abs(Number(p.amount) - Number(order.total_amount)) < 0.01
-    );
+    // Only count it as paid if Maya says so, for THIS order, for the full amount
+    const paid =
+      checkout.paymentStatus === 'PAYMENT_SUCCESS' &&
+      checkout.requestReferenceNumber === order.id &&
+      Math.abs(Number(checkout.totalAmount?.amount ?? checkout.totalAmount?.value) - Number(order.total_amount)) < 0.01;
 
-    if (success) {
+    if (paid) {
       await markPaid(order);
       return res.status(200).json({ paymentStatus: 'paid' });
     }
 
-    const failed = payments.length > 0 && payments.every(p =>
-      ['PAYMENT_FAILED', 'PAYMENT_EXPIRED', 'PAYMENT_CANCELLED', 'VOIDED'].includes(p.status)
-    );
+    const failed = ['PAYMENT_FAILED', 'PAYMENT_EXPIRED', 'PAYMENT_CANCELLED', 'VOIDED']
+      .includes(checkout.paymentStatus);
     return res.status(200).json({ paymentStatus: failed ? 'failed' : 'pending' });
 
   } catch (err) {

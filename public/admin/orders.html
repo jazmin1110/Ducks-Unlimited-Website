@@ -973,7 +973,7 @@
         .from('orders')
         .select(`
           id, order_number, customer_name, customer_email, customer_phone, shipping_address,
-          total_amount, payment_status, fulfillment_status, paymongo_payment_id,
+          total_amount, payment_status, fulfillment_status, paymongo_payment_id, payment_provider, payment_reference,
           tracking_number, internal_notes, created_at,
           order_items (
             id, quantity, price_at_purchase,
@@ -1089,7 +1089,7 @@
           </div>
         </section>
 
-        <!-- Payment info (read-only — payment_status is updated by PayMongo webhook) -->
+        <!-- Payment info (read-only — payment_status is set automatically once Maya confirms payment) -->
         <section class="order-section">
           <h3 class="section-heading">Payment</h3>
           <div class="info-row">
@@ -1099,10 +1099,12 @@
             </span>
           </div>
           <div class="info-row">
-            <span class="info-label">PayMongo&nbsp;ID</span>
+            <!-- Shows which company took the payment and its reference id
+                 (older orders only have paymongo_payment_id) -->
+            <span class="info-label">${order.payment_provider === 'paymongo' || (!order.payment_provider && order.paymongo_payment_id) ? 'PayMongo' : 'Maya'}&nbsp;ID</span>
             <span class="info-value">
-              ${order.paymongo_payment_id
-                ? `<span class="paymongo-id">${escapeHtml(order.paymongo_payment_id)}</span>`
+              ${(order.payment_reference || order.paymongo_payment_id)
+                ? `<span class="paymongo-id">${escapeHtml(order.payment_reference || order.paymongo_payment_id)}</span>`
                 : '<span class="paymongo-id paymongo-id-empty">— not yet recorded —</span>'}
             </span>
           </div>

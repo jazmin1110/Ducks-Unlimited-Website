@@ -16,8 +16,8 @@
 
   <div data-component="nav"></div>
 
-  <!-- PayMongo sends shoppers here after paying:
-         /order-confirmation.html?order=DU-00012
+  <!-- Maya sends shoppers here after paying:
+         /order-confirmation.html?order=DU-00012&provider=maya
        (set as the success URL in api/create-payment.js).
        Works without JavaScript too — the static thank-you message below
        always shows; the script adds live order details on top. -->
@@ -63,7 +63,7 @@
       document.getElementById('trackLink').href = `/track-order.html?order=${encodeURIComponent(orderNumber)}`;
     }
 
-    // Saved by checkout right before it sent the shopper to PayMongo
+    // Saved by checkout right before it sent the shopper to Maya
     let lastOrder = null;
     try { lastOrder = JSON.parse(sessionStorage.getItem('du:lastOrder') || 'null'); } catch {}
 
@@ -139,7 +139,7 @@
       let order = await fetchOrder();
       if (order) render(order);
 
-      // PayMongo's "paid" webhook can arrive a few seconds after the redirect.
+      // Payment confirmation can take a few seconds after the redirect.
       // Re-check a few times so the page flips from "Awaiting payment" to "Paid".
       let tries = 0;
       while (order && order.paymentStatus === 'pending' && tries < 6) {

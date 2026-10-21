@@ -99,6 +99,14 @@ http.createServer(async (req, res) => {
     if (!res.headersSent) res.writeHead(500);
     res.end('Server error');
   }
+}).on('error', (err) => {
+  // Most common problem: the server is already running in another window
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use: the site is probably already running.`);
+    console.error(`Open http://localhost:${PORT}, or stop the other one with:  lsof -ti tcp:${PORT} | xargs kill`);
+    process.exit(1);
+  }
+  throw err;
 }).listen(PORT, () => {
   console.log(`Site + API running at http://localhost:${PORT}`);
   console.log(`Payment provider: ${process.env.PAYMENT_PROVIDER || 'paymongo'}`);

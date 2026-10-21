@@ -625,8 +625,8 @@
               </button>
 
               <p class="payment-help">
-                <strong>Secure checkout</strong> — you'll be redirected to PayMongo
-                to complete payment with credit card, GCash, GrabPay, or Maya.
+                <strong>Secure checkout</strong> — you'll be redirected to Maya
+                to pay by credit/debit card, Maya, or QR Ph (GCash and other banks).
               </p>
 
             </aside>
@@ -885,7 +885,7 @@
             }).then(({ error }) => { if (error) console.warn('Could not save address:', error); });
           }
 
-          // Hand off to PayMongo. After payment, PayMongo redirects to
+          // Hand off to Maya. After payment, Maya redirects to
           // /order-confirmation.html?order=<order_number> (configured via
           // the success URL in create-payment.js).
           window.location.href = result.paymentUrl;
@@ -903,7 +903,7 @@
     // ─────────────────────────────────────────────────────────────────
 
     async function init() {
-      // ── Handle redirect from a failed PayMongo payment ──
+      // ── Handle redirect from a failed or cancelled payment ──
       const params = new URLSearchParams(window.location.search);
       if (params.get('status') === 'failed' || params.get('status') === 'cancelled') {
         // Don't clear the cart — let the customer try again

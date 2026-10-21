@@ -1,5 +1,5 @@
 // =============================================================================
-// /api/create-payment — Create a Supabase order + PayMongo payment link
+// /api/create-payment — Create a Supabase order + Maya checkout
 // =============================================================================
 // POST body:
 //   {
@@ -16,9 +16,13 @@
 //   1. Validates the request body
 //   2. Re-fetches variant prices + stock from Supabase (frontend can't be trusted)
 //   3. Creates an order + order_items rows with status 'pending'
-//   4. Creates a PayMongo payment link
-//   5. Stores the PayMongo link id on the order so the webhook can match later
-//   6. Returns the PayMongo checkout URL
+//   4. Creates a Maya checkout (Maya's hosted page for card / QR / wallet)
+//   5. Stores Maya's checkout id on the order (payment_reference) so
+//      /api/maya-verify can ask Maya later whether it was paid
+//   6. Returns the Maya page URL for the browser to go to
+//
+// PayMongo is still here as a backup: set PAYMENT_PROVIDER=paymongo in the
+// environment to switch back.
 //
 // Inventory is NOT decremented here — that happens only after the webhook
 // confirms successful payment.
@@ -29,9 +33,9 @@ import { createMayaCheckout } from './_lib/maya.js';
 
 const SHIPPING_FEE_PHP = 150;
 
-// Which payment company handles checkout. Set PAYMENT_PROVIDER=maya in the
-// environment to send shoppers to Maya's card page instead of PayMongo.
-const PAYMENT_PROVIDER = (process.env.PAYMENT_PROVIDER || 'paymongo').toLowerCase();
+// Which payment company handles checkout. Maya is the default; set
+// PAYMENT_PROVIDER=paymongo in the environment to switch back to PayMongo.
+const PAYMENT_PROVIDER = (process.env.PAYMENT_PROVIDER || 'maya').toLowerCase();
 
 // Centavos — PayMongo amounts are in the smallest currency unit (1 PHP = 100 centavos)
 function toCentavos(amount) {
@@ -259,8 +263,8 @@ export default async function handler(req, res) {
       let checkout;
       try {
         checkout = await createMayaCheckout({
-          // The order's UUID is our reference number. /api/maya-verify uses it
-          // later to ask Maya whether this exact order was paid.
+          // The order's UUID is our reference number. /api/maya-verify checks
+          // Maya's reply carries this same id before marking the order paid.
           referenceNumber: order.id,
           total,
           shippingFee,
@@ -298,7 +302,15 @@ export default async function handler(req, res) {
         return res.status(502).json({ error: 'Could not start card payment. Please try again.' });
       }
 
-      if (!checkout?.redirectUrl) throw new Error('Maya response missing redirectUrl');
+      if (!checkout?.checkoutId || !checkout?.redirectUrl) {
+        throw new Error('Maya response missing checkoutId or redirectUrl');
+      }
+
+      // Save Maya's checkout id so /api/maya-verify can look this payment up
+      await supabase(`orders?id=eq.${order.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ payment_provider: 'maya', payment_reference: checkout.checkoutId }),
+      });
 
       return res.status(200).json({
         orderId:     order.id,
@@ -313,7 +325,7 @@ export default async function handler(req, res) {
     try {
       paymongoLink = await createPayMongoLink({
         amount:      total,
-        description: `Ducks Unlimited Order ${order.order_number}`,
+        description: `Order ${order.order_number}`,
         remarks:     `${customer.name.trim()} · ${customer.email.trim()}`,
         redirect:    siteUrl ? { success: successUrl, failed: failedUrl } : undefined,
       });
@@ -336,7 +348,7 @@ export default async function handler(req, res) {
     // ── Store the link id on the order so the webhook can match it back ──
     await supabase(`orders?id=eq.${order.id}`, {
       method: 'PATCH',
-      body: JSON.stringify({ paymongo_payment_id: linkId }),
+      body: JSON.stringify({ paymongo_payment_id: linkId, payment_provider: 'paymongo', payment_reference: linkId }),
     });
 
     return res.status(200).json({

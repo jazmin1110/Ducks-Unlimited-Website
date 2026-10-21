@@ -3,7 +3,7 @@
 // =============================================================================
 // Used by:
 //   * /track-order.html         → guests checking on an order without an account
-//   * /order-confirmation.html  → the "thank you" page PayMongo sends people to
+//   * /order-confirmation.html  → the "thank you" page Maya sends people to
 //
 // POST body:
 //   { orderNumber: "DU-00012", email: "juan@example.com", claim: false }
