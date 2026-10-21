@@ -1,0 +1,496 @@
+/* ============================================================
+   /css/home.css — homepage layout (hero, collection tiles,
+   editorial rows, new arrivals, heritage story, journal teaser).
+
+   Shared by /index.html and /preview-home.html. The markup these
+   classes style is produced by /js/sections-render.js (and the
+   no-JavaScript fallback HTML inside index.html).
+   ============================================================ */
+
+/* Two editorial blocks in a row: keep the thin divider between them.
+   (Each editorial block is its own <section> now, so the original
+   `.editorial__row + .editorial__row` rule no longer reaches it.) */
+.editorial + .editorial .editorial__row {
+  border-top: 1px solid var(--color-border-light);
+}
+
+/* ============================================================
+   Homepage — editorial Ralph-Lauren-style layout.
+   Reusable patterns live in /css/style.css; this file holds
+   layout that's specific to the homepage.
+
+   NOTE on imagery: every photo slot starts BLANK. Hero, collection
+   tiles, and editorial blocks render brand-tone placeholders via the
+   `img.is-empty` rule in /css/style.css until real photos are
+   uploaded through /admin/homepage.html.
+   ============================================================ */
+
+/* ── HERO ──────────────────────────────────────────────────── */
+
+.hero {
+  position: relative;
+  min-height: calc(100vh - var(--nav-total-h));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-white);
+  text-align: center;
+  overflow: hidden;
+  /* Solid forest-green background while no hero photo is uploaded.
+     Once the admin uploads one via /admin/homepage.html, the storefront
+     reader (js/site-content.js) sets a background-image inline that
+     overrides this. */
+  background: var(--color-primary);
+}
+
+.hero__inner {
+  width: 100%;
+  max-width: 880px;
+  padding-inline: var(--space-md);
+  position: relative;
+  z-index: 1;
+}
+
+.hero__eyebrow {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: 1.25rem;
+}
+
+.hero__headline {
+  font-family: var(--font-heading);
+  font-size: var(--type-display);
+  font-weight: 400;
+  color: var(--color-white);
+  letter-spacing: var(--ls-tight);
+  line-height: 1.02;
+  margin-bottom: 1.5rem;
+}
+
+.hero__sub {
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 520px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.7;
+}
+
+/* Scroll indicator at the bottom of the hero */
+.hero__scroll {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--color-white);
+  opacity: 0.7;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  animation: hero-scroll-bob 2.5s ease-in-out infinite;
+}
+
+@keyframes hero-scroll-bob {
+  0%, 100% { transform: translate(-50%, 0); }
+  50%      { transform: translate(-50%, 8px); }
+}
+
+/* ── FEATURED COLLECTIONS MOSAIC ──────────────────────────── */
+/* Three large image tiles + headline that link to category pages */
+
+.collections {
+  background: var(--color-white);
+}
+
+.collections__intro {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto var(--space-xl);
+}
+
+.collections__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.collection-tile {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  display: block;
+  text-decoration: none;
+  color: var(--color-white);
+}
+
+.collection-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.collection-tile:hover img { transform: scale(1.04); }
+
+.collection-tile__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 1.75rem;
+}
+
+.collection-tile__label {
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: 0.4rem;
+}
+
+.collection-tile__name {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  margin-bottom: 0.75rem;
+}
+
+.collection-tile__cta {
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--color-white);
+  padding-bottom: 0.2rem;
+  align-self: flex-start;
+}
+
+/* ── EDITORIAL BLOCK (alternating image / text) ──────────── */
+
+.editorial {
+  background: var(--color-bg);
+}
+
+.editorial__row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  align-items: stretch;
+}
+
+.editorial__row + .editorial__row {
+  border-top: 1px solid var(--color-border-light);
+}
+
+.editorial__media {
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+}
+
+.editorial__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.editorial__copy {
+  padding: var(--space-2xl) var(--space-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 540px;
+  margin-inline: auto;
+}
+
+.editorial__copy p {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--color-text);
+  margin-bottom: 1.25rem;
+}
+
+/* ── NEW ARRIVALS ──────────────────────────────────────────── */
+
+.new-arrivals { background: var(--color-bg-warm); }
+
+.new-arrivals__head {
+  text-align: center;
+  margin-bottom: var(--space-xl);
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.product-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--color-white);
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+
+.product-card:hover { text-decoration: none; }
+.product-card:hover .product-card__image img { transform: scale(1.03); }
+
+.product-card__image {
+  aspect-ratio: 4 / 5;
+  background: var(--color-bg-warm);
+  position: relative;
+  overflow: hidden;
+}
+
+.product-card__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.product-card__placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-family: var(--font-heading);
+  color: var(--color-primary);
+  background: linear-gradient(135deg, #f5f0e8, #fff);
+  padding: 1rem;
+  text-align: center;
+}
+
+.product-card__placeholder-mark {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.product-card__placeholder-sub {
+  font-style: italic;
+  font-size: 0.65rem;
+  color: var(--color-accent);
+  letter-spacing: 0.14em;
+}
+
+.product-card__body {
+  padding: 1rem 0.25rem 0;
+  text-align: center;
+}
+
+.product-card__name {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 0.3rem;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+
+.product-card__price {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+
+.products-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--color-text-light);
+  font-size: 0.9rem;
+}
+
+.new-arrivals__cta {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-xl);
+}
+
+/* Skeletons */
+.product-card--skeleton { pointer-events: none; }
+
+.product-card--skeleton .product-card__image,
+.skeleton-line {
+  background: linear-gradient(90deg, #f0ebe1 0%, #faf7f2 50%, #f0ebe1 100%);
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-line {
+  height: 0.85rem;
+  border-radius: 3px;
+  margin: 0 auto 0.45rem;
+}
+.skeleton-line--name  { width: 60%; height: 1rem; }
+.skeleton-line--price { width: 30%; }
+
+@keyframes skeleton-pulse {
+  0%, 100% { background-position: 100% 0; }
+  50%      { background-position: 0% 0; }
+}
+
+/* ── HERITAGE STORY ───────────────────────────────────────── */
+
+.story {
+  background: var(--color-primary);
+  color: var(--color-white);
+  text-align: center;
+}
+
+.story__inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.story h2 { color: var(--color-white); }
+
+.story p {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 1.25rem;
+}
+
+.story__stats {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+
+.story-stat__num {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--color-accent);
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.story-stat__label {
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 0.4rem;
+}
+
+/* ── JOURNAL TEASER ───────────────────────────────────────── */
+
+.journal-teaser {
+  background: var(--color-bg);
+  text-align: center;
+}
+
+.journal-teaser__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+}
+
+.journal-card {
+  display: block;
+  text-decoration: none;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.journal-card__media {
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.journal-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.journal-card:hover .journal-card__media img { transform: scale(1.04); }
+
+.journal-card__eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: 0.5rem;
+}
+
+.journal-card__title {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+
+.journal-card__excerpt {
+  font-size: 0.92rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+/* ── DESKTOP (≥ 768px) ────────────────────────────────────── */
+
+@media (min-width: 768px) {
+
+  .hero { background-attachment: fixed; }
+  .hero__sub { font-size: 1.2rem; }
+
+  /* 3-tile collections mosaic — first tile spans tall */
+  .collections__grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+  .collection-tile__name { font-size: 2.5rem; }
+
+  /* Editorial rows: image left, copy right (and flip on alt rows) */
+  .editorial__row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .editorial__row--reverse .editorial__media { order: 2; }
+  .editorial__row--reverse .editorial__copy  { order: 1; }
+
+  .editorial__media { aspect-ratio: auto; min-height: 560px; }
+  .editorial__copy  { padding: var(--space-3xl) var(--space-2xl); }
+  .editorial__copy p { font-size: 1.1rem; }
+
+  .products-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
+  .product-card__name  { font-size: 1.1rem; }
+
+  .story__stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-lg);
+  }
+
+  .story p { font-size: 1.15rem; }
+
+  .journal-teaser__grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+}

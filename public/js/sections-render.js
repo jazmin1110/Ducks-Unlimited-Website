@@ -13,8 +13,14 @@
 // `published`. Anonymous visitors with ?preview=1 silently fall back.
 //
 // Keep the per-type template functions tiny and self-contained — one function
-// per section type, each returns an HTML string. No frameworks, no reactivity;
-// the admin preview re-renders the whole page on each change.
+// per section type, each returns an HTML string. No frameworks, no reactivity.
+//
+// Templates output the SAME markup + class names as the hand-written homepage,
+// so all the styling lives in /css/home.css (not inline here).
+//
+// No-JavaScript / offline fallback: whatever HTML is already inside the
+// container stays put unless we successfully load at least one section. So
+// index.html keeps a hardcoded copy of the homepage inside its container.
 // =============================================================================
 
 import { supabase }        from '/lib/supabase.js';
@@ -44,6 +50,10 @@ export async function renderPageSections(pageKey, container, options = {}) {
 
   // Products are a cross-section concern — one fetch, slice per rail.
   const productsByCollection = await loadProductsForRails(sections, brandId);
+
+  // Nothing loaded (DB unreachable, or page has no sections yet)? Leave the
+  // container's existing fallback HTML alone rather than blanking the page.
+  if (!sections.length) return;
 
   // Render each section in order.
   const html = sections.map((s) => renderOne(s, { productsByCollection })).join('');
@@ -175,15 +185,16 @@ function pickPrimaryImage(images) {
 
 function applyThemeVars(container, theme) {
   if (!theme) return;
-  // Scope the CSS vars to the sections container so a per-brand theme can
-  // coexist with the global stylesheet without `!important`.
+  // Override the site's own CSS variables (from /css/style.css), scoped to
+  // the sections container — so the Theme form recolors every section while
+  // the nav and footer keep the brand defaults.
   const map = {
-    '--section-brand-color':  theme.brand_color,
-    '--section-accent-color': theme.accent_color,
-    '--section-bg-color':     theme.bg_color,
-    '--section-text-color':   theme.text_color,
-    '--section-heading-font': theme.heading_font && `"${theme.heading_font}", serif`,
-    '--section-body-font':    theme.body_font    && `"${theme.body_font}", sans-serif`
+    '--color-primary': theme.brand_color,
+    '--color-accent':  theme.accent_color,
+    '--color-bg':      theme.bg_color,
+    '--color-text':    theme.text_color,
+    '--font-heading':  theme.heading_font && `'${theme.heading_font}', Georgia, serif`,
+    '--font-body':     theme.body_font    && `'${theme.body_font}', -apple-system, sans-serif`
   };
   for (const [k, v] of Object.entries(map)) {
     if (v) container.style.setProperty(k, v);
@@ -215,27 +226,20 @@ function renderOne(section, ctx) {
 const TEMPLATES = {
 
   hero(s) {
+    // No image → the CSS default (solid brand color) shows through.
     const overlay = typeof s.overlay === 'number' ? s.overlay / 100 : 0.35;
-    const img = s.image_url || '';
-    const bg = img
-      ? `linear-gradient(rgba(0,0,0,${overlay}), rgba(0,0,0,${overlay + 0.1})), url('${escCssUrl(img)}')`
-      : 'var(--section-brand-color, #1B4D2E)';
-    const align = ['left', 'center', 'right'].includes(s.align) ? s.align : 'center';
+    const bgStyle = s.image_url
+      ? ` style="background-image: linear-gradient(rgba(0,0,0,${overlay}), rgba(0,0,0,${Math.min(overlay + 0.1, 0.9)})), url('${escCssUrl(s.image_url)}'); background-size: cover; background-position: center;"`
+      : '';
     return `
-      <section class="s-hero" style="
-        background: ${bg};
-        background-size: cover;
-        background-position: center;
-        color: #fff;
-        padding: clamp(4rem, 12vw, 10rem) 1.25rem;
-        text-align: ${align};
-      ">
-        <div style="max-width:900px; margin:0 auto;">
-          ${s.eyebrow ? `<p style="font-size:.72rem; letter-spacing:.22em; text-transform:uppercase; opacity:.9; margin-bottom:1rem;">${esc(s.eyebrow)}</p>` : ''}
-          ${s.headline ? `<h1 style="font-family: var(--section-heading-font, 'Cormorant Garamond', serif); font-size: clamp(2rem, 5vw, 3.75rem); line-height:1.1; font-weight:500; margin:0 0 1rem;">${s.headline}</h1>` : ''}
-          ${s.sub      ? `<p style="font-size: 1.05rem; max-width:620px; margin:${align === 'center' ? '0 auto' : '0'} 1.75rem; opacity:.92;">${esc(s.sub)}</p>` : ''}
-          ${s.cta_text && s.cta_link ? `<a href="${escAttr(s.cta_link)}" style="display:inline-block; padding:.9rem 2rem; background:#fff; color:#1A1A1A; text-decoration:none; font-size:.82rem; letter-spacing:.15em; text-transform:uppercase; font-weight:600;">${esc(s.cta_text)}</a>` : ''}
+      <section class="hero"${bgStyle}>
+        <div class="hero__inner">
+          ${s.eyebrow  ? `<p class="hero__eyebrow">${esc(s.eyebrow)}</p>` : ''}
+          ${s.headline ? `<h1 class="hero__headline">${s.headline}</h1>` : ''}
+          ${s.sub      ? `<p class="hero__sub">${esc(s.sub)}</p>` : ''}
+          ${s.cta_text && s.cta_link ? `<a class="btn btn-outline-light" href="${escAttr(s.cta_link)}">${esc(s.cta_text)}</a>` : ''}
         </div>
+        <span class="hero__scroll" aria-hidden="true">Scroll</span>
       </section>
     `;
   },
@@ -244,10 +248,10 @@ const TEMPLATES = {
     const tiles = Array.isArray(s.blocks) ? s.blocks : [];
     if (!tiles.length) return '';
     return `
-      <section class="s-cat-tiles" style="padding: clamp(2.5rem, 6vw, 4.5rem) 1.25rem; background: var(--section-bg-color, #F5F0E8);">
-        <div style="max-width:1200px; margin:0 auto;">
-          ${s.heading ? `<h2 style="font-family: var(--section-heading-font, 'Cormorant Garamond', serif); font-size: clamp(1.6rem, 3vw, 2.4rem); color: var(--section-brand-color, #1B4D2E); text-align:center; margin:0 0 2rem;">${esc(s.heading)}</h2>` : ''}
-          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:1rem;">
+      <section class="collections section-xl">
+        <div class="container">
+          ${introHtml(s.eyebrow, s.heading, 'collections__intro')}
+          <div class="collections__grid">
             ${tiles.map(tileHtml).join('')}
           </div>
         </div>
@@ -258,42 +262,84 @@ const TEMPLATES = {
   'product-rail'(s, ctx) {
     const products = (ctx.productsByCollection?.[s.collection] || []).slice(0, Number(s.max_products) || 8);
     return `
-      <section class="s-rail" style="padding: clamp(2.5rem, 6vw, 4.5rem) 1.25rem;">
-        <div style="max-width:1200px; margin:0 auto;">
-          <div style="display:flex; align-items:baseline; justify-content:space-between; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap;">
-            <div>
-              ${s.heading    ? `<h2 style="font-family: var(--section-heading-font, 'Cormorant Garamond', serif); font-size: clamp(1.6rem, 3vw, 2.4rem); color: var(--section-brand-color, #1B4D2E); margin:0;">${esc(s.heading)}</h2>` : ''}
-              ${s.subheading ? `<p style="color:#555; margin:.3rem 0 0;">${esc(s.subheading)}</p>` : ''}
-            </div>
-            ${s.cta_text && s.cta_link ? `<a href="${escAttr(s.cta_link)}" style="font-size:.78rem; letter-spacing:.14em; text-transform:uppercase; color: var(--section-brand-color, #1B4D2E);">${esc(s.cta_text)} →</a>` : ''}
+      <section class="new-arrivals section-xl">
+        <div class="container">
+          ${introHtml(s.eyebrow, s.heading, 'new-arrivals__head')}
+          <div class="products-grid">
+            ${products.length
+              ? products.map(productCardHtml).join('')
+              : `<p class="products-empty">New arrivals coming soon.</p>`}
           </div>
-          ${products.length
-            ? `<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem;">${products.map(productCardHtml).join('')}</div>`
-            : `<p style="color:#999; font-style:italic;">No products in this collection yet.</p>`}
+          ${s.cta_text && s.cta_link ? `
+            <div class="new-arrivals__cta">
+              <a href="${escAttr(s.cta_link)}" class="btn btn-outline-dark">${esc(s.cta_text)}</a>
+            </div>` : ''}
         </div>
       </section>
     `;
   },
 
   'editorial-block'(s) {
-    const imgFirst = (s.layout ?? 'image-left') === 'image-left';
-    const img = `
-      <div style="aspect-ratio: 4/5; background: #eee; overflow:hidden;">
-        ${s.image_url ? `<img src="${escAttr(s.image_url)}" alt="${escAttr(s.image_alt || '')}" style="width:100%; height:100%; object-fit:cover; display:block;" loading="lazy">` : ''}
-      </div>
-    `;
-    const text = `
-      <div style="display:flex; flex-direction:column; justify-content:center; padding: clamp(1.5rem, 3vw, 3rem);">
-        ${s.eyebrow  ? `<p style="font-size:.72rem; letter-spacing:.22em; text-transform:uppercase; color: var(--section-accent-color, #C9A84C); margin:0 0 1rem;">${esc(s.eyebrow)}</p>` : ''}
-        ${s.headline ? `<h2 style="font-family: var(--section-heading-font, 'Cormorant Garamond', serif); font-size: clamp(1.6rem, 3vw, 2.6rem); color: var(--section-brand-color, #1B4D2E); line-height:1.15; margin:0 0 1rem;">${esc(s.headline)}</h2>` : ''}
-        ${s.body     ? `<div style="color:#333; line-height:1.65; margin-bottom:1.5rem;">${s.body}</div>` : ''}
-        ${s.cta_text && s.cta_link ? `<a href="${escAttr(s.cta_link)}" style="font-size:.78rem; letter-spacing:.14em; text-transform:uppercase; color: var(--section-brand-color, #1B4D2E); align-self:flex-start;">${esc(s.cta_text)} →</a>` : ''}
-      </div>
-    `;
+    const reverse = s.layout === 'image-right';
     return `
-      <section class="s-editorial" style="padding: clamp(2rem, 5vw, 4rem) 1.25rem;">
-        <div style="max-width:1200px; margin:0 auto; display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:0;">
-          ${imgFirst ? img + text : text + img}
+      <section class="editorial">
+        <div class="editorial__row${reverse ? ' editorial__row--reverse' : ''}">
+          <div class="editorial__media">
+            ${imgHtml(s.image_url, s.image_alt)}
+          </div>
+          <div class="editorial__copy">
+            ${s.eyebrow  ? `<p class="eyebrow">${esc(s.eyebrow)}</p>` : ''}
+            ${s.headline ? `<h2 class="display-sm">${esc(s.headline)}</h2>` : ''}
+            <span class="editorial-rule editorial-rule--left"></span>
+            ${s.body ? `<div>${s.body}</div>` : ''}
+            ${s.cta_text && s.cta_link ? `<p><a class="btn btn-outline-dark" href="${escAttr(s.cta_link)}">${esc(s.cta_text)}</a></p>` : ''}
+          </div>
+        </div>
+      </section>
+    `;
+  },
+
+  story(s) {
+    const stats = Array.isArray(s.blocks) ? s.blocks : [];
+    // id="story" keeps the nav's "Heritage" (/#story) link working.
+    return `
+      <section class="story section-xl" id="story">
+        <div class="container story__inner">
+          ${s.eyebrow ? `<p class="eyebrow" style="color: var(--color-accent);">${esc(s.eyebrow)}</p>` : ''}
+          ${s.heading ? `<h2 class="display-sm display--light">${esc(s.heading)}</h2>` : ''}
+          <span class="editorial-rule"></span>
+          ${s.body || ''}
+          ${stats.length ? `
+            <div class="story__stats">
+              ${stats.map((b) => `
+                <div class="story-stat">
+                  <div class="story-stat__num">${esc(b.num)}</div>
+                  <div class="story-stat__label">${esc(b.label)}</div>
+                </div>`).join('')}
+            </div>` : ''}
+        </div>
+      </section>
+    `;
+  },
+
+  'journal-teaser'(s) {
+    const cards = Array.isArray(s.blocks) ? s.blocks : [];
+    if (!cards.length) return '';
+    return `
+      <section class="journal-teaser section-xl">
+        <div class="container">
+          ${s.eyebrow ? `<p class="eyebrow">${esc(s.eyebrow)}</p>` : ''}
+          ${s.heading ? `<h2 class="display-sm">${esc(s.heading)}</h2>` : ''}
+          <span class="editorial-rule"></span>
+          <div class="journal-teaser__grid">
+            ${cards.map((c) => `
+              <a class="journal-card" href="${escAttr(c.link || '/journal/')}">
+                <div class="journal-card__media">${imgHtml(c.image_url, '')}</div>
+                ${c.eyebrow ? `<p class="journal-card__eyebrow">${esc(c.eyebrow)}</p>` : ''}
+                ${c.title   ? `<h3 class="journal-card__title">${esc(c.title)}</h3>` : ''}
+                ${c.excerpt ? `<p class="journal-card__excerpt">${esc(c.excerpt)}</p>` : ''}
+              </a>`).join('')}
+          </div>
         </div>
       </section>
     `;
@@ -302,10 +348,10 @@ const TEMPLATES = {
   richtext(s) {
     const align = ['left', 'center', 'right'].includes(s.align) ? s.align : 'center';
     return `
-      <section class="s-richtext" style="padding: clamp(2rem, 5vw, 4rem) 1.25rem; text-align:${align};">
-        <div style="max-width:720px; margin:0 auto;">
-          ${s.heading ? `<h2 style="font-family: var(--section-heading-font, 'Cormorant Garamond', serif); font-size: clamp(1.6rem, 3vw, 2.4rem); color: var(--section-brand-color, #1B4D2E); margin:0 0 1rem;">${esc(s.heading)}</h2>` : ''}
-          ${s.body    ? `<div style="color:#333; line-height:1.75; font-size:1.02rem;">${s.body}</div>` : ''}
+      <section class="section-xl" style="text-align:${align};">
+        <div class="container" style="max-width:720px;">
+          ${s.heading ? `<h2 class="display-sm">${esc(s.heading)}</h2>` : ''}
+          ${s.body    ? `<div style="line-height:1.8;">${s.body}</div>` : ''}
         </div>
       </section>
     `;
@@ -315,35 +361,64 @@ const TEMPLATES = {
 
 // ── Small helpers ───────────────────────────────────────────────────────────
 
+// Centered eyebrow + heading + gold rule, used at the top of several sections.
+function introHtml(eyebrow, heading, className) {
+  if (!eyebrow && !heading) return '';
+  return `
+    <div class="${className}">
+      ${eyebrow ? `<p class="eyebrow">${esc(eyebrow)}</p>` : ''}
+      ${heading ? `<h2 class="display-sm">${esc(heading)}</h2>` : ''}
+      <span class="editorial-rule"></span>
+    </div>
+  `;
+}
+
+// An <img>, or the brand-tone placeholder (img.is-empty in style.css) when
+// no photo has been uploaded yet.
+function imgHtml(url, alt) {
+  return url
+    ? `<img src="${escAttr(url)}" alt="${escAttr(alt || '')}" loading="lazy" decoding="async" />`
+    : `<img class="is-empty" src="" alt="${escAttr(alt || '')}" />`;
+}
+
 function tileHtml(b) {
   return `
-    <a href="${escAttr(b.link || '#')}" style="display:block; text-decoration:none; color:inherit;">
-      <div style="aspect-ratio: 3/4; background:#eee; overflow:hidden; margin-bottom:.75rem;">
-        ${b.image_url ? `<img src="${escAttr(b.image_url)}" alt="${escAttr(b.name || '')}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block; transition: transform .4s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">` : ''}
+    <a class="collection-tile" href="${escAttr(b.link || '/shop.html')}">
+      ${imgHtml(b.image_url, b.image_alt || b.name)}
+      <div class="collection-tile__overlay">
+        ${b.label    ? `<span class="collection-tile__label">${esc(b.label)}</span>` : ''}
+        ${b.name     ? `<h3 class="collection-tile__name">${esc(b.name)}</h3>` : ''}
+        ${b.cta_text ? `<span class="collection-tile__cta">${esc(b.cta_text)}</span>` : ''}
       </div>
-      ${b.label ? `<p style="font-size:.68rem; letter-spacing:.18em; text-transform:uppercase; color: var(--section-accent-color, #C9A84C); margin:0 0 .25rem;">${esc(b.label)}</p>` : ''}
-      <p style="font-family: var(--section-heading-font, 'Cormorant Garamond', serif); font-size:1.3rem; color: var(--section-brand-color, #1B4D2E); margin:0;">${esc(b.name || '')}</p>
     </a>
   `;
 }
 
 function productCardHtml(p) {
-  const href = `/product.html?id=${encodeURIComponent(p.id)}`;
+  const href  = `/product.html?id=${encodeURIComponent(p.id)}`;
+  const brand = getCurrentBrand();
   return `
-    <a href="${escAttr(href)}" style="display:block; text-decoration:none; color:inherit;">
-      <div style="aspect-ratio:4/5; background:#eee; margin-bottom:.6rem; overflow:hidden;">
-        ${p.image_url ? `<img src="${escAttr(p.image_url)}" alt="${escAttr(p.name || '')}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">` : ''}
+    <a class="product-card" href="${escAttr(href)}">
+      <div class="product-card__image">
+        ${p.image_url
+          ? `<img src="${escAttr(p.image_url)}" alt="${escAttr(p.name || '')}" loading="lazy" />`
+          : `<div class="product-card__placeholder">
+               <span class="product-card__placeholder-mark">${esc(brand.name)}</span>
+               ${brand.tagline ? `<span class="product-card__placeholder-sub">${esc(brand.tagline)}</span>` : ''}
+             </div>`}
       </div>
-      <p style="margin:0; font-size:.95rem; color:#1A1A1A;">${esc(p.name || '')}</p>
-      <p style="margin:.2rem 0 0; font-size:.9rem; color:#333;">${formatPrice(p.price)}</p>
+      <div class="product-card__body">
+        <h3 class="product-card__name">${esc(p.name || '')}</h3>
+        <p class="product-card__price">${formatPrice(p.price)}</p>
+      </div>
     </a>
   `;
 }
 
 function formatPrice(n) {
   if (n == null) return '';
-  // Local PHP format — adjust once there's a shared formatter.
-  return '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 0 });
+  // Same format as the shop page: ₱1,250.00
+  return '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 // Preview = ?preview=1 AND an authenticated session. Same rule as site-content.js.

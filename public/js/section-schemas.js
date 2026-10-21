@@ -41,26 +41,19 @@
 export const SECTION_SCHEMAS = {
 
   // ────────────────────────────────────────────────────────────────────────
-  // HERO — full-width image with eyebrow / headline / sub / CTA.
+  // HERO — full-screen image with eyebrow / headline / sub / CTA.
   // The anchor section at the top of a page.
   // ────────────────────────────────────────────────────────────────────────
   hero: {
     name: 'Hero',
-    description: 'A full-width image with a headline and a call-to-action button.',
+    description: 'A full-screen image with a headline and a call-to-action button. Leave the image empty to show a solid brand-color background.',
     settings: [
       { id: 'image_url', type: 'image',    label: 'Background image' },
       { id: 'eyebrow',   type: 'text',     label: 'Eyebrow (small label above headline)', default: '' },
       { id: 'headline',  type: 'richtext', label: 'Headline (HTML allowed — use <br> for a line break)', default: '' },
       { id: 'sub',       type: 'textarea', label: 'Sub-headline', default: '' },
-      { id: 'cta_text',  type: 'text',     label: 'Button label', default: 'Shop Now' },
+      { id: 'cta_text',  type: 'text',     label: 'Button label', default: 'Shop the Collection' },
       { id: 'cta_link',  type: 'url',      label: 'Button link',  default: '/shop.html' },
-      { id: 'align',     type: 'select',   label: 'Text alignment', default: 'center',
-        options: [
-          { value: 'left',   label: 'Left'   },
-          { value: 'center', label: 'Center' },
-          { value: 'right',  label: 'Right'  }
-        ]
-      },
       { id: 'overlay',   type: 'range',    label: 'Image darken (%)', default: 35,
         min: 0, max: 80, step: 5, unit: '%' }
     ]
@@ -68,28 +61,34 @@ export const SECTION_SCHEMAS = {
 
 
   // ────────────────────────────────────────────────────────────────────────
-  // CATEGORY TILES — a row of 2–4 image tiles linking to category pages.
-  // Each tile is a BLOCK the admin can add/remove/reorder.
+  // CATEGORY TILES — big image tiles linking to collections (Men / Women /
+  // Kids on the homepage). Each tile is a BLOCK the admin can add/remove/
+  // reorder.
   // ────────────────────────────────────────────────────────────────────────
   'category-tiles': {
     name: 'Category Tiles',
-    description: 'A row of image tiles linking to collection pages. Add up to 4 tiles.',
+    description: 'Large image tiles linking to collection pages. Add up to 4 tiles.',
     settings: [
-      { id: 'heading',  type: 'text', label: 'Section heading', default: 'Shop by Category' }
+      { id: 'eyebrow', type: 'text', label: 'Eyebrow',         default: 'The Collection' },
+      { id: 'heading', type: 'text', label: 'Section heading', default: 'Made for everyday elegance' }
     ],
     blocks: {
       name: 'Tile',
       max: 4,
       settings: [
         { id: 'image_url', type: 'image', label: 'Image' },
-        { id: 'label',     type: 'text',  label: 'Small label (optional, e.g. "Iconic")', default: '' },
-        { id: 'name',      type: 'text',  label: 'Tile name',  default: 'Category' },
-        { id: 'link',      type: 'url',   label: 'Link target', default: '/shop.html' }
+        { id: 'image_alt', type: 'text',  label: 'Image description (for screen readers)', default: '' },
+        { id: 'label',     type: 'text',  label: 'Small label (e.g. "For Him")', default: '' },
+        { id: 'name',      type: 'text',  label: 'Tile name',    default: 'Category' },
+        { id: 'cta_text',  type: 'text',  label: 'Link text (e.g. "Shop Men")', default: 'Shop Now' },
+        { id: 'link',      type: 'url',   label: 'Link target',  default: '/shop.html' }
       ],
       defaults: {
         image_url: '',
+        image_alt: '',
         label:     '',
         name:      'New Category',
+        cta_text:  'Shop Now',
         link:      '/shop.html'
       }
     }
@@ -97,26 +96,26 @@ export const SECTION_SCHEMAS = {
 
 
   // ────────────────────────────────────────────────────────────────────────
-  // PRODUCT RAIL — pulls products from Supabase (products table) and shows
-  // them as a horizontal rail. The admin picks a "collection" (new / sale /
-  // tag) rather than hand-picking products.
+  // PRODUCT RAIL — pulls products from Supabase (products table) for the
+  // brand being viewed. The admin picks a "collection" rather than
+  // hand-picking products.
   // ────────────────────────────────────────────────────────────────────────
   'product-rail': {
-    name: 'Product Rail',
-    description: 'A row of products pulled live from your catalog.',
+    name: 'Product Grid',
+    description: 'A grid of products pulled live from your catalog.',
     settings: [
-      { id: 'heading',      type: 'text', label: 'Heading',    default: 'New Arrivals' },
-      { id: 'subheading',   type: 'text', label: 'Subheading', default: '' },
+      { id: 'eyebrow',      type: 'text', label: 'Eyebrow', default: 'Just In' },
+      { id: 'heading',      type: 'text', label: 'Heading', default: 'New Arrivals' },
       { id: 'collection',   type: 'select', label: 'Which products?', default: 'new',
         options: [
-          { value: 'new',       label: 'Newest products'    },
-          { value: 'sale',      label: 'On sale'            },
-          { value: 'featured',  label: 'Featured (manually tagged)' }
+          // Only "newest" exists today. Add "sale" / "featured" here once the
+          // products table has columns to support them.
+          { value: 'new', label: 'Newest products' }
         ]
       },
       { id: 'max_products', type: 'range', label: 'Max products', default: 8,
         min: 2, max: 16, step: 1 },
-      { id: 'cta_text',     type: 'text', label: 'Button label (optional)', default: 'Shop All' },
+      { id: 'cta_text',     type: 'text', label: 'Button label (optional)', default: 'Shop All New' },
       { id: 'cta_link',     type: 'url',  label: 'Button link',  default: '/shop.html' }
     ]
   },
@@ -124,17 +123,17 @@ export const SECTION_SCHEMAS = {
 
   // ────────────────────────────────────────────────────────────────────────
   // EDITORIAL BLOCK — large image + text block. Admin picks which side the
-  // image is on. The "feel luxury" block from the RL playbook.
+  // image is on. Stack two with opposite sides for the RL alternating look.
   // ────────────────────────────────────────────────────────────────────────
   'editorial-block': {
     name: 'Editorial Block',
     description: 'An image + text block for storytelling. Choose which side the image sits on.',
     settings: [
       { id: 'image_url', type: 'image',    label: 'Image' },
-      { id: 'image_alt', type: 'text',     label: 'Image alt text', default: '' },
+      { id: 'image_alt', type: 'text',     label: 'Image description (for screen readers)', default: '' },
       { id: 'eyebrow',   type: 'text',     label: 'Eyebrow',  default: '' },
       { id: 'headline',  type: 'text',     label: 'Headline', default: '' },
-      { id: 'body',      type: 'richtext', label: 'Body (HTML allowed)', default: '' },
+      { id: 'body',      type: 'richtext', label: 'Body (HTML allowed — wrap paragraphs in <p>…</p>)', default: '' },
       { id: 'cta_text',  type: 'text',     label: 'Button label', default: '' },
       { id: 'cta_link',  type: 'url',      label: 'Button link',  default: '' },
       { id: 'layout',    type: 'select',   label: 'Image side', default: 'image-left',
@@ -148,12 +147,62 @@ export const SECTION_SCHEMAS = {
 
 
   // ────────────────────────────────────────────────────────────────────────
+  // HERITAGE STORY — dark band with a heading, a few paragraphs, and a row
+  // of big-number stats ("1995 · Family-run since"). The nav's "Heritage"
+  // link jumps here via #story.
+  // ────────────────────────────────────────────────────────────────────────
+  story: {
+    name: 'Heritage Story',
+    description: 'A dark brand-color band with your story and up to 4 headline stats. The nav "Heritage" link scrolls here.',
+    settings: [
+      { id: 'eyebrow', type: 'text',     label: 'Eyebrow', default: 'Our Heritage' },
+      { id: 'heading', type: 'text',     label: 'Heading', default: '' },
+      { id: 'body',    type: 'richtext', label: 'Story (HTML allowed — wrap paragraphs in <p>…</p>)', default: '' }
+    ],
+    blocks: {
+      name: 'Stat',
+      max: 4,
+      settings: [
+        { id: 'num',   type: 'text', label: 'Big number / word (e.g. "1995")', default: '' },
+        { id: 'label', type: 'text', label: 'Caption (e.g. "Family-run since")', default: '' }
+      ],
+      defaults: { num: '', label: '' }
+    }
+  },
+
+
+  // ────────────────────────────────────────────────────────────────────────
+  // JOURNAL TEASER — up to 3 story cards linking to journal articles.
+  // ────────────────────────────────────────────────────────────────────────
+  'journal-teaser': {
+    name: 'Journal Teaser',
+    description: 'Up to 3 cards linking to journal stories.',
+    settings: [
+      { id: 'eyebrow', type: 'text', label: 'Eyebrow', default: 'The Journal' },
+      { id: 'heading', type: 'text', label: 'Heading', default: 'Stories from the workshop' }
+    ],
+    blocks: {
+      name: 'Story card',
+      max: 3,
+      settings: [
+        { id: 'image_url', type: 'image',    label: 'Image' },
+        { id: 'eyebrow',   type: 'text',     label: 'Topic (e.g. "Materials")', default: '' },
+        { id: 'title',     type: 'text',     label: 'Title',   default: '' },
+        { id: 'excerpt',   type: 'textarea', label: 'Short summary', default: '' },
+        { id: 'link',      type: 'url',      label: 'Link to the story', default: '/journal/' }
+      ],
+      defaults: { image_url: '', eyebrow: '', title: 'New story', excerpt: '', link: '/journal/' }
+    }
+  },
+
+
+  // ────────────────────────────────────────────────────────────────────────
   // RICHTEXT — a plain text block (headline + body) with no image.
   // Useful for announcements and simple copy sections.
   // ────────────────────────────────────────────────────────────────────────
   richtext: {
     name: 'Text Block',
-    description: 'A simple centred text block — headline + paragraph.',
+    description: 'A simple text block — heading + paragraph.',
     settings: [
       { id: 'heading', type: 'text',     label: 'Heading', default: '' },
       { id: 'body',    type: 'richtext', label: 'Body (HTML allowed)', default: '' },

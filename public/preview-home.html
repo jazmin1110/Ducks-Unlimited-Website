@@ -6,6 +6,8 @@
   <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
   <title>Homepage preview · Ducks Unlimited</title>
   <link rel="stylesheet" href="/css/style.css" />
+  <!-- Same homepage layout styles as index.html -->
+  <link rel="stylesheet" href="/css/home.css" />
   <style>
     /* Minimal shell — the sections bring their own styling. We just mount them. */
     body { margin: 0; background: var(--color-bg-warm, #F5F0E8); }
@@ -34,6 +36,9 @@
     <a href="/admin/design.html">Back to editor</a> ·
     <a href="/" target="_blank" rel="noopener">Open live site ↗</a>
   </div>
+
+  <!-- Site nav (mounted by /js/components.js), same as the real homepage -->
+  <div data-component="nav"></div>
 
   <!-- The sections mount point. renderPageSections() paints into this. -->
   <div id="sections"></div>
