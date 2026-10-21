@@ -58,6 +58,25 @@
     <nav class="site-nav__menu" aria-label="Primary">
       <ul class="site-nav__links">
 
+        <!-- Mobile-only search box at the top of the drawer. The header's
+             search icon is hidden on phones to save room, so this is where
+             phone shoppers search. Plain form → works without JavaScript. -->
+        <li class="site-nav__item site-nav__item--mobile-only site-nav__drawer-search">
+          <form action="/shop.html" method="get" role="search">
+            <label for="drawerSearchInput" class="sr-only">Search the collection</label>
+            <input type="search" name="q" id="drawerSearchInput"
+                   placeholder="Search the collection…" autocomplete="off" />
+            <button type="submit" aria-label="Search">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+                   stroke="currentColor" stroke-width="1.7"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <line x1="20" y1="20" x2="16.65" y2="16.65"></line>
+              </svg>
+            </button>
+          </form>
+        </li>
+
         <!-- Top-level audience nav: Men / Women / Kids & Baby.
              URLs use ?audience=... so they're future-proof when products
              get tagged by audience. Until then, the shop page ignores the
@@ -475,7 +494,7 @@
     flex-wrap: wrap;
     min-height: var(--nav-main-h);
     padding-block: 0.75rem;
-    gap: 0.5rem;
+    gap: 0.25rem;
     position: relative;
   }
 
@@ -488,14 +507,19 @@
     height: 0;
   }
 
-  /* Hamburger (mobile only) */
+  /* Hamburger (mobile only).
+     The 3 lines are 26px wide, but the tappable box is 44×44px so it's easy
+     to hit with a thumb. The negative left margin keeps the lines visually
+     lined up with the page edge. Line spacing is 7px, which matches the
+     translateY(7px) used for the "X" animation below. */
   .site-nav__hamburger {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    width: 26px;
-    height: 20px;
-    padding: 3px 0;
+    width: 44px;
+    height: 44px;
+    padding: 14px 9px;
+    margin-left: -9px;
     cursor: pointer;
     order: 1;
   }
@@ -528,7 +552,9 @@
 
   .site-nav__logo {
     font-family: var(--font-heading);
-    font-size: 1.25rem;
+    /* Shrinks a little on narrow phones (e.g. 320px iPhone SE) so the name
+       stays on one line next to the icons; full 1.25rem from ~400px up. */
+    font-size: clamp(0.95rem, 5vw, 1.25rem);
     font-weight: 600;
     color: var(--color-primary);
     letter-spacing: 0.08em;
@@ -548,8 +574,9 @@
   .site-nav__utility {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
+    gap: 0; /* icon buttons have their own 40px tap area, so no extra gap needed */
     order: 3;
+    margin-right: -0.6rem; /* line the bag icon up with the page edge */
   }
 
   .site-nav__util-link {
@@ -569,6 +596,9 @@
     background: none;
     border: none;
     padding: 0.4rem;
+    /* 40×40px minimum so the icons are comfortable to tap on phones */
+    min-width: 40px;
+    min-height: 40px;
     color: var(--color-text);
     cursor: pointer;
     display: inline-flex;
@@ -600,7 +630,8 @@
 
   .site-nav__count.has-items { display: inline-block; }
 
-  /* Hide the dedicated search button on mobile — search lives in the drawer */
+  /* Hide the dedicated search button on mobile — phones use the search box
+     at the top of the menu drawer (.site-nav__drawer-search) instead */
   #searchToggle { display: none; }
 
   /* ── Mobile menu drawer ── */
@@ -613,7 +644,13 @@
   }
 
   .site-nav__toggle:checked ~ .site-nav__menu {
-    max-height: 90vh;
+    /* Screen height minus everything above the drawer (announcement bar +
+       brand tabs + header row ≈ 180px), so
+       the last links never fall below the bottom of the screen. dvh = the
+       visible height on phones; the vh line is a fallback for old browsers. */
+    max-height: calc(100vh - 180px);
+    max-height: calc(100dvh - 180px);
+    overscroll-behavior: contain; /* scrolling the menu doesn't scroll the page */
     overflow-y: auto;
     margin-top: 0.75rem;
     border-top: 1px solid var(--color-border-light);
@@ -686,14 +723,51 @@
   }
 
   .site-nav__mega li a {
+    /* Block + padding gives each drawer sub-link a ~32px tall tap row
+       instead of a thin 19px line of text. Reset on desktop below. */
+    display: block;
+    padding: 0.4rem 0;
     color: var(--color-text);
     text-decoration: none;
     font-size: 0.88rem;
   }
 
+  .site-nav__mega ul { gap: 0; }
+
   .site-nav__mega li a:hover { color: var(--color-primary); }
 
   .site-nav__mega-feature { display: none; }
+
+  /* ── Drawer search box (mobile only) ── */
+  .site-nav__drawer-search form {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--color-border);
+    background: var(--color-white);
+    margin: 0.25rem 0 0.75rem;
+  }
+
+  .site-nav__drawer-search input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 0.75rem 0.9rem;
+    font-size: 16px; /* 16px stops iPhones zooming in when the box is tapped */
+    color: var(--color-text);
+  }
+
+  .site-nav__drawer-search button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    color: var(--color-text-muted);
+  }
+
+  .site-nav__drawer-search form:focus-within { border-color: var(--color-primary); }
 
 
   /* ── Search panel ── */
@@ -880,6 +954,8 @@
     .site-nav__mega ul { gap: 0.65rem; }
 
     .site-nav__mega li a {
+      display: inline;
+      padding: 0;
       font-size: 0.9rem;
       color: var(--color-text);
       transition: color 0.15s;

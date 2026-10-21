@@ -140,7 +140,8 @@
 
     .view-all:hover { color: #1B4D2E; }
 
-    .panel-body { padding: 0; }
+    /* overflow-x: auto lets the Recent Orders table scroll sideways on phones */
+    .panel-body { padding: 0; overflow-x: auto; }
 
     /* ── Recent orders table inside the panel card ── */
     table.recent-orders {

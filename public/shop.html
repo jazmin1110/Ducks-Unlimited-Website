@@ -90,7 +90,7 @@
     .sort-select {
       padding: 0.5rem 0.75rem;
       font-family: var(--font-body);
-      font-size: 0.85rem;
+      font-size: 16px; /* 16px+ stops iPhones zooming in when the menu is tapped */
       border: 1px solid var(--color-border);
       border-radius: var(--radius);
       background: var(--color-white);
@@ -533,6 +533,7 @@
       width: 100%;
       max-width: 460px;
       height: 100vh;
+      height: 100dvh; /* visible screen height on phones (excludes browser toolbars) */
       background: var(--color-white);
       z-index: 301;
       transform: translateX(100%);
@@ -939,6 +940,7 @@
         top: 0;
         left: 0;
         height: 100vh;
+        height: 100dvh; /* visible screen height on phones (excludes browser toolbars) */
         width: 85%;
         max-width: 360px;
         z-index: 201;
@@ -1105,8 +1107,11 @@
         <div class="results-count" id="resultsCount">Loading…</div>
 
         <div class="toolbar-right">
-          <!-- Mobile-only — opens the filter drawer -->
-          <button type="button" class="filter-toggle hide-desktop" id="openDrawerBtn">
+          <!-- Phones + tablets — opens the filter drawer. Hidden at ≥ 1024px
+               by the `.filter-toggle` rule, where the sidebar shows inline.
+               (Don't add `hide-desktop` here: that hides it from 768px,
+               which left iPads with no way to open the filters.) -->
+          <button type="button" class="filter-toggle" id="openDrawerBtn">
             <span>Filters</span>
             <span class="filter-toggle__count" id="filterToggleCount" style="display:none;">0</span>
           </button>

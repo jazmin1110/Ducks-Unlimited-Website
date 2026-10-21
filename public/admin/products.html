@@ -65,7 +65,8 @@
       background: #fff;
       border-radius: 8px;
       box-shadow: 0 1px 6px rgba(0,0,0,0.06);
-      overflow: hidden;
+      /* Scroll sideways on phones instead of cutting off the right-hand columns */
+      overflow-x: auto;
     }
 
     table {
@@ -186,6 +187,7 @@
       top: 0;
       right: 0;
       height: 100vh;
+      height: 100dvh; /* visible screen height on phones (excludes browser toolbars) */
       width: 100%;
       max-width: 440px;
       background: #fff;
