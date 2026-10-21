@@ -29,7 +29,36 @@
 
     .page-header {
       margin-bottom: 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
     }
+
+    /* ── Stock import / export buttons (Oboda CSV format) ── */
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-outline {
+      background: #fff;
+      color: #1B4D2E;
+      border: 1px solid #1B4D2E;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.6rem 1rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color 0.15s;
+    }
+
+    .btn-outline:hover { background-color: #eef4f0; }
+    .btn-outline:disabled { opacity: 0.6; cursor: not-allowed; }
 
     .page-title {
       font-family: 'Cormorant Garamond', serif;
@@ -501,8 +530,16 @@
   <main>
 
     <div class="page-header">
-      <h1 class="page-title">Inventory</h1>
-      <p class="page-subtitle">Track stock per variant across the online shop and the Greenhills store.</p>
+      <div>
+        <h1 class="page-title">Inventory</h1>
+        <p class="page-subtitle">Track stock per variant across the online shop and the Greenhills store.</p>
+      </div>
+      <!-- Bulk stock import/export in Oboda's CSV format — see /admin/js/stock-import.js -->
+      <div class="header-actions">
+        <button class="btn-outline" id="addStockBtn"    title="File quantities are ADDED to current stock">Add Stock (CSV)</button>
+        <button class="btn-outline" id="updateStockBtn" title="File quantities REPLACE current stock">Update Stock (CSV)</button>
+        <button class="btn-outline" id="exportStockBtn">Export CSV</button>
+      </div>
     </div>
 
     <!-- ── Summary bar (filled by JS) ── -->
@@ -645,6 +682,11 @@
   <script type="module">
     import { supabase } from '/lib/supabase.js';
     import { adminBrandFilter } from '/js/brand.js';
+    import { openImportModal } from '/admin/js/import-modal.js';
+    import { downloadCsv, todayStamp } from '/admin/js/csv.js';
+    import {
+      buildStockExport, blankStockTemplate, analyzeStockFile, applyStockPlan,
+    } from '/admin/js/stock-import.js';
 
     // ── Auth guard ──
     const { data: { session } } = await supabase.auth.getSession();
@@ -1064,6 +1106,59 @@
       showToast('Stock updated.');
       await loadInventory(); // refresh from DB so timestamps + statuses are current
     }
+
+
+    // ─────────────────────────────────────────────────────────────────────
+    // BULK STOCK IMPORT / EXPORT (Oboda CSV format)
+    // The logic lives in /admin/js/stock-import.js; this just wires buttons.
+    //   Add Stock    → file quantities are ADDED   (a delivery arrived)
+    //   Update Stock → file quantities REPLACE     (after a physical count)
+    // ─────────────────────────────────────────────────────────────────────
+
+    const STOCK_INTRO_COMMON = `
+      Upload a CSV in <strong>Oboda's stock template</strong> format:
+      Branch name, Product code or Barcode, Quantity, Inventory location.
+      <br><br>
+      Use the <strong>SKU code or barcode</strong> (not the product name).
+      Rows whose branch or location mentions <strong>Warehouse</strong> go to online stock;
+      rows mentioning <strong>Greenhills</strong> go to the Greenhills store.
+      Nothing is saved until you click Confirm.
+    `;
+
+    function openStockImport(mode) {
+      openImportModal({
+        title: mode === 'add' ? 'Add Stock' : 'Update Stock',
+        intro: (mode === 'add'
+          ? '<strong>Add Stock:</strong> quantities in the file are <strong>added</strong> to current stock (e.g. a delivery of 20 → +20).<br><br>'
+          : '<strong>Update Stock:</strong> quantities in the file <strong>replace</strong> current stock (e.g. after a count, it\'s now 37).<br><br>'
+        ) + STOCK_INTRO_COMMON,
+        templateName: 'stock-template.csv',
+        templateCsv:  blankStockTemplate,
+        analyze: (text) => analyzeStockFile(text, mode),
+        apply:   (result) => applyStockPlan(result.plan, mode),
+        onDone:  (message) => { showToast(message); loadInventory(); },
+      });
+    }
+
+    document.getElementById('addStockBtn').addEventListener('click',    () => openStockImport('add'));
+    document.getElementById('updateStockBtn').addEventListener('click', () => openStockImport('set'));
+
+    document.getElementById('exportStockBtn').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      btn.textContent = 'Exporting…';
+      try {
+        const slug = adminBrandFilter();             // null = all brands
+        const csv  = await buildStockExport(slug);
+        downloadCsv(`stock-${slug ?? 'all'}-${todayStamp()}.csv`, csv);
+      } catch (err) {
+        console.error(err);
+        showToast('Export failed. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Export CSV';
+      }
+    });
 
 
     // ── Initial load ──

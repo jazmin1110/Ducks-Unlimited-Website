@@ -60,6 +60,85 @@
 
     .btn-add:hover { background-color: #b8943e; }
 
+    /* ── Import / Export buttons next to "Add Product" ── */
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-outline {
+      background: #fff;
+      color: #1B4D2E;
+      border: 1px solid #1B4D2E;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0.6rem 1rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color 0.15s;
+    }
+
+    .btn-outline:hover { background-color: #eef4f0; }
+    .btn-outline:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ── Bulk bar: appears when one or more products are ticked ── */
+    .bulk-bar {
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      background: #1B4D2E;
+      color: #fff;
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.875rem;
+    }
+
+    .bulk-bar.visible { display: flex; }
+    .bulk-bar .bulk-count { margin-right: auto; }
+
+    .bulk-bar button {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 4px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      padding: 0.4rem 0.75rem;
+      cursor: pointer;
+    }
+
+    .bulk-bar button:hover { background: rgba(255,255,255,0.22); }
+    .bulk-bar button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Checkbox column */
+    th.col-select, td.col-select { width: 44px; text-align: center; }
+    .col-select input { width: 18px; height: 18px; cursor: pointer; accent-color: #1B4D2E; }
+
+    /* ── One-click Visible / Hidden button in each row ── */
+    .visibility-btn {
+      border: none;
+      border-radius: 20px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.7rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: box-shadow 0.15s;
+    }
+
+    .visibility-btn.is-visible { background: #e6f2ec; color: #1B4D2E; }
+    .visibility-btn.is-hidden  { background: #f0ece4; color: #888; }
+    .visibility-btn:hover      { box-shadow: 0 0 0 1px currentColor; }
+    .visibility-btn:disabled   { opacity: 0.5; cursor: wait; }
+
     /* ── Products table ── */
     .table-wrap {
       background: #fff;
@@ -751,24 +830,40 @@
 
     <div class="page-header">
       <h1 class="page-title">Products</h1>
-      <button class="btn-add" id="addProductBtn">+ Add Product</button>
+      <div class="header-actions">
+        <!-- Bulk import/export in Oboda's CSV format — see /admin/js/product-import.js -->
+        <button class="btn-outline" id="importProductsBtn">Import CSV</button>
+        <button class="btn-outline" id="exportProductsBtn">Export CSV</button>
+        <button class="btn-add" id="addProductBtn">+ Add Product</button>
+      </div>
+    </div>
+
+    <!-- Shown when one or more products are ticked -->
+    <div class="bulk-bar" id="bulkBar">
+      <span class="bulk-count" id="bulkCount">0 selected</span>
+      <button type="button" id="bulkHideBtn">Hide from customers</button>
+      <button type="button" id="bulkShowBtn">Show to customers</button>
+      <button type="button" id="bulkClearBtn">Clear</button>
     </div>
 
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
+            <th class="col-select">
+              <input type="checkbox" id="selectAll" aria-label="Select all products" />
+            </th>
             <th>Product</th>
             <th>Category</th>
             <th class="col-price">Base Price</th>
             <th class="col-variants">Variants</th>
-            <th class="col-status">Status</th>
+            <th class="col-status">Visibility</th>
             <th class="col-actions">Edit</th>
           </tr>
         </thead>
         <tbody id="productsTableBody">
           <tr>
-            <td colspan="6" class="table-state">Loading products…</td>
+            <td colspan="7" class="table-state">Loading products…</td>
           </tr>
         </tbody>
       </table>
@@ -910,6 +1005,11 @@
   <script type="module">
     import { supabase } from '/lib/supabase.js';
     import { adminBrandFilter, getAdminBrandSlug, ADMIN_ALL } from '/js/brand.js';
+    import { openImportModal } from '/admin/js/import-modal.js';
+    import { downloadCsv, todayStamp } from '/admin/js/csv.js';
+    import {
+      buildProductExport, blankProductTemplate, analyzeProductFile, applyProductPlan,
+    } from '/admin/js/product-import.js';
 
     // ── Auth guard ──
     const { data: { session } } = await supabase.auth.getSession();
@@ -943,7 +1043,8 @@
 
     // ── Load and render products table ──
     async function loadProducts() {
-      tableBody.innerHTML = '<tr><td colspan="6" class="table-state">Loading…</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="7" class="table-state">Loading…</td></tr>';
+      clearSelection();
 
       // Scope to the admin's chosen brand. `null` = "All brands" (no filter).
       // `brands!inner` ensures the row drops out when the slug doesn't match.
@@ -959,12 +1060,12 @@
       const { data: products, error } = await query;
 
       if (error) {
-        tableBody.innerHTML = `<tr><td colspan="6" class="table-state">Failed to load products. Please refresh.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" class="table-state">Failed to load products. Please refresh.</td></tr>`;
         return;
       }
 
       if (!products || products.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" class="table-state">No products yet. Click "Add Product" to create your first one.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" class="table-state">No products yet. Click "Add Product" to create your first one, or "Import CSV" to upload many at once.</td></tr>`;
         return;
       }
 
@@ -986,6 +1087,10 @@
         row.dataset.id = p.id; // store product ID on the row for click handler
 
         row.innerHTML = `
+          <td class="col-select">
+            <input type="checkbox" class="row-select" data-id="${p.id}"
+                   aria-label="Select ${escapeHtml(p.name)}" />
+          </td>
           <td>
             <div class="product-name">${escapeHtml(p.name)}</div>
             ${p.description
@@ -996,9 +1101,8 @@
           <td>₱${Number(p.base_price).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
           <td>${variantCount}</td>
           <td>
-            <span class="badge ${p.is_active ? 'badge-active' : 'badge-inactive'}">
-              ${p.is_active ? 'Active' : 'Inactive'}
-            </span>
+            <!-- One click flips it. See toggleVisibility() below. -->
+            ${visibilityButtonHtml(p.id, p.is_active)}
           </td>
           <td>
             <button class="edit-btn" data-id="${p.id}">Edit</button>
@@ -1008,14 +1112,169 @@
         tableBody.appendChild(row);
       }
 
-      // Clicking anywhere on a row (or its Edit button) opens the edit panel
+      // Clicking anywhere on a row (or its Edit button) opens the edit panel —
+      // EXCEPT the checkbox and the Visible/Hidden button, which do their own thing.
       tableBody.querySelectorAll('tr').forEach(row => {
         row.addEventListener('click', (e) => {
+          if (e.target.closest('.col-select, .visibility-btn')) return;
           const id = e.currentTarget.dataset.id;
           if (id) openEditPanel(id);
         });
       });
     }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // HIDE / SHOW FROM CUSTOMERS
+    // Uses the existing products.is_active column. Hidden products stay in
+    // the admin (and in exports) but customers can't see or buy them.
+    // ─────────────────────────────────────────────────────────────────────
+
+    function visibilityButtonHtml(id, isActive) {
+      return isActive
+        ? `<button type="button" class="visibility-btn is-visible" data-id="${id}" data-active="true"
+                   title="Customers can see this. Click to hide it.">Visible</button>`
+        : `<button type="button" class="visibility-btn is-hidden" data-id="${id}" data-active="false"
+                   title="Hidden from customers. Click to show it.">Hidden</button>`;
+    }
+
+    // Save is_active for one or more products at once.
+    async function setVisibility(ids, visible) {
+      const { error } = await supabase
+        .from('products')
+        .update({ is_active: visible })
+        .in('id', ids);
+      if (error) throw error;
+    }
+
+    // One-click toggle in a row
+    tableBody.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.visibility-btn');
+      if (!btn) return;
+
+      const makeVisible = btn.dataset.active !== 'true';
+      btn.disabled = true;
+      try {
+        await setVisibility([btn.dataset.id], makeVisible);
+        // Swap just this button instead of reloading the whole table
+        btn.outerHTML = visibilityButtonHtml(btn.dataset.id, makeVisible);
+        showToast(makeVisible ? 'Product is now visible to customers.' : 'Product hidden from customers.');
+      } catch (err) {
+        console.error(err);
+        btn.disabled = false;
+        showToast('Could not change visibility. Please try again.');
+      }
+    });
+
+    // ── Ticking several products + Hide/Show selected ──
+    const bulkBar   = document.getElementById('bulkBar');
+    const bulkCount = document.getElementById('bulkCount');
+    const selectAll = document.getElementById('selectAll');
+
+    function selectedIds() {
+      return [...tableBody.querySelectorAll('.row-select:checked')].map(cb => cb.dataset.id);
+    }
+
+    function updateBulkBar() {
+      const all = tableBody.querySelectorAll('.row-select');
+      const ids = selectedIds();
+      bulkCount.textContent = `${ids.length} selected`;
+      bulkBar.classList.toggle('visible', ids.length > 0);
+      // The header checkbox shows ticked / half-ticked / empty
+      selectAll.checked       = all.length > 0 && ids.length === all.length;
+      selectAll.indeterminate = ids.length > 0 && ids.length < all.length;
+    }
+
+    function clearSelection() {
+      tableBody.querySelectorAll('.row-select').forEach(cb => { cb.checked = false; });
+      updateBulkBar();
+    }
+
+    tableBody.addEventListener('change', (e) => {
+      if (e.target.classList.contains('row-select')) updateBulkBar();
+    });
+
+    selectAll.addEventListener('change', () => {
+      tableBody.querySelectorAll('.row-select').forEach(cb => { cb.checked = selectAll.checked; });
+      updateBulkBar();
+    });
+
+    document.getElementById('bulkClearBtn').addEventListener('click', clearSelection);
+
+    async function bulkSetVisibility(visible) {
+      const ids = selectedIds();
+      if (ids.length === 0) return;
+      bulkBar.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      try {
+        await setVisibility(ids, visible);
+        showToast(`${ids.length} product${ids.length === 1 ? '' : 's'} ${visible ? 'now visible' : 'hidden from customers'}.`);
+        await loadProducts();
+      } catch (err) {
+        console.error(err);
+        showToast('Could not change visibility. Please try again.');
+      } finally {
+        bulkBar.querySelectorAll('button').forEach(b => { b.disabled = false; });
+      }
+    }
+
+    document.getElementById('bulkHideBtn').addEventListener('click', () => bulkSetVisibility(false));
+    document.getElementById('bulkShowBtn').addEventListener('click', () => bulkSetVisibility(true));
+
+    // ─────────────────────────────────────────────────────────────────────
+    // BULK IMPORT / EXPORT (Oboda CSV format)
+    // The logic lives in /admin/js/product-import.js; this just wires buttons.
+    // ─────────────────────────────────────────────────────────────────────
+
+    // The brand chosen in the top bar as { slug, id }, or null for "All brands".
+    async function currentBrand() {
+      const slug = getAdminBrandSlug();
+      if (slug === ADMIN_ALL) return null;
+      const { data, error } = await supabase.from('brands').select('id').eq('slug', slug).single();
+      if (error || !data) throw new Error('Could not look up the current brand. Refresh and try again.');
+      return { slug, id: data.id };
+    }
+
+    document.getElementById('exportProductsBtn').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      btn.textContent = 'Exporting…';
+      try {
+        const slug = adminBrandFilter();             // null = all brands
+        const csv  = await buildProductExport(slug);
+        downloadCsv(`products-${slug ?? 'all'}-${todayStamp()}.csv`, csv);
+      } catch (err) {
+        console.error(err);
+        showToast('Export failed. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Export CSV';
+      }
+    });
+
+    document.getElementById('importProductsBtn').addEventListener('click', () => {
+      // Looked up once when the file is checked, then reused when saving
+      let brand = null;
+
+      openImportModal({
+        title: 'Import products',
+        intro: `
+          Upload a CSV in <strong>Oboda's product template</strong> format — one row per size/color.
+          The <strong>code</strong> column is the SKU: existing SKUs are updated, new SKUs are added.
+          Rows with the same <strong>name</strong> become one product.
+          <br><br>
+          New products are added to the brand picked in the top bar and start
+          <strong>hidden</strong>, so you can add photos before customers see them.
+          Blank cells never erase anything. Nothing is saved until you click Confirm.
+        `,
+        templateName: 'products-template.csv',
+        templateCsv:  blankProductTemplate,
+        analyze: async (text) => {
+          brand = await currentBrand();
+          return analyzeProductFile(text, brand);
+        },
+        apply:  (result) => applyProductPlan(result.plan, brand),
+        onDone: (message) => { showToast(message); loadProducts(); },
+      });
+    });
 
     // ── Panel open / close ──
     function openPanel() {
