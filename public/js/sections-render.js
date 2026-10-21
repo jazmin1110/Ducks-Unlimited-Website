@@ -229,7 +229,7 @@ const TEMPLATES = {
     // No image → the CSS default (solid brand color) shows through.
     const overlay = typeof s.overlay === 'number' ? s.overlay / 100 : 0.35;
     const bgStyle = s.image_url
-      ? ` style="background-image: linear-gradient(rgba(0,0,0,${overlay}), rgba(0,0,0,${Math.min(overlay + 0.1, 0.9)})), url('${escCssUrl(s.image_url)}'); background-size: cover; background-position: center;"`
+      ? ` style="background-image: linear-gradient(rgba(0,0,0,${overlay}), rgba(0,0,0,${Math.min(overlay + 0.15, 0.9)})), url('${escCssUrl(s.image_url)}'); background-size: cover; background-position: center;"`
       : '';
     return `
       <section class="hero"${bgStyle}>

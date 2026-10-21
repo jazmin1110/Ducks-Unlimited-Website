@@ -100,7 +100,16 @@
   <main class="admin-main">
 
     <h1 class="admin-h1">Homepage</h1>
-    <p class="admin-sub">Edit the copy and images that appear on the live storefront's homepage. Click <strong>Preview</strong> to see your draft on the real site, then <strong>Publish</strong> when it's ready to go live.</p>
+    <p class="admin-sub">Edit the announcement bar (shown on every page) and the Shop page intro. Click <strong>Publish</strong> when your changes are ready to go live.</p>
+
+    <!-- The homepage hero, tiles, editorial rows, story and journal cards
+         moved to the Design page (page_sections table). Their old panels
+         below are hidden — they no longer change the live homepage. -->
+    <p class="admin-panel" style="border-left:3px solid var(--color-accent);">
+      <strong>Looking for the homepage hero, collection tiles or editorial blocks?</strong>
+      They're now edited on the <a href="/admin/design.html">Design</a> page, where you can also
+      reorder, add and remove homepage sections.
+    </p>
 
     <!-- ── Sticky action bar ── -->
     <div class="action-bar">
@@ -157,7 +166,8 @@
 
 
     <!-- ── HERO ── -->
-    <section class="admin-panel" data-section="home.hero">
+    <!-- HIDDEN: moved to /admin/design.html (kept so this page's save code still finds its inputs) -->
+    <section class="admin-panel" data-section="home.hero" hidden>
       <h2>Hero</h2>
       <p class="help-text" style="margin-top:-0.25rem;margin-bottom:var(--space);">The full-screen photo + headline at the top of the homepage.</p>
 
@@ -203,8 +213,8 @@
     </section>
 
 
-    <!-- ── COLLECTION TILES (3 of them) ── -->
-    <section class="admin-panel">
+    <!-- ── COLLECTION TILES (3 of them) — HIDDEN: moved to /admin/design.html ── -->
+    <section class="admin-panel" hidden>
       <h2>Featured Collections (3 tiles)</h2>
       <p class="help-text" style="margin-top:-0.25rem;margin-bottom:var(--space);">The three large image tiles linking to category pages.</p>
 
@@ -213,8 +223,8 @@
     </section>
 
 
-    <!-- ── EDITORIAL ROWS (2 of them) ── -->
-    <section class="admin-panel">
+    <!-- ── EDITORIAL ROWS (2 of them) — HIDDEN: moved to /admin/design.html ── -->
+    <section class="admin-panel" hidden>
       <h2>Editorial Rows (2 blocks)</h2>
       <p class="help-text" style="margin-top:-0.25rem;margin-bottom:var(--space);">The alternating image + text blocks below the collection tiles.</p>
 

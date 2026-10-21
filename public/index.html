@@ -19,7 +19,17 @@
   <!-- ── Nav (mounted by /js/components.js) ── -->
   <div data-component="nav"></div>
 
-  <main>
+  <!-- ────────────────────────────────────────────────────────
+       HOMEPAGE SECTIONS — built in /admin/design.html.
+       /js/sections-render.js replaces everything inside <main> with the
+       sections saved for the current brand (page_sections table).
+
+       The hardcoded HTML below is the FALLBACK: it's what visitors see
+       if JavaScript is off or the database can't be reached. It is no
+       longer edited from the admin — change the live homepage in
+       Admin → Design instead.
+       ──────────────────────────────────────────────────────── -->
+  <main id="home-sections">
 
     <!-- ────────────────────────────────────────────────────────
          HERO — content driven by /admin/homepage.html (site_content table).
@@ -302,116 +312,23 @@
   <script type="module" src="/js/components.js"></script>
   <script type="module" src="/js/cart.js"></script>
 
-  <!-- Apply CMS content (hero, tiles, editorial blocks) from site_content.
-       See /js/site-content.js for the data-content-* attribute contract. -->
+  <!-- Paint the homepage from the sections saved in Admin → Design. -->
   <script type="module">
-    import { applySiteContent } from '/js/site-content.js';
-    applySiteContent('home.');
-  </script>
+    import { renderPageSections } from '/js/sections-render.js';
 
-  <!-- Page-specific: fetch the 8 newest active products into the grid -->
-  <script type="module">
-    import { supabase } from '/lib/supabase.js';
-
-    const grid = document.getElementById('newArrivalsGrid');
-
-    function escapeHtml(str) {
-      return String(str ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
-
-    function formatPrice(amount) {
-      return '₱' + Number(amount).toLocaleString('en-PH', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+    const main = document.getElementById('home-sections');
+    renderPageSections('home', main)
+      .then(() => {
+        // Links like /#story jump before the sections exist — re-jump now.
+        if (location.hash) {
+          const target = document.querySelector(location.hash);
+          if (target) target.scrollIntoView();
+        }
+      })
+      .catch((err) => {
+        // The fallback HTML inside <main> stays on screen.
+        console.error('[home] sections failed to render:', err);
       });
-    }
-
-    function showSkeletons(count) {
-      grid.innerHTML = '';
-      for (let i = 0; i < count; i++) {
-        const card = document.createElement('div');
-        card.className = 'product-card product-card--skeleton';
-        card.innerHTML = `
-          <div class="product-card__image"></div>
-          <div class="product-card__body">
-            <div class="skeleton-line skeleton-line--name"></div>
-            <div class="skeleton-line skeleton-line--price"></div>
-          </div>
-        `;
-        grid.appendChild(card);
-      }
-    }
-
-    function pickPrimaryImage(product) {
-      const imgs = product.product_images || [];
-      if (imgs.length === 0) return null;
-      const primary = imgs.find(i => i.is_primary);
-      if (primary) return primary.image_url;
-      const sorted = [...imgs].sort((a, b) => a.display_order - b.display_order);
-      return sorted[0].image_url;
-    }
-
-    function renderProducts(products) {
-      grid.innerHTML = '';
-      for (const p of products) {
-        const img = pickPrimaryImage(p);
-        const card = document.createElement('a');
-        card.className = 'product-card';
-        card.href = `/product.html?id=${encodeURIComponent(p.id)}`;
-        card.innerHTML = `
-          <div class="product-card__image">
-            ${img
-              ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(p.name)}" loading="lazy" />`
-              : `<div class="product-card__placeholder">
-                   <span class="product-card__placeholder-mark">Ducks Unlimited</span>
-                   <span class="product-card__placeholder-sub">est. 1995</span>
-                 </div>`}
-          </div>
-          <div class="product-card__body">
-            <h3 class="product-card__name">${escapeHtml(p.name)}</h3>
-            <p class="product-card__price">${formatPrice(p.base_price)}</p>
-          </div>
-        `;
-        grid.appendChild(card);
-      }
-    }
-
-    function renderEmpty(message) {
-      grid.innerHTML = `<p class="products-empty">${escapeHtml(message)}</p>`;
-    }
-
-    async function loadNewArrivals() {
-      showSkeletons(8);
-
-      const { data, error } = await supabase
-        .from('products')
-        .select(`
-          id, name, base_price, created_at,
-          product_images ( image_url, display_order, is_primary )
-        `)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(8);
-
-      if (error) {
-        console.error('Failed to load new arrivals:', error);
-        renderEmpty('Could not load products. Please refresh the page.');
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        renderEmpty('New arrivals coming soon.');
-        return;
-      }
-
-      renderProducts(data);
-    }
-
-    loadNewArrivals();
   </script>
 
 </body>
