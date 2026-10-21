@@ -149,7 +149,7 @@ svg {
    Renders as a soft warm-beige rectangle when an <img> has no src yet,
    so empty image slots look intentional instead of showing a broken-image
    icon. Used by:
-     - Homepage hero / collection tiles / editorial / journal teasers
+     - Homepage hero / collection tiles / editorial
        (their hardcoded fallbacks are blank until photos are uploaded
        via /admin/homepage.html)
      - Mega-nav featured tiles in /components/nav.html

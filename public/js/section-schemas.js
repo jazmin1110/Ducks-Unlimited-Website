@@ -147,56 +147,6 @@ export const SECTION_SCHEMAS = {
 
 
   // ────────────────────────────────────────────────────────────────────────
-  // HERITAGE STORY — dark band with a heading, a few paragraphs, and a row
-  // of big-number stats ("1995 · Family-run since"). The nav's "Heritage"
-  // link jumps here via #story.
-  // ────────────────────────────────────────────────────────────────────────
-  story: {
-    name: 'Heritage Story',
-    description: 'A dark brand-color band with your story and up to 4 headline stats. The nav "Heritage" link scrolls here.',
-    settings: [
-      { id: 'eyebrow', type: 'text',     label: 'Eyebrow', default: 'Our Heritage' },
-      { id: 'heading', type: 'text',     label: 'Heading', default: '' },
-      { id: 'body',    type: 'richtext', label: 'Story (HTML allowed — wrap paragraphs in <p>…</p>)', default: '' }
-    ],
-    blocks: {
-      name: 'Stat',
-      max: 4,
-      settings: [
-        { id: 'num',   type: 'text', label: 'Big number / word (e.g. "1995")', default: '' },
-        { id: 'label', type: 'text', label: 'Caption (e.g. "Family-run since")', default: '' }
-      ],
-      defaults: { num: '', label: '' }
-    }
-  },
-
-
-  // ────────────────────────────────────────────────────────────────────────
-  // JOURNAL TEASER — up to 3 story cards linking to journal articles.
-  // ────────────────────────────────────────────────────────────────────────
-  'journal-teaser': {
-    name: 'Journal Teaser',
-    description: 'Up to 3 cards linking to journal stories.',
-    settings: [
-      { id: 'eyebrow', type: 'text', label: 'Eyebrow', default: 'The Journal' },
-      { id: 'heading', type: 'text', label: 'Heading', default: 'Stories from the workshop' }
-    ],
-    blocks: {
-      name: 'Story card',
-      max: 3,
-      settings: [
-        { id: 'image_url', type: 'image',    label: 'Image' },
-        { id: 'eyebrow',   type: 'text',     label: 'Topic (e.g. "Materials")', default: '' },
-        { id: 'title',     type: 'text',     label: 'Title',   default: '' },
-        { id: 'excerpt',   type: 'textarea', label: 'Short summary', default: '' },
-        { id: 'link',      type: 'url',      label: 'Link to the story', default: '/journal/' }
-      ],
-      defaults: { image_url: '', eyebrow: '', title: 'New story', excerpt: '', link: '/journal/' }
-    }
-  },
-
-
-  // ────────────────────────────────────────────────────────────────────────
   // RICHTEXT — a plain text block (headline + body) with no image.
   // Useful for announcements and simple copy sections.
   // ────────────────────────────────────────────────────────────────────────

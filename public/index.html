@@ -147,8 +147,8 @@
           <p>
             <a class="btn btn-outline-dark"
                data-content-key="home.editorial.cotton" data-content-field="cta_link" data-content-attr="href"
-               href="/journal/the-cotton-story">
-              <span data-content-key="home.editorial.cotton" data-content-field="cta_text">Read the Cotton Story</span>
+               href="/shop.html">
+              <span data-content-key="home.editorial.cotton" data-content-field="cta_text">Shop the Collection</span>
             </a>
           </p>
         </div>
@@ -176,8 +176,8 @@
           <p>
             <a class="btn btn-outline-dark"
                data-content-key="home.editorial.workshop" data-content-field="cta_link" data-content-attr="href"
-               href="/#story">
-              <span data-content-key="home.editorial.workshop" data-content-field="cta_text">Discover Our Heritage</span>
+               href="/shop.html">
+              <span data-content-key="home.editorial.workshop" data-content-field="cta_text">Shop the Collection</span>
             </a>
           </p>
         </div>
@@ -207,98 +207,6 @@
       </div>
     </section>
 
-
-    <!-- ────────────────────────────────────────────────────────
-         HERITAGE STORY (#story anchor for nav)
-         ──────────────────────────────────────────────────────── -->
-    <section class="story section-xl" id="story">
-      <div class="container story__inner">
-        <p class="eyebrow" style="color: var(--color-accent);">Our Heritage</p>
-        <h2 class="display-sm display--light">Crafted in the Philippines since 1995</h2>
-        <span class="editorial-rule"></span>
-
-        <p>
-          Ducks Unlimited began as a small family workshop in Greenhills,
-          San Juan — a place to make beautiful, honest clothes the way they
-          used to be made: slowly, by hand, with care.
-        </p>
-        <p>
-          Three decades on, we're still here, still vertically integrated,
-          still finishing every hem ourselves. Because affordable luxury
-          isn't about cutting corners. It's about clothes made to last,
-          designed to live in, by people who care.
-        </p>
-
-        <div class="story__stats">
-          <div class="story-stat">
-            <div class="story-stat__num">1995</div>
-            <div class="story-stat__label">Family-run since</div>
-          </div>
-          <div class="story-stat">
-            <div class="story-stat__num">100%</div>
-            <div class="story-stat__label">Hand-finished in Greenhills</div>
-          </div>
-          <div class="story-stat">
-            <div class="story-stat__num">Egyptian Cotton</div>
-            <div class="story-stat__label">Woven in-house</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-
-    <!-- ────────────────────────────────────────────────────────
-         JOURNAL TEASER — three story cards
-         Will be wired to the journal_posts table in Phase 4.
-         ──────────────────────────────────────────────────────── -->
-    <section class="journal-teaser section-xl">
-      <div class="container">
-        <p class="eyebrow">The Journal</p>
-        <h2 class="display-sm">Stories from the workshop</h2>
-        <span class="editorial-rule"></span>
-
-        <div class="journal-teaser__grid">
-
-          <a class="journal-card" href="/journal/the-cotton-story">
-            <div class="journal-card__media">
-              <img loading="lazy" decoding="async" class="is-empty" src="" alt="" />
-            </div>
-            <p class="journal-card__eyebrow">Materials</p>
-            <h3 class="journal-card__title">Why Egyptian Cotton Matters</h3>
-            <p class="journal-card__excerpt">
-              The longer the fiber, the softer the cloth — and the longer
-              your shirt lasts. A primer on what makes our cotton different.
-            </p>
-          </a>
-
-          <a class="journal-card" href="/journal/the-perfect-polo">
-            <div class="journal-card__media">
-              <img loading="lazy" decoding="async" class="is-empty" src="" alt="" />
-            </div>
-            <p class="journal-card__eyebrow">Style Guide</p>
-            <h3 class="journal-card__title">The Anatomy of a Perfect Polo</h3>
-            <p class="journal-card__excerpt">
-              From collar roll to placket length, six small details that
-              separate an everyday polo from one you'll wear for a decade.
-            </p>
-          </a>
-
-          <a class="journal-card" href="/journal/thirty-years">
-            <div class="journal-card__media">
-              <img loading="lazy" decoding="async" class="is-empty" src="" alt="" />
-            </div>
-            <p class="journal-card__eyebrow">Heritage</p>
-            <h3 class="journal-card__title">Thirty Years in Greenhills</h3>
-            <p class="journal-card__excerpt">
-              A family business, three generations in. How our workshop has
-              stayed small, stayed local, and stayed Filipino-made.
-            </p>
-          </a>
-
-        </div>
-      </div>
-    </section>
-
   </main>
 
   <!-- ── Footer (mounted by /js/components.js) ── -->
@@ -319,7 +227,7 @@
     const main = document.getElementById('home-sections');
     renderPageSections('home', main)
       .then(() => {
-        // Links like /#story jump before the sections exist — re-jump now.
+        // Links like /#section-id jump before the sections exist — re-jump now.
         if (location.hash) {
           const target = document.querySelector(location.hash);
           if (target) target.scrollIntoView();

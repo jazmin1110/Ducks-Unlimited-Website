@@ -2,7 +2,7 @@
 // Ducks Unlimited — Reusable Single-Image Uploader
 // =============================================================================
 // Drop-in widget that replaces a "paste an image URL here" text field with a
-// real file picker. Used by stores, journal, lookbooks, gift-cards, and
+// real file picker. Used by stores, lookbooks, gift-cards, and
 // (Phase 2) the homepage CMS.
 //
 // What it gives the admin:

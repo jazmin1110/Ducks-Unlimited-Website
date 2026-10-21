@@ -299,52 +299,6 @@ const TEMPLATES = {
     `;
   },
 
-  story(s) {
-    const stats = Array.isArray(s.blocks) ? s.blocks : [];
-    // id="story" keeps the nav's "Heritage" (/#story) link working.
-    return `
-      <section class="story section-xl" id="story">
-        <div class="container story__inner">
-          ${s.eyebrow ? `<p class="eyebrow" style="color: var(--color-accent);">${esc(s.eyebrow)}</p>` : ''}
-          ${s.heading ? `<h2 class="display-sm display--light">${esc(s.heading)}</h2>` : ''}
-          <span class="editorial-rule"></span>
-          ${s.body || ''}
-          ${stats.length ? `
-            <div class="story__stats">
-              ${stats.map((b) => `
-                <div class="story-stat">
-                  <div class="story-stat__num">${esc(b.num)}</div>
-                  <div class="story-stat__label">${esc(b.label)}</div>
-                </div>`).join('')}
-            </div>` : ''}
-        </div>
-      </section>
-    `;
-  },
-
-  'journal-teaser'(s) {
-    const cards = Array.isArray(s.blocks) ? s.blocks : [];
-    if (!cards.length) return '';
-    return `
-      <section class="journal-teaser section-xl">
-        <div class="container">
-          ${s.eyebrow ? `<p class="eyebrow">${esc(s.eyebrow)}</p>` : ''}
-          ${s.heading ? `<h2 class="display-sm">${esc(s.heading)}</h2>` : ''}
-          <span class="editorial-rule"></span>
-          <div class="journal-teaser__grid">
-            ${cards.map((c) => `
-              <a class="journal-card" href="${escAttr(c.link || '/journal/')}">
-                <div class="journal-card__media">${imgHtml(c.image_url, '')}</div>
-                ${c.eyebrow ? `<p class="journal-card__eyebrow">${esc(c.eyebrow)}</p>` : ''}
-                ${c.title   ? `<h3 class="journal-card__title">${esc(c.title)}</h3>` : ''}
-                ${c.excerpt ? `<p class="journal-card__excerpt">${esc(c.excerpt)}</p>` : ''}
-              </a>`).join('')}
-          </div>
-        </div>
-      </section>
-    `;
-  },
-
   richtext(s) {
     const align = ['left', 'center', 'right'].includes(s.align) ? s.align : 'center';
     return `
