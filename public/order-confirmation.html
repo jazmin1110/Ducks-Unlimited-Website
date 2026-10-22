@@ -93,7 +93,7 @@
 
     // Once the order is paid, take the bought items out of the bag. Checkout
     // leaves them in until now so a failed or cancelled payment loses nothing.
-    // (Only lines from this order — the other brand's items stay put.)
+    // (Only lines from this order — anything added since stays put.)
     let bagCleared = false;
     function clearPaidItemsFromBag(o) {
       if (bagCleared || o.paymentStatus !== 'paid') return;

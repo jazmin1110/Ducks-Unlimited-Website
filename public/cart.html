@@ -380,18 +380,9 @@
       line-height: 1.45;
     }
 
-    /* Neutral version: explains that a two-brand bag is two orders */
-    .summary-notice--info {
-      background: var(--color-bg-warm);
-      border-color: transparent;
-      color: var(--color-text);
-    }
-
     .checkout-btn {
       margin-top: 1.25rem;
     }
-
-    .checkout-btn + .checkout-btn { margin-top: 0.6rem; }
 
     /* Brand name over each group of items when the bag holds both brands */
     .cart-group__title {
@@ -923,8 +914,9 @@
       const hasAvailable   = state.cart.some(i => getItemStatus(i).available !== false);
       const blocked        = hasUnavailable || !hasAvailable;
 
-      // One brand: a plain list. Two brands: a heading over each brand's items,
-      // because each brand is checked out as its own order.
+      // One brand: a plain list. Two brands: a heading over each brand's items
+      // so the shopper can see what's what — but it's still ONE order and one
+      // checkout (Rocwood pieces ride along on the Ducks Unlimited order).
       const itemsHtml = isMixed
         ? groups.map(g => `
             <h2 class="cart-group__title">${escapeHtml(g.name)}</h2>
@@ -932,25 +924,8 @@
           `).join('')
         : state.cart.map(renderCartItem).join('');
 
-      // Checkout button(s). Mixed bag → one button per brand, each with that
-      // brand's own total (free shipping is worked out per order).
-      const checkoutHtml = isMixed
-        ? `
-          <div class="summary-notice summary-notice--info">
-            Ducks Unlimited and Rocwood are separate orders, so you'll check out
-            each one on its own. Free shipping applies to each order over
-            ${formatPrice(FREE_SHIPPING_THRESHOLD)}.
-          </div>
-          ${groups.map(g => {
-            const gSub = computeSubtotal(g.items);
-            return `
-              <a href="${blocked ? '#' : `/checkout.html?brand=${encodeURIComponent(g.slug)}`}"
-                 class="btn btn-primary btn-lg btn-block checkout-btn"
-                 ${blocked ? 'aria-disabled="true"' : ''}>
-                Check out ${escapeHtml(g.name)} · ${formatPrice(gSub)}
-              </a>`;
-          }).join('')}`
-        : `
+      // One checkout button for the whole bag, whatever brands are in it.
+      const checkoutHtml = `
           <a href="${blocked ? '#' : '/checkout.html'}"
              class="btn btn-primary btn-lg btn-block checkout-btn"
              ${blocked ? 'aria-disabled="true"' : ''}>
@@ -958,7 +933,7 @@
           </a>`;
 
       // Shipping is a flat fee under the threshold, so we can show the real
-      // number instead of "calculated at checkout" (single-brand bags only).
+      // number instead of "calculated at checkout".
       const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
 
       cartRoot.innerHTML = `
@@ -974,9 +949,8 @@
               <span class="summary-row__value">${formatPrice(subtotal)}</span>
             </div>
 
-            ${isMixed ? '' : renderShippingProgress(subtotal)}
+            ${renderShippingProgress(subtotal)}
 
-            ${isMixed ? '' : `
               <div class="summary-row summary-row--shipping">
                 <span class="summary-row__label">Shipping</span>
                 <span class="summary-row__value">${shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
@@ -985,7 +959,7 @@
               <div class="summary-row summary-row--total">
                 <span class="summary-row__label">Total</span>
                 <span class="summary-row__value">${formatPrice(subtotal + shipping)}</span>
-              </div>`}
+              </div>
 
             ${hasUnavailable ? `
               <div class="summary-notice">

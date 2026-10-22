@@ -194,18 +194,23 @@ export default async function handler(req, res) {
     }
 
     // ── Which brand is this order for? ──
-    // Every order belongs to one brand (it decides the DU-/RW- order number),
-    // so it comes from the products in the cart. Mixed-brand carts are rare;
-    // we ask the shopper to check out each brand separately.
+    // Every order belongs to one brand (it decides the DU-/RW- order number).
+    // A bag with only Rocwood items is a Rocwood order. A bag with both brands
+    // is checked out as ONE order under Ducks Unlimited — customers share one
+    // account and Maya is set up under Ducks Unlimited, so the Rocwood pieces
+    // simply ride along as extra lines on the DU order.
     const brandIds = [...new Set(
       items.map(it => variants.find(x => x.id === it.variantId)?.products?.brand_id)
     )];
-    if (brandIds.length !== 1 || !brandIds[0]) {
-      return res.status(400).json({
-        error: 'Your bag has items from more than one brand. Please check out each brand separately.',
-      });
+    if (brandIds.length === 0 || brandIds.some(id => !id)) {
+      return res.status(400).json({ error: 'An item in your cart is no longer available.' });
     }
-    const brandId = brandIds[0];
+    let brandId = brandIds[0];
+    if (brandIds.length > 1) {
+      const du = await supabase('brands?slug=eq.du&select=id');
+      if (!du?.[0]?.id) throw new Error('Ducks Unlimited brand row not found');
+      brandId = du[0].id;
+    }
 
     // Free shipping over the threshold (the site promises this everywhere)
     const shippingFee = subtotal >= FREE_SHIPPING_THRESHOLD_PHP ? 0 : SHIPPING_FEE_PHP;
