@@ -39,7 +39,7 @@
     /* Sticky top bar (page title + action buttons + status) */
     .design-top {
       position: sticky;
-      top: 56px;                 /* sits below the admin-nav */
+      top: var(--admin-nav-h, 56px); /* sits right below the admin nav */
       z-index: 40;
       background: var(--color-bg-warm);
       border-bottom: 1px solid var(--color-border-light);
