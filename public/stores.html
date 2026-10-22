@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Find a Store — Ducks Unlimited</title>
-  <meta name="description" content="Visit Ducks Unlimited in Greenhills. See the workshop, meet the team, and shop the full collection in person." />
+  <meta name="description" content="Visit a Ducks Unlimited store in Greenhills, Malate or Makati and shop the collection in person." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -166,8 +166,8 @@
       <h1>Find a Store</h1>
       <span class="editorial-rule"></span>
       <p class="stores-header__sub">
-        Come by the workshop. See the cloth woven, meet the team, and try
-        on the full collection.
+        Visit one of our stores to see the pieces up close and try them on
+        before you buy.
       </p>
     </header>
 
@@ -268,10 +268,11 @@
                   <a href="${escapeHtml(directionsUrl(s))}" target="_blank" rel="noopener">Get directions →</a>
                 </p>
               </div>
+              ${s.hours ? `
               <div>
                 <p class="store-card__block-label">Hours</p>
                 <div class="store-card__hours">${renderHours(s.hours)}</div>
-              </div>
+              </div>` : '' /* Only show Hours when we've entered them for this store */}
             </div>
           </div>
         </article>
