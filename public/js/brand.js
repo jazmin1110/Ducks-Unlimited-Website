@@ -116,9 +116,11 @@ export function setBrand(slug) {
   // (shop products, announcement bar, site-content hero) re-runs with the
   // newly-applied brand. Making one place reload is cheaper and more
   // reliable than making every consumer subscribe to brand:change.
+  // A page that belongs to one brand (a product page) would just switch
+  // itself back on reload, so it also jumps to the chosen brand's home.
   const path   = window.location.pathname;
   const atHome = /^\/[a-z]{2,4}\/?$/.test(path);
-  if (atHome && brand.homePath !== path) {
+  if ((atHome || pageOwnsBrand) && brand.homePath !== path) {
     window.location.href = brand.homePath;
   } else {
     window.location.reload();
@@ -126,10 +128,15 @@ export function setBrand(slug) {
   return brand;
 }
 
+// Set by adoptBrand(): this page's brand comes from its content, not the
+// shopper's choice — see setBrand().
+let pageOwnsBrand = false;
+
 // Switch to a brand quietly — no reload. Used by pages that already know
 // which brand they belong to (a product page shows its product's brand).
 // The nav, footer and colours repaint via the brand:change event.
 export function adoptBrand(slug) {
+  if (KNOWN_BRANDS[slug]) pageOwnsBrand = true;
   if (!KNOWN_BRANDS[slug] || getCurrentBrand().slug === slug) return getCurrentBrand();
   const brand = applyBrand(slug);
   applyBrandToTitle(brand);
