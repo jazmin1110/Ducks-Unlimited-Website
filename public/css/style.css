@@ -830,3 +830,22 @@ p:last-child { margin-bottom: 0; }
 @media (min-width: 1024px) {
   h1 { font-size: 3rem; }
 }
+
+/* ── Close (×) buttons: thumb-sized tap area ─────────────────
+   The × glyph is small, so on phones it was easy to miss.
+   This gives every close button an invisible 44×44px tap area
+   (Apple's recommended minimum) without changing how it looks. */
+.announcement-bar__close,
+.filter-drawer-close,
+.qv-drawer__close,
+.mini-cart__close,
+.stl-close,
+.imp-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+/* The announcement bar is short, so its × gets a slightly smaller box. */
+.announcement-bar__close { min-width: 40px; min-height: 36px; right: 0.25rem; }
