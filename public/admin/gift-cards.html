@@ -79,7 +79,7 @@
 
   <main class="admin-main">
     <h1 class="admin-h1">Gift Cards</h1>
-    <p class="admin-sub">Issued gift card codes. Activate "pending" cards once payment is confirmed.</p>
+    <p class="admin-sub">Gift cards bought on the website start as <strong>Pending</strong>. Once you've confirmed the customer's payment, click <strong>Activate</strong> so the code can be used.</p>
 
     <section class="admin-panel">
       <h2>Overview</h2>
@@ -93,6 +93,9 @@
 
     <section class="admin-panel">
       <h2>All Cards</h2>
+
+      <input type="search" id="cardSearch" class="input" placeholder="Search code, name or email…"
+             style="max-width:340px; margin-bottom:0.75rem;" autocomplete="off" aria-label="Search gift cards" />
 
       <div class="filters" id="filters">
         <button type="button" class="filter-pill is-active" data-status="">All</button>
@@ -118,9 +121,10 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { requireAdmin } from '/admin/js/admin-guard.js';
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { window.location.href = '/admin/index.html'; }
+    // Only signed-in admins get past this line (see /admin/js/admin-guard.js)
+    const session = await requireAdmin();
 
     // Log out is handled by /components/admin-nav.html
 
@@ -136,6 +140,15 @@
     }
 
     let currentFilter = '';
+
+    const STATUS_LABELS = { pending: 'Pending', active: 'Active', spent: 'Used up', cancelled: 'Cancelled' };
+
+    // Re-filter as the admin types (small delay so we don't reload on every key)
+    let searchTimer;
+    document.getElementById('cardSearch').addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(load, 250);
+    });
 
     document.querySelectorAll('#filters .filter-pill').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -169,11 +182,16 @@
         .order('created_at', { ascending: false });
       if (currentFilter) query = query.eq('status', currentFilter);
 
-      const { data, error } = await query;
+      const { data: rows, error } = await query;
       const tbody = document.getElementById('cardTable');
+
+      // Search box: match the code, recipient name/email or purchaser email
+      const q = document.getElementById('cardSearch').value.trim().toLowerCase();
+      const data = (rows ?? []).filter(c => !q || [c.code, c.recipient_name, c.recipient_email, c.purchaser_email]
+        .join(' ').toLowerCase().includes(q));
       if (error) { tbody.innerHTML = '<tr><td colspan="8">Error loading.</td></tr>'; console.error(error); return; }
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="color:#999;">No cards.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="color:#999;">No gift cards found.</td></tr>';
         return;
       }
 
@@ -182,7 +200,7 @@
           <td><code>${escapeHtml(c.code)}</code></td>
           <td>${formatPHP(c.amount)}</td>
           <td>${formatPHP(c.balance)}</td>
-          <td><span class="badge badge-${escapeHtml(c.status)}">${escapeHtml(c.status)}</span></td>
+          <td><span class="badge badge-${escapeHtml(c.status)}">${escapeHtml(STATUS_LABELS[c.status] ?? c.status)}</span></td>
           <td>${escapeHtml(c.recipient_name ?? '—')}<br /><small style="color:#999;">${escapeHtml(c.recipient_email ?? '')}</small></td>
           <td>${escapeHtml(c.purchaser_email ?? '—')}</td>
           <td>${escapeHtml(formatDate(c.created_at))}</td>

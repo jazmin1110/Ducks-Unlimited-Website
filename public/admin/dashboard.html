@@ -62,6 +62,19 @@
     }
 
     .stat-card.warning { border-left-color: #C9A84C; }
+
+    /* Cards that are links (click → the matching filtered list) */
+    a.stat-card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      transition: box-shadow 0.15s, transform 0.15s;
+    }
+    a.stat-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.1); transform: translateY(-1px); }
+    .stat-hint { font-size: 0.75rem; color: #888; margin-top: 0.45rem; }
+
+    /* "Things to do" cards get a stronger colour when there is work waiting */
+    .stat-card.todo.has-work { border-left-color: #b33a3a; background: #fffaf7; }
     .stat-card.danger  { border-left-color: #b33a3a; }
 
     .stat-label {
@@ -263,6 +276,7 @@
     .ful-packed    { background: #e0ebf5; color: #2d5a87; }
     .ful-shipped   { background: #fff4d6; color: #997f33; }
     .ful-delivered { background: #e6f2ec; color: #1B4D2E; }
+    .ful-cancelled { background: #eee; color: #555; }
 
     .badge-stack {
       display: flex;
@@ -310,30 +324,49 @@
     <div class="welcome">
       <h1>Welcome back</h1>
       <p class="welcome-email" id="welcomeEmail"></p>
+      <p class="welcome-email" id="brandNote"></p>
     </div>
 
-    <!-- ── Stat cards (4 across) ── -->
+    <!-- ── To-do cards: the work waiting for staff today. Click to open the list. ── -->
+    <div class="stats-grid">
+
+      <a class="stat-card todo" id="cardToPack" href="/admin/orders.html?show=to-pack">
+        <div class="stat-label">Orders to pack</div>
+        <div class="stat-value loading" id="statToPack">—</div>
+        <div class="stat-hint">Paid, not packed yet →</div>
+      </a>
+
+      <a class="stat-card todo" id="cardToShip" href="/admin/orders.html?show=to-ship">
+        <div class="stat-label">Orders to ship</div>
+        <div class="stat-value loading" id="statToShip">—</div>
+        <div class="stat-hint">Packed, waiting for courier →</div>
+      </a>
+
+      <a class="stat-card warning" href="/admin/inventory.html?status=attention">
+        <div class="stat-label">Low / Out of Stock</div>
+        <div class="stat-value loading" id="statLowStock">—</div>
+        <div class="stat-hint">Sizes that need restocking →</div>
+      </a>
+
+    </div>
+
+    <!-- ── Today's numbers ── -->
     <div class="stats-grid">
 
       <div class="stat-card">
-        <div class="stat-label">Active Products</div>
-        <div class="stat-value loading" id="statProducts">—</div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-label">Orders Today</div>
+        <div class="stat-label">Paid Orders Today</div>
         <div class="stat-value loading" id="statOrders">—</div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-label">Revenue Today</div>
+        <div class="stat-label">Sales Today</div>
         <div class="stat-value currency loading" id="statRevenue">—</div>
       </div>
 
-      <div class="stat-card warning">
-        <div class="stat-label">Low Stock Items</div>
-        <div class="stat-value loading" id="statLowStock">—</div>
-      </div>
+      <a class="stat-card" href="/admin/products.html">
+        <div class="stat-label">Products on the website</div>
+        <div class="stat-value loading" id="statProducts">—</div>
+      </a>
 
     </div>
 
@@ -384,13 +417,23 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { requireAdmin } from '/admin/js/admin-guard.js';
+    import { adminBrandFilter } from '/js/brand.js';
+    import { fetchAll } from '/admin/js/bulk-data.js';
 
     // ── Auth guard ──
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) window.location.href = '/admin/index.html';
+    // Only signed-in admins get past this line (see /admin/js/admin-guard.js)
+    const session = await requireAdmin();
 
     // Show the logged-in email
     document.getElementById('welcomeEmail').textContent = session.user.email;
+
+    // Every number below follows the Brand picker in the top bar.
+    // null = "All brands" (no filter), otherwise 'du' or 'rw'.
+    const brandFilter = adminBrandFilter();
+    document.getElementById('brandNote').textContent = brandFilter
+      ? `Showing ${brandFilter === 'rw' ? 'Rocwood' : 'Ducks Unlimited'} only — change the Brand picker in the top bar to see the other brand.`
+      : 'Showing all brands.';
 
     // Log out + email display are handled by /components/admin-nav.html
 
@@ -431,7 +474,7 @@
 
     const FULFILLMENT_LABELS = {
       pending: 'Pending', packed: 'Packed',
-      shipped: 'Shipped', delivered: 'Delivered',
+      shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled',
     };
 
     // ─────────────────────────────────────────────────────────────────────
@@ -439,62 +482,78 @@
     // Each returns a promise — we fire them all in parallel below.
     // ─────────────────────────────────────────────────────────────────────
 
-    // Active products count (head:true skips returning the rows themselves)
+    // Adds the brand filter to an orders/products query (they both have brand_id).
+    // `brands!inner` must be in the select for this to work.
+    function byBrand(query) {
+      return brandFilter ? query.eq('brands.slug', brandFilter) : query;
+    }
+
+    // Products customers can see (head:true = only count, don't return rows)
     async function fetchActiveProductCount() {
-      const { count } = await supabase
+      const { count } = await byBrand(supabase
         .from('products')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true);
+        .select('id, brands!inner(slug)', { count: 'exact', head: true })
+        .eq('is_active', true));
       return count ?? 0;
     }
 
-    // Count of orders placed today (any payment status)
-    async function fetchOrdersTodayCount() {
-      const { count } = await supabase
+    // Count of a filtered set of orders, e.g. "paid but not packed yet"
+    async function countOrders(filters) {
+      let q = supabase
         .from('orders')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', todayStartIso());
+        .select('id, brands!inner(slug)', { count: 'exact', head: true });
+      for (const [col, val] of Object.entries(filters)) q = q.eq(col, val);
+      const { count } = await byBrand(q);
       return count ?? 0;
     }
 
-    // Revenue today = sum of total_amount for paid orders placed today.
-    // Supabase JS doesn't have a SUM aggregator, so we fetch totals and sum in JS.
-    // The count is small (today's paid orders), so this is fine.
-    async function fetchRevenueToday() {
-      const { data, error } = await supabase
+    // Paid orders placed today. Unpaid ones are left out — those are
+    // usually customers who opened the payment page and never finished.
+    async function fetchPaidOrdersToday() {
+      const { data, error } = await byBrand(supabase
         .from('orders')
-        .select('total_amount')
+        .select('total_amount, brands!inner(slug)')
         .eq('payment_status', 'paid')
-        .gte('created_at', todayStartIso());
-      if (error || !data) return 0;
-      return data.reduce((sum, o) => sum + Number(o.total_amount), 0);
+        .neq('fulfillment_status', 'cancelled')
+        .gte('created_at', todayStartIso()));
+      if (error || !data) return { count: 0, revenue: 0 };
+      return {
+        count:   data.length,
+        revenue: data.reduce((sum, o) => sum + Number(o.total_amount), 0),
+      };
     }
 
-    // Most recent 10 orders, including item count (via embedded relation count)
+    // Most recent 10 orders
     async function fetchRecentOrders() {
-      const { data } = await supabase
+      const { data } = await byBrand(supabase
         .from('orders')
         .select(`
           id, order_number, customer_name, total_amount,
-          payment_status, fulfillment_status, created_at
+          payment_status, fulfillment_status, created_at,
+          brands!inner ( slug )
         `)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(10));
       return data ?? [];
     }
 
     // Variants joined with inventory + product info. We compute total stock
     // and "low" status in JS afterwards, so we get one consistent definition
-    // of "low stock" across the whole admin panel.
+    // of "low stock" across the whole admin panel. fetchAll() pages through
+    // the results so nothing is cut off once there are 1000+ variants.
     async function fetchVariantsWithStock() {
-      const { data } = await supabase
-        .from('variants')
-        .select(`
-          id, color, size, sku,
-          products!inner ( name ),
-          inventory ( quantity, low_stock_threshold )
-        `);
-      return data ?? [];
+      return fetchAll(() => {
+        let q = supabase
+          .from('variants')
+          .select(`
+            id, color, size, sku,
+            products!inner ( name, is_active, brands!inner ( slug ) ),
+            inventory ( quantity, low_stock_threshold )
+          `)
+          .order('id');
+        if (brandFilter) q = q.eq('products.brands.slug', brandFilter);
+        return q;
+      }).catch(() => []);
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -529,8 +588,8 @@
           <td class="col-total">${formatPrice(o.total_amount)}</td>
           <td>
             <div class="badge-stack">
-              <span class="status-badge pay-${o.payment_status}">${PAYMENT_LABELS[o.payment_status]}</span>
-              <span class="status-badge ful-${o.fulfillment_status}">${FULFILLMENT_LABELS[o.fulfillment_status]}</span>
+              <span class="status-badge pay-${o.payment_status}">${PAYMENT_LABELS[o.payment_status] ?? escapeHtml(o.payment_status)}</span>
+              <span class="status-badge ful-${o.fulfillment_status}">${FULFILLMENT_LABELS[o.fulfillment_status] ?? escapeHtml(o.fulfillment_status)}</span>
             </div>
           </td>
         `;
@@ -552,6 +611,8 @@
       for (const v of variants) {
         const inv = v.inventory || [];
         if (inv.length === 0) continue; // skip variants with no inventory yet
+        // Hidden products can't be bought, so their stock isn't urgent
+        if (v.products?.is_active === false) continue;
 
         const total     = inv.reduce((sum, i) => sum + (i.quantity ?? 0), 0);
         // Channels usually share a threshold (set together via the inventory
@@ -630,22 +691,30 @@
 
     const [
       productCount,
-      ordersTodayCount,
-      revenueToday,
+      todayStats,
+      toPackCount,
+      toShipCount,
       recentOrders,
       variantsWithStock,
     ] = await Promise.all([
       fetchActiveProductCount(),
-      fetchOrdersTodayCount(),
-      fetchRevenueToday(),
+      fetchPaidOrdersToday(),
+      countOrders({ payment_status: 'paid', fulfillment_status: 'pending' }),
+      countOrders({ payment_status: 'paid', fulfillment_status: 'packed' }),
       fetchRecentOrders(),
       fetchVariantsWithStock(),
     ]);
 
     // ── Fill stat cards ──
     setStatValue(document.getElementById('statProducts'), productCount);
-    setStatValue(document.getElementById('statOrders'),   ordersTodayCount);
-    setStatValue(document.getElementById('statRevenue'),  formatPrice(revenueToday), { currency: true });
+    setStatValue(document.getElementById('statOrders'),   todayStats.count);
+    setStatValue(document.getElementById('statRevenue'),  formatPrice(todayStats.revenue), { currency: true });
+    setStatValue(document.getElementById('statToPack'),   toPackCount);
+    setStatValue(document.getElementById('statToShip'),   toShipCount);
+
+    // Highlight the to-do cards when there's work waiting
+    document.getElementById('cardToPack').classList.toggle('has-work', toPackCount > 0);
+    document.getElementById('cardToShip').classList.toggle('has-work', toShipCount > 0);
 
     const lowStockItems = computeLowStock(variantsWithStock);
     setStatValue(document.getElementById('statLowStock'), lowStockItems.length);

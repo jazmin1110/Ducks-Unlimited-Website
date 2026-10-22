@@ -106,7 +106,7 @@
 
   <main class="admin-main">
 
-    <h1 class="admin-h1">Homepage</h1>
+    <h1 class="admin-h1">Announcements &amp; Shop Intro</h1>
     <p class="admin-sub">Edit the announcement bar (shown on every page) and the Shop page intro. Click <strong>Publish</strong> when your changes are ready to go live.</p>
 
     <!-- The homepage hero, tiles, editorial rows, and new arrivals
@@ -114,7 +114,7 @@
          below are hidden — they no longer change the live homepage. -->
     <p class="admin-panel" style="border-left:3px solid var(--color-accent);">
       <strong>Looking for the homepage hero, collection tiles or editorial blocks?</strong>
-      They're now edited on the <a href="/admin/design.html">Design</a> page, where you can also
+      They're edited on the <a href="/admin/design.html">Homepage</a> page, where you can also
       reorder, add and remove homepage sections.
     </p>
 
@@ -255,12 +255,13 @@
     // =========================================================================
 
     import { supabase } from '/lib/supabase.js';
+    import { requireAdmin } from '/admin/js/admin-guard.js';
     import { getAdminBrandSlug } from '/js/brand.js';
     import { mountImageUploader } from '/admin/js/image-uploader.js';
 
     // ── Auth guard ──
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { window.location.href = '/admin/index.html'; }
+    // Only signed-in admins get past this line (see /admin/js/admin-guard.js)
+    const session = await requireAdmin();
 
     // ── Schema ──
     // The shape of each section's JSONB blob. Matches /js/site-content.js

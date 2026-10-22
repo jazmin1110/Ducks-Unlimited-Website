@@ -190,6 +190,90 @@
     .ful-packed    { background: #e0ebf5; color: #2d5a87; }
     .ful-shipped   { background: #fff4d6; color: #997f33; }
     .ful-delivered { background: #e6f2ec; color: #1B4D2E; }
+    .ful-cancelled { background: #eee; color: #555; text-decoration: line-through; }
+    .refund-badge  { background: #fdf0f0; color: #b33a3a; }
+
+    /* ── Cancel / refund section ── */
+    .refund-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+    .btn-danger-outline {
+      background: none;
+      border: 1px solid #b33a3a;
+      color: #b33a3a;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      padding: 0.55rem 0.9rem;
+      cursor: pointer;
+    }
+    .btn-danger-outline:hover { background: #fdf0f0; }
+
+    .btn-danger {
+      background: #b33a3a;
+      border: none;
+      color: #fff;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 0.65rem 1rem;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+    .btn-danger:disabled { opacity: 0.6; cursor: wait; }
+
+    .refund-form {
+      background: #faf7f2;
+      border: 1px solid #efe6d4;
+      border-radius: 6px;
+      padding: 0.9rem;
+      margin-top: 0.75rem;
+    }
+
+    .refund-form h4 { font-size: 0.9rem; color: #1A1A1A; margin-bottom: 0.5rem; }
+    .refund-form .help { font-size: 0.8rem; color: #666; margin-bottom: 0.75rem; line-height: 1.45; }
+    .refund-form label.radio {
+      display: flex; gap: 0.5rem; align-items: flex-start;
+      font-size: 0.85rem; padding: 0.4rem 0; cursor: pointer;
+    }
+    .refund-form label.radio input { margin-top: 0.2rem; }
+
+    .return-item {
+      display: grid;
+      grid-template-columns: 1fr 64px;
+      gap: 0.4rem 0.5rem;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #efe6d4;
+      font-size: 0.82rem;
+    }
+    .return-item select { grid-column: 1 / -1; }
+    .return-item input,
+    .return-item select,
+    .refund-form .field input,
+    .refund-form .field select {
+      width: 100%;
+      padding: 0.45rem 0.55rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;
+      background: #fff;
+    }
+
+    .refund-history { list-style: none; margin: 0.75rem 0 0; padding: 0; font-size: 0.8rem; color: #555; }
+    .refund-history li { padding: 0.45rem 0; border-top: 1px dashed #e5ddcc; }
+    .refund-history strong { color: #1A1A1A; }
+
+    .cancelled-note {
+      background: #f3f3f3;
+      border-left: 3px solid #888;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.85rem;
+      border-radius: 4px;
+      margin-bottom: 0.75rem;
+    }
 
     /* Stack the two badges vertically in tight columns */
     .badge-stack {
@@ -487,6 +571,88 @@
       min-height: 80px;
     }
 
+    /* ── Quick tabs above the filters ("To pack", "To ship"…) ── */
+    .quick-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .quick-tab {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      padding: 0.5rem 1rem;          /* big enough to tap on a phone */
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      color: #555;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .quick-tab:hover { border-color: #1B4D2E; color: #1B4D2E; }
+
+    .quick-tab.is-active {
+      background: #1B4D2E;
+      border-color: #1B4D2E;
+      color: #fff;
+    }
+
+    .quick-tab .tab-count {
+      display: inline-block;
+      min-width: 1.4em;
+      margin-left: 0.3rem;
+      padding: 0 0.35rem;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.08);
+      font-size: 0.75rem;
+      text-align: center;
+    }
+
+    .quick-tab.is-active .tab-count { background: rgba(255,255,255,0.25); }
+
+    /* Small grey note under the filters (e.g. which brand is shown) */
+    .list-note {
+      font-size: 0.8rem;
+      color: #888;
+      margin: -0.5rem 0 0.75rem;
+    }
+
+    /* Red warning shown when an unpaid order is being packed / shipped */
+    .unpaid-warning {
+      background: #fdf0f0;
+      border-left: 3px solid #b33a3a;
+      color: #8a2b2b;
+      font-size: 0.82rem;
+      padding: 0.55rem 0.85rem;
+      border-radius: 4px;
+      margin-top: 0.5rem;
+    }
+
+    /* Subtotal / shipping lines above the order total */
+    .items-subline {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      color: #666;
+      padding: 0.2rem 0;
+    }
+
+    .btn-print {
+      background: none;
+      border: 1px solid #1B4D2E;
+      color: #1B4D2E;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      padding: 0.45rem 0.9rem;
+      cursor: pointer;
+      margin-top: 0.75rem;
+    }
+
+    .btn-print:hover { background: #eef4f0; }
+
     /* Yellow warning shown when status is "shipped" but tracking is empty */
     .tracking-warning {
       display: none;
@@ -606,7 +772,16 @@
 
     <div class="page-header">
       <h1 class="page-title">Orders</h1>
-      <p class="page-subtitle">All online orders. Click any order to view details and update fulfillment status.</p>
+      <p class="page-subtitle">All online orders. Tap an order to see what to pack, print a packing slip, and update its status.</p>
+    </div>
+
+    <!-- ── Quick tabs: one tap shows the orders that need work ── -->
+    <div class="quick-tabs" id="quickTabs">
+      <button type="button" class="quick-tab is-active" data-show="">All orders</button>
+      <button type="button" class="quick-tab" data-show="to-pack">To pack <span class="tab-count" data-count="to-pack"></span></button>
+      <button type="button" class="quick-tab" data-show="to-ship">To ship <span class="tab-count" data-count="to-ship"></span></button>
+      <button type="button" class="quick-tab" data-show="unpaid">Not paid yet <span class="tab-count" data-count="unpaid"></span></button>
+      <button type="button" class="quick-tab" data-show="done">Delivered</button>
     </div>
 
     <!-- ── Filters bar ── -->
@@ -617,7 +792,7 @@
         <input
           type="search"
           id="filterSearch"
-          placeholder="Order # or customer name…"
+          placeholder="Order #, name, email or phone…"
           autocomplete="off"
         />
       </div>
@@ -640,6 +815,7 @@
           <option value="packed">Packed</option>
           <option value="shipped">Shipped</option>
           <option value="delivered">Delivered</option>
+          <option value="cancelled">Cancelled</option>
         </select>
       </div>
 
@@ -654,6 +830,8 @@
       </div>
 
     </div>
+
+    <p class="list-note" id="brandNote"></p>
 
     <!-- ── Orders table ── -->
     <div class="table-wrap">
@@ -703,11 +881,13 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { requireAdmin } from '/admin/js/admin-guard.js';
     import { adminBrandFilter } from '/js/brand.js';
+    import { fetchAll } from '/admin/js/bulk-data.js';
 
     // ── Auth guard ──
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) window.location.href = '/admin/index.html';
+    // Only signed-in admins get past this line (see /admin/js/admin-guard.js)
+    const session = await requireAdmin();
 
     // Log out is handled by /components/admin-nav.html
 
@@ -743,6 +923,7 @@
       packed:    'Packed',
       shipped:   'Shipped',
       delivered: 'Delivered',
+      cancelled: 'Cancelled',
     };
 
     // ─────────────────────────────────────────────────────────────────────
@@ -757,6 +938,18 @@
 
     // Full data of the order currently open in the detail panel
     let currentOrder = null;
+
+    // Which quick tab is selected: '' (all), 'to-pack', 'to-ship', 'unpaid', 'done'.
+    // Can be set from the URL, e.g. the dashboard links to ?show=to-pack
+    let quickTab = new URLSearchParams(window.location.search).get('show') ?? '';
+
+    // What each quick tab means, as a yes/no test on one order
+    const QUICK_TABS = {
+      'to-pack': o => o.paymentStatus === 'paid' && o.fulfillmentStatus === 'pending',
+      'to-ship': o => o.paymentStatus === 'paid' && o.fulfillmentStatus === 'packed',
+      'unpaid':  o => o.paymentStatus !== 'paid' && o.fulfillmentStatus !== 'cancelled',
+      'done':    o => o.fulfillmentStatus === 'delivered',
+    };
 
     // ─────────────────────────────────────────────────────────────────────
     // HELPERS
@@ -806,19 +999,30 @@
       // 011); the embedded brands!inner lets us filter by slug at the DB.
       const brandFilter = adminBrandFilter();
 
-      let query = supabase
-        .from('orders')
-        .select(`
-          id, order_number, customer_name, total_amount,
-          payment_status, fulfillment_status, created_at,
-          brands!inner ( slug, name ),
-          order_items ( count )
-        `)
-        .order('created_at', { ascending: false });
+      document.getElementById('brandNote').textContent = brandFilter
+        ? `Showing ${brandFilter === 'rw' ? 'Rocwood' : 'Ducks Unlimited'} orders only. Orders with both brands in one bag are filed under Ducks Unlimited. Pick "All brands" in the top bar to see everything.`
+        : '';
 
-      if (brandFilter) query = query.eq('brands.slug', brandFilter);
-
-      const { data, error } = await query;
+      // fetchAll() pages through the results so nothing is cut off at 1000 orders
+      let data, error;
+      try {
+        data = await fetchAll(() => {
+          let query = supabase
+            .from('orders')
+            .select(`
+              id, order_number, customer_name, customer_email, customer_phone, total_amount,
+              payment_status, fulfillment_status, created_at, refunded_amount,
+              brands!inner ( slug, name ),
+              order_items ( count )
+            `)
+            .order('created_at', { ascending: false })
+            .order('id');
+          if (brandFilter) query = query.eq('brands.slug', brandFilter);
+          return query;
+        });
+      } catch (err) {
+        error = err;
+      }
 
       if (error) {
         console.error(error);
@@ -830,11 +1034,14 @@
         id:                 o.id,
         orderNumber:        o.order_number,
         customerName:       o.customer_name,
+        customerEmail:      o.customer_email ?? '',
+        customerPhone:      o.customer_phone ?? '',
         totalAmount:        Number(o.total_amount),
         paymentStatus:      o.payment_status,
         fulfillmentStatus:  o.fulfillment_status,
         createdAt:          o.created_at,
         itemCount:          o.order_items?.[0]?.count ?? 0,
+        refundedAmount:     Number(o.refunded_amount ?? 0),
       }));
 
       applyFiltersAndRender();
@@ -851,10 +1058,16 @@
       const from     = fromDateInput.value ? new Date(fromDateInput.value + 'T00:00:00') : null;
       const to       = toDateInput.value   ? new Date(toDateInput.value   + 'T23:59:59.999') : null;
 
+      updateTabCounts();
+
       filteredView = allOrders.filter(o => {
-        // Search matches order number OR customer name (case-insensitive)
+        // Quick tab first ("To pack", "To ship"…)
+        if (quickTab && QUICK_TABS[quickTab] && !QUICK_TABS[quickTab](o)) return false;
+
+        // Search matches order number, customer name, email or phone (case-insensitive)
         if (q) {
-          const haystack = (o.orderNumber + ' ' + o.customerName).toLowerCase();
+          const haystack = [o.orderNumber, o.customerName, o.customerEmail, o.customerPhone]
+            .join(' ').toLowerCase();
           if (!haystack.includes(q)) return false;
         }
         if (pay && o.paymentStatus     !== pay) return false;
@@ -873,9 +1086,27 @@
       renderTable();
     }
 
+    // Show how many orders are waiting in each quick tab
+    function updateTabCounts() {
+      document.querySelectorAll('[data-count]').forEach(el => {
+        const n = allOrders.filter(QUICK_TABS[el.dataset.count]).length;
+        el.textContent = n;
+      });
+      document.querySelectorAll('.quick-tab').forEach(btn => {
+        btn.classList.toggle('is-active', btn.dataset.show === quickTab);
+      });
+    }
+
+    document.getElementById('quickTabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.quick-tab');
+      if (!btn) return;
+      quickTab = btn.dataset.show;
+      applyFiltersAndRender();
+    });
+
     function renderTable() {
       if (filteredView.length === 0) {
-        const hasFilters = searchInput.value || paymentSelect.value || fulfillmentSelect.value
+        const hasFilters = quickTab || searchInput.value || paymentSelect.value || fulfillmentSelect.value
                          || fromDateInput.value || toDateInput.value;
 
         if (allOrders.length === 0) {
@@ -910,8 +1141,9 @@
           <td class="col-total">${formatPrice(o.totalAmount)}</td>
           <td>
             <div class="badge-stack">
-              <span class="status-badge pay-${o.paymentStatus}">${PAYMENT_LABELS[o.paymentStatus]}</span>
-              <span class="status-badge ful-${o.fulfillmentStatus}">${FULFILLMENT_LABELS[o.fulfillmentStatus]}</span>
+              <span class="status-badge pay-${o.paymentStatus}">${PAYMENT_LABELS[o.paymentStatus] ?? escapeHtml(o.paymentStatus)}</span>
+              <span class="status-badge ful-${o.fulfillmentStatus}">${FULFILLMENT_LABELS[o.fulfillmentStatus] ?? escapeHtml(o.fulfillmentStatus)}</span>
+              ${o.refundedAmount > 0 ? `<span class="status-badge refund-badge">Refunded ${formatPrice(o.refundedAmount)}</span>` : ''}
             </div>
           </td>
         `;
@@ -920,6 +1152,7 @@
     }
 
     function clearFilters() {
+      quickTab = '';
       searchInput.value = '';
       paymentSelect.value = '';
       fulfillmentSelect.value = '';
@@ -982,8 +1215,10 @@
           id, order_number, customer_name, customer_email, customer_phone, shipping_address,
           total_amount, payment_status, fulfillment_status, paymongo_payment_id, payment_provider, payment_reference,
           tracking_number, internal_notes, created_at,
+          refunded_amount, cancelled_at, cancel_reason, paid_at,
+          order_refunds ( kind, amount, method, reason, note, provider_refund_id, items, created_by_email, created_at ),
           order_items (
-            id, quantity, price_at_purchase,
+            id, variant_id, quantity, price_at_purchase,
             variants (
               id, color, size, sku,
               products ( name )
@@ -1034,6 +1269,11 @@
           </tr>
         `;
       }).join('');
+
+      // Subtotal = what the items cost. Anything above that in the total is shipping.
+      const itemsSubtotal = (order.order_items || [])
+        .reduce((sum, it) => sum + Number(it.price_at_purchase) * it.quantity, 0);
+      const shippingFee = Math.max(0, Number(order.total_amount) - itemsSubtotal);
 
       // ── Render the full panel body ──
       panelBody.innerHTML = `
@@ -1090,10 +1330,21 @@
           <table class="items-table">
             <tbody>${itemRows || '<tr><td colspan="3" style="color:#aaa;">No items.</td></tr>'}</tbody>
           </table>
+          <!-- Items add up to the subtotal; the difference to the total is the
+               shipping fee charged at checkout. -->
+          <div class="items-subline">
+            <span>Subtotal</span>
+            <span>${formatPrice(itemsSubtotal)}</span>
+          </div>
+          <div class="items-subline">
+            <span>Shipping</span>
+            <span>${shippingFee > 0 ? formatPrice(shippingFee) : 'Free'}</span>
+          </div>
           <div class="items-total">
             <span>Total</span>
             <span>${formatPrice(order.total_amount)}</span>
           </div>
+          <button type="button" class="btn-print" id="printSlipBtn">🖨 Print packing slip</button>
         </section>
 
         <!-- Payment info (read-only — payment_status is set automatically once Maya confirms payment) -->
@@ -1115,6 +1366,17 @@
                 : '<span class="paymongo-id paymongo-id-empty">— not yet recorded —</span>'}
             </span>
           </div>
+          ${isPayMongoOrder(order) ? '' : `
+          <div class="info-row">
+            <!-- Maya calls our order id the "Request Reference Number". Search
+                 for it in Maya Manager to find this payment. -->
+            <span class="info-label">Maya ref #</span>
+            <span class="info-value">
+              <span class="paymongo-id">${escapeHtml(order.id)}</span>
+              <button type="button" class="btn-print" style="margin:0 0 0 0.4rem;padding:0.15rem 0.5rem;font-size:0.75rem;"
+                      data-copy="${escapeHtml(order.id)}">Copy</button>
+            </span>
+          </div>`}
         </section>
 
         <!-- Editable: fulfillment status + tracking number -->
@@ -1122,7 +1384,8 @@
           <h3 class="section-heading">Fulfillment</h3>
           <div class="field">
             <label for="fulfillmentSelect">Status</label>
-            <select id="fulfillmentSelect">
+            <select id="fulfillmentSelect" ${order.fulfillment_status === 'cancelled' ? 'disabled' : ''}>
+              ${order.fulfillment_status === 'cancelled' ? '<option value="cancelled" selected>Cancelled</option>' : ''}
               <option value="pending"   ${order.fulfillment_status === 'pending'   ? 'selected' : ''}>Pending</option>
               <option value="packed"    ${order.fulfillment_status === 'packed'    ? 'selected' : ''}>Packed</option>
               <option value="shipped"   ${order.fulfillment_status === 'shipped'   ? 'selected' : ''}>Shipped</option>
@@ -1140,6 +1403,11 @@
             <div class="tracking-warning" id="trackingWarning">
               Please enter a tracking number — this order is marked as shipped.
             </div>
+            ${order.payment_status !== 'paid' ? `
+              <div class="unpaid-warning">
+                ⚠ This order is <strong>not paid</strong>. Do not pack or ship it until
+                the payment shows as Paid.
+              </div>` : ''}
           </div>
         </section>
 
@@ -1154,9 +1422,14 @@
           </div>
         </section>
 
+        <!-- Cancel / refund / return. Filled in by renderRefundSection(). -->
+        <section class="order-section" id="refundSection"></section>
+
         <!-- Inline error appears here when save validation fails -->
         <div class="panel-error" id="panelError"></div>
       `;
+
+      renderRefundSection(order);
 
       // ── Wire up dynamic behavior on the rendered form ──
       const fulSelect   = document.getElementById('fulfillmentSelect');
@@ -1182,6 +1455,355 @@
 
       // Initial check (in case the order is already shipped with no tracking yet)
       updateTrackingWarning();
+
+      document.getElementById('printSlipBtn').addEventListener('click', () => printPackingSlip(order));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // CANCEL / REFUND
+    // The buttons here open a small form. Submitting it calls the server
+    // (/api/admin-order), which sends the money back through PayMongo if
+    // asked, puts items back in stock, and saves a history row.
+    //
+    // Rules (the server checks them again):
+    //   Cancel  → only before shipping. Paid orders: all items go back to
+    //             online stock + the money is refunded.
+    //   Return / refund → paid orders. Pick items that came back (and where
+    //             they go in stock) and how much money to return.
+    // ─────────────────────────────────────────────────────────────────────
+
+    const REASON_OPTIONS = `
+      <option value="">Choose a reason…</option>
+      <option value="customer_request">Customer asked</option>
+      <option value="out_of_stock">Out of stock</option>
+      <option value="damaged">Damaged / defective</option>
+      <option value="wrong_item">Wrong item sent</option>
+      <option value="other">Other</option>`;
+
+    // How much is left to refund, and how many of each item can still come back
+    function refundState(order) {
+      const stillOwed = Math.round((Number(order.total_amount) - Number(order.refunded_amount || 0)) * 100) / 100;
+      const returned = {};
+      for (const r of order.order_refunds || []) {
+        for (const it of r.items || []) returned[it.variant_id] = (returned[it.variant_id] || 0) + it.quantity;
+      }
+      const items = (order.order_items || []).map(it => ({
+        variantId: it.variant_id,
+        name:      `${it.variants?.products?.name ?? 'Item'} — ${it.variants?.color ?? ''} ${it.variants?.size ?? ''}`.trim(),
+        price:     Number(it.price_at_purchase),
+        left:      it.quantity - (returned[it.variant_id] || 0),
+      }));
+      return { stillOwed, items };
+    }
+
+    // Was this order paid through PayMongo? (Only older orders — the shop now uses Maya.)
+    function isPayMongoOrder(order) {
+      return order.payment_provider === 'paymongo' || (!order.payment_provider && !!order.paymongo_payment_id);
+    }
+
+    // Step-by-step for refunding a Maya payment. Maya only lets us refund from
+    // Maya Manager (its website) until Maya switches on refunds through code.
+    function mayaRefundSteps(order) {
+      const paidDay = order.paid_at ?? order.created_at;
+      const sameDay = new Date(paidDay).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' })
+                   === new Date().toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' });
+      return `
+        <div class="cancelled-note" style="background:#fff8e6;border-left-color:#C9A84C;">
+          <strong>First, send the money back in Maya Manager:</strong>
+          <ol style="margin:0.4rem 0 0 1.1rem;padding:0;line-height:1.55;">
+            <li>Log in to <a href="https://manager.paymaya.com" target="_blank" rel="noopener">Maya Manager</a> → Transactions.</li>
+            <li>Search the reference number
+              <code style="font-size:0.75rem;">${escapeHtml(order.id)}</code>
+              <button type="button" class="btn-print" style="margin:0;padding:0.1rem 0.45rem;font-size:0.72rem;" data-copy="${escapeHtml(order.id)}">Copy</button></li>
+            <li>${sameDay
+              ? 'It was paid <strong>today</strong>, so click <strong>Void</strong> (voids return the full amount only). For a partial refund, wait until tomorrow.'
+              : 'Click <strong>Refund</strong> and enter the amount (partial refunds are OK, up to 180 days after payment).'}</li>
+            <li>Come back here and press the button below to record it.</li>
+          </ol>
+        </div>`;
+    }
+
+    // The "how is the money returned?" choices
+    function refundMethodChoices(order, amountText) {
+      if (isPayMongoOrder(order)) {
+        // Old PayMongo orders can still be refunded automatically
+        return `
+          <label class="radio"><input type="radio" name="refundMethod" value="paymongo" checked />
+            <span><strong>Refund ${amountText} now through PayMongo</strong> (this older order was paid with PayMongo).</span></label>
+          <label class="radio"><input type="radio" name="refundMethod" value="manual" />
+            <span><strong>I already refunded it another way</strong> (bank transfer, GCash, cash). Just record it.</span></label>
+          <label class="radio"><input type="radio" name="refundMethod" value="none" />
+            <span><strong>Don't return money</strong> (e.g. store credit or exchange).</span></label>`;
+      }
+      return `
+        ${mayaRefundSteps(order)}
+        <label class="radio"><input type="radio" name="refundMethod" value="manual" checked />
+          <span><strong>I refunded ${amountText} in Maya Manager</strong> (or by bank transfer / GCash / cash).</span></label>
+        <label class="radio"><input type="radio" name="refundMethod" value="none" />
+          <span><strong>Don't return money</strong> (e.g. store credit or exchange).</span></label>`;
+    }
+
+    // Any "Copy" button in the panel copies its reference number
+    panelBody.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-copy]');
+      if (!btn) return;
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy);
+        showToast('Reference number copied.');
+      } catch {
+        window.prompt('Copy this reference number:', btn.dataset.copy);
+      }
+    });
+
+    function renderRefundSection(order) {
+      const box = document.getElementById('refundSection');
+      const isPaid      = order.payment_status === 'paid';
+      const isCancelled = order.fulfillment_status === 'cancelled';
+      const canCancel   = !isCancelled && ['pending', 'packed'].includes(order.fulfillment_status);
+      const { stillOwed, items } = refundState(order);
+      const canRefund   = isPaid && (stillOwed > 0 || items.some(i => i.left > 0));
+
+      const history = (order.order_refunds || [])
+        .slice().sort((a, b) => a.created_at.localeCompare(b.created_at))
+        .map(r => {
+          const when  = new Date(r.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+          const count = (r.items || []).reduce((n, i) => n + i.quantity, 0);
+          const how   = { paymongo: 'via PayMongo', manual: 'recorded (refunded outside)', none: 'no money returned' }[r.method];
+          return `<li><strong>${r.kind === 'cancel' ? 'Cancelled' : 'Refund'}</strong> · ${when}<br>
+            ${formatPrice(r.amount)} ${how}${count ? ` · ${count} item${count === 1 ? '' : 's'} returned` : ''}
+            · ${escapeHtml(r.reason ?? '')}${r.note ? ` — ${escapeHtml(r.note)}` : ''}
+            <br><span style="color:#999">by ${escapeHtml(r.created_by_email ?? 'staff')}${r.provider_refund_id ? ` · ${escapeHtml(r.provider_refund_id)}` : ''}</span></li>`;
+        }).join('');
+
+      box.innerHTML = `
+        <h3 class="section-heading">Cancel or Refund</h3>
+        ${isCancelled ? `<div class="cancelled-note">This order was <strong>cancelled</strong>
+            ${order.cancelled_at ? 'on ' + escapeHtml(new Date(order.cancelled_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })) : ''}.
+            ${order.cancel_reason ? '<br>Reason: ' + escapeHtml(order.cancel_reason) : ''}</div>` : ''}
+        ${Number(order.refunded_amount) > 0 ? `<p style="font-size:0.85rem;margin-bottom:0.5rem;">
+            Refunded so far: <strong>${formatPrice(order.refunded_amount)}</strong> of ${formatPrice(order.total_amount)}</p>` : ''}
+        <div class="refund-actions">
+          ${canCancel ? '<button type="button" class="btn-danger-outline" data-open="cancel">Cancel order</button>' : ''}
+          ${canRefund ? '<button type="button" class="btn-danger-outline" data-open="refund">Return / refund</button>' : ''}
+          ${!canCancel && !canRefund && !isCancelled ? '<p style="font-size:0.8rem;color:#999;">Nothing to cancel or refund on this order.</p>' : ''}
+        </div>
+        <div id="refundFormSlot"></div>
+        ${history ? `<ul class="refund-history">${history}</ul>` : ''}
+      `;
+
+      box.querySelector('[data-open="cancel"]')?.addEventListener('click', () => openCancelForm(order));
+      box.querySelector('[data-open="refund"]')?.addEventListener('click', () => openRefundForm(order));
+    }
+
+    function openCancelForm(order) {
+      const isPaid = order.payment_status === 'paid';
+      const { stillOwed, items } = refundState(order);
+      const itemCount = items.reduce((n, i) => n + Math.max(0, i.left), 0);
+      const slot = document.getElementById('refundFormSlot');
+
+      slot.innerHTML = `
+        <div class="refund-form">
+          <h4>Cancel this order</h4>
+          <p class="help">${isPaid
+            ? `All ${itemCount} item${itemCount === 1 ? '' : 's'} go back into <strong>online stock</strong> automatically.`
+            : `This order was <strong>never paid</strong>, so no money or stock needs to move. It will just be marked Cancelled.`}</p>
+          <div class="field"><label>Reason</label><select id="rfReason">${REASON_OPTIONS}</select></div>
+          <div class="field"><label>Note (optional)</label><input type="text" id="rfNote" placeholder="e.g. customer changed their mind" /></div>
+          ${isPaid ? `<div style="margin-top:0.5rem;">${refundMethodChoices(order, formatPrice(stillOwed))}</div>` : ''}
+          <button type="button" class="btn-danger" id="rfSubmit">Cancel order${isPaid ? ' and refund' : ''}</button>
+          <button type="button" class="btn-cancel" id="rfClose" style="width:100%;margin-top:0.4rem;">Never mind</button>
+        </div>`;
+
+      slot.querySelector('#rfClose').addEventListener('click', () => { slot.innerHTML = ''; });
+      slot.querySelector('#rfSubmit').addEventListener('click', () => {
+        const method = isPaid ? slot.querySelector('input[name="refundMethod"]:checked')?.value : 'none';
+        submitOrderAction(order, {
+          action: 'cancel',
+          reason: slot.querySelector('#rfReason').value,
+          note:   slot.querySelector('#rfNote').value,
+          refundMethod: method,
+        }, method === 'paymongo'
+          ? `Cancel ${order.order_number} and send ${formatPrice(stillOwed)} back to the customer through PayMongo? This cannot be undone.`
+          : method === 'manual'
+            ? `Have you already refunded ${formatPrice(stillOwed)} in Maya Manager? Press OK to cancel ${order.order_number} and record the refund.`
+            : `Cancel ${order.order_number}? This cannot be undone.`);
+      });
+    }
+
+    function openRefundForm(order) {
+      const { stillOwed, items } = refundState(order);
+      const slot = document.getElementById('refundFormSlot');
+      const subtotal = items.reduce((s, i) => s + i.price * (order.order_items.find(x => x.variant_id === i.variantId)?.quantity ?? 0), 0);
+      const shipping = Math.max(0, Number(order.total_amount) - subtotal);
+
+      slot.innerHTML = `
+        <div class="refund-form">
+          <h4>Return / refund</h4>
+          <p class="help">Enter how many of each item came back and where it goes. Damaged items?
+            Choose "Don't put back in stock". The refund amount fills in by itself — you can change it.
+            For a refund without a return (e.g. a goodwill discount), leave all items at 0.</p>
+          ${items.map((it, idx) => `
+            <div class="return-item">
+              <div>${escapeHtml(it.name)}<br><span style="color:#999">${formatPrice(it.price)} each · ${Math.max(0, it.left)} can be returned</span></div>
+              <input type="number" min="0" max="${Math.max(0, it.left)}" value="0" data-qty="${idx}" ${it.left <= 0 ? 'disabled' : ''} inputmode="numeric" aria-label="Quantity returned" />
+              <select data-restock="${idx}" aria-label="Where does it go">
+                <option value="online">Put back in online stock</option>
+                <option value="greenhills_store">Put back in Greenhills store stock</option>
+                <option value="">Don't put back in stock (damaged)</option>
+              </select>
+            </div>`).join('')}
+          ${shipping > 0 ? `<label class="radio"><input type="checkbox" id="rfShipping" />
+            <span>Also refund the shipping fee (${formatPrice(shipping)})</span></label>` : ''}
+          <div class="field" style="margin-top:0.5rem;"><label>Amount to refund (₱) — at most ${formatPrice(stillOwed)}</label>
+            <input type="number" id="rfAmount" min="0" max="${stillOwed}" step="0.01" value="0" /></div>
+          <div class="field"><label>Reason</label><select id="rfReason">${REASON_OPTIONS}</select></div>
+          <div class="field"><label>Note (optional)</label><input type="text" id="rfNote" placeholder="e.g. size too small, returned at Greenhills" /></div>
+          <div style="margin-top:0.5rem;">${refundMethodChoices(order, 'the amount above')}</div>
+          <button type="button" class="btn-danger" id="rfSubmit">Save return / refund</button>
+          <button type="button" class="btn-cancel" id="rfClose" style="width:100%;margin-top:0.4rem;">Never mind</button>
+        </div>`;
+
+      const amountIn = slot.querySelector('#rfAmount');
+      let amountTouched = false;
+      amountIn.addEventListener('input', () => { amountTouched = true; });
+
+      // Keep the amount = returned items (+ shipping if ticked), until staff type their own
+      function recalc() {
+        if (amountTouched) return;
+        let sum = 0;
+        slot.querySelectorAll('[data-qty]').forEach(inp => {
+          sum += (parseInt(inp.value, 10) || 0) * items[Number(inp.dataset.qty)].price;
+        });
+        if (slot.querySelector('#rfShipping')?.checked) sum += shipping;
+        amountIn.value = Math.min(stillOwed, Math.round(sum * 100) / 100).toFixed(2);
+      }
+      slot.addEventListener('input', (e) => { if (e.target !== amountIn) recalc(); });
+      slot.addEventListener('change', (e) => { if (e.target !== amountIn) recalc(); });
+
+      slot.querySelector('#rfClose').addEventListener('click', () => { slot.innerHTML = ''; });
+      slot.querySelector('#rfSubmit').addEventListener('click', () => {
+        const chosen = [...slot.querySelectorAll('[data-qty]')]
+          .map(inp => {
+            const idx = Number(inp.dataset.qty);
+            return {
+              variantId:      items[idx].variantId,
+              quantity:       parseInt(inp.value, 10) || 0,
+              restockChannel: slot.querySelector(`[data-restock="${idx}"]`).value || null,
+            };
+          })
+          .filter(i => i.quantity > 0);
+        const method = slot.querySelector('input[name="refundMethod"]:checked')?.value;
+        const amount = Number(amountIn.value) || 0;
+        submitOrderAction(order, {
+          action: 'refund',
+          reason: slot.querySelector('#rfReason').value,
+          note:   slot.querySelector('#rfNote').value,
+          refundMethod: method,
+          amount,
+          items:  chosen,
+        }, method === 'paymongo' && amount > 0
+          ? `Send ${formatPrice(amount)} back to the customer through PayMongo? This cannot be undone.`
+          : method === 'manual' && amount > 0
+            ? `Have you already refunded ${formatPrice(amount)} in Maya Manager? Press OK to record it on ${order.order_number}.`
+            : `Save this return / refund on ${order.order_number}?`);
+      });
+    }
+
+    // Send the cancel/refund to the server, then reload the order
+    async function submitOrderAction(order, payload, confirmText) {
+      const slot = document.getElementById('refundFormSlot');
+      const btn  = slot.querySelector('#rfSubmit');
+
+      if (!payload.reason) { showToast('Please choose a reason.'); slot.querySelector('#rfReason').focus(); return; }
+      if (!payload.refundMethod) { showToast('Please choose how the money is returned.'); return; }
+      if (!window.confirm(confirmText)) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Working…';
+
+      try {
+        // Fresh token, in case the page has been open for a long time
+        const { data: { session: s } } = await supabase.auth.getSession();
+        const res = await fetch('/api/admin-order', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s?.access_token}` },
+          body:    JSON.stringify({ orderId: order.id, ...payload }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || 'Something went wrong. Please try again.');
+
+        showToast(payload.action === 'cancel' ? 'Order cancelled.' : 'Return / refund saved.');
+        await openOrderPanel(order.id);  // show the updated order
+        loadOrders();                    // refresh the list in the background
+      } catch (err) {
+        console.error(err);
+        btn.disabled = false;
+        btn.textContent = 'Try again';
+        window.alert(err.message);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // PACKING SLIP
+    // Opens a plain, printer-friendly page with the customer's address and
+    // the list of items, then shows the browser's print dialog. Put the
+    // printout inside the parcel or use it as a picking list.
+    // ─────────────────────────────────────────────────────────────────────
+
+    function printPackingSlip(order) {
+      const rows = (order.order_items || []).map(it => {
+        const v = it.variants;
+        return `<tr>
+          <td>${escapeHtml(v?.products?.name ?? 'Unknown product')}</td>
+          <td>${escapeHtml(v?.color ?? '')}</td>
+          <td>${escapeHtml(v?.size ?? '')}</td>
+          <td style="font-family:monospace">${escapeHtml(v?.sku ?? '')}</td>
+          <td style="text-align:center">${it.quantity}</td>
+          <td style="text-align:center">☐</td>
+        </tr>`;
+      }).join('');
+
+      const date = new Date(order.created_at).toLocaleDateString('en-PH', {
+        year: 'numeric', month: 'long', day: 'numeric',
+      });
+
+      const win = window.open('', '_blank');
+      if (!win) { showToast('Allow pop-ups for this site to print packing slips.'); return; }
+
+      win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+        <title>Packing slip ${escapeHtml(order.order_number)}</title>
+        <style>
+          body { font-family: Arial, sans-serif; color: #111; padding: 24px; max-width: 760px; margin: 0 auto; }
+          h1 { font-size: 20px; margin: 0 0 4px; }
+          .muted { color: #555; font-size: 13px; }
+          .box { border: 1px solid #999; padding: 12px 14px; margin: 16px 0; }
+          .box h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 6px; color: #555; }
+          table { width: 100%; border-collapse: collapse; font-size: 14px; }
+          th, td { border-bottom: 1px solid #ccc; padding: 8px 6px; text-align: left; }
+          th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #555; }
+          .note { white-space: pre-wrap; }
+        </style></head><body>
+        <h1>Ducks Unlimited — Packing slip</h1>
+        <div class="muted">Order <strong>${escapeHtml(order.order_number)}</strong> · ${escapeHtml(date)}</div>
+
+        <div class="box">
+          <h2>Ship to</h2>
+          <div><strong>${escapeHtml(order.customer_name)}</strong></div>
+          <div>${escapeHtml(order.shipping_address)}</div>
+          <div>${escapeHtml(order.customer_phone ?? '')}</div>
+        </div>
+
+        <table>
+          <thead><tr><th>Item</th><th>Color</th><th>Size</th><th>SKU</th><th style="text-align:center">Qty</th><th style="text-align:center">Packed</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+
+        ${order.internal_notes ? `<div class="box"><h2>Staff notes</h2><div class="note">${escapeHtml(order.internal_notes)}</div></div>` : ''}
+
+        <p class="muted" style="margin-top:24px">Thank you for shopping with us!</p>
+        <script>window.onload = () => window.print();<\/script>
+        </body></html>`);
+      win.document.close();
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -1222,13 +1844,23 @@
         return;
       }
 
+      // Packing / shipping an unpaid order is almost always a mistake — ask first.
+      if (currentOrder.payment_status !== 'paid'
+          && newFulfillment !== 'pending'
+          && newFulfillment !== currentOrder.fulfillment_status) {
+        const ok = window.confirm('This order is NOT PAID yet. Are you sure you want to mark it as '
+          + FULFILLMENT_LABELS[newFulfillment] + '?');
+        if (!ok) return;
+      }
+
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving…';
 
       const { error } = await supabase
         .from('orders')
         .update({
-          fulfillment_status: newFulfillment,
+          // A cancelled order stays cancelled — only /api/admin-order changes that
+          ...(currentOrder.fulfillment_status === 'cancelled' ? {} : { fulfillment_status: newFulfillment }),
           // Store empty tracking / notes as null rather than empty strings,
           // so the DB clearly says "no value here yet"
           tracking_number:    newTracking || null,

@@ -256,11 +256,12 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { requireAdmin } from '/admin/js/admin-guard.js';
     import { mountImageUploader } from '/admin/js/image-uploader.js';
 
     // Require admin sign-in (admin/index.html already gates the section)
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { window.location.href = '/admin/index.html'; }
+    // Only signed-in admins get past this line (see /admin/js/admin-guard.js)
+    const session = await requireAdmin();
 
     // Log out is handled by /components/admin-nav.html
 

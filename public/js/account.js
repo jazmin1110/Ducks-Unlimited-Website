@@ -162,6 +162,7 @@ export function orderFromRow(o) {
     packedAt:          o.packed_at,
     shippedAt:         o.shipped_at,
     deliveredAt:       o.delivered_at,
+    refundedAmount:    Number(o.refunded_amount ?? 0),
     items: (o.order_items || []).map(it => {
       const v = it.variants || {};
       const p = v.products || {};
@@ -184,7 +185,7 @@ export function orderFromRow(o) {
 export const ORDER_SELECT = `
   id, order_number, payment_status, fulfillment_status, tracking_number,
   shipping_address, total_amount, created_at,
-  paid_at, packed_at, shipped_at, delivered_at,
+  paid_at, packed_at, shipped_at, delivered_at, refunded_amount,
   order_items (
     quantity, price_at_purchase,
     variants ( color, size, products ( id, name, product_images ( image_url, is_primary, display_order ) ) )
@@ -193,6 +194,8 @@ export const ORDER_SELECT = `
 
 // One label for the pill, based on both lifecycle columns.
 export function orderStatus(o) {
+  // Cancelled wins over everything else (uses the red "failed" pill style)
+  if (o.fulfillmentStatus === 'cancelled') return { key: 'failed', label: o.refundedAmount > 0 ? 'Cancelled · Refunded' : 'Cancelled' };
   if (o.paymentStatus === 'failed')  return { key: 'failed',  label: 'Payment not completed' };
   if (o.paymentStatus === 'pending') return { key: 'pending', label: 'Awaiting payment' };
   switch (o.fulfillmentStatus) {
@@ -205,6 +208,14 @@ export function orderStatus(o) {
 
 // What the customer should expect next — shown under the timeline.
 function nextStepText(o) {
+  if (o.fulfillmentStatus === 'cancelled') {
+    return o.refundedAmount > 0
+      ? `This order was cancelled and ${formatPrice(o.refundedAmount)} was refunded to you. It can take a few days to show, depending on your bank or e-wallet.`
+      : 'This order was cancelled. If you have questions, please contact us.';
+  }
+  if (o.refundedAmount > 0) {
+    return `We refunded ${formatPrice(o.refundedAmount)} on this order. It can take a few days to show, depending on your bank or e-wallet.`;
+  }
   if (o.paymentStatus === 'failed')
     return "Your payment didn't go through, so this order won't be shipped. You can place it again from your cart.";
   if (o.paymentStatus === 'pending')

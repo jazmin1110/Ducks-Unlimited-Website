@@ -139,6 +139,53 @@
     .visibility-btn:hover      { box-shadow: 0 0 0 1px currentColor; }
     .visibility-btn:disabled   { opacity: 0.5; cursor: wait; }
 
+    /* ── Search + category filter above the table ── */
+    .list-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .list-tools input,
+    .list-tools select {
+      padding: 0.6rem 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 16px;              /* 16px stops iPhones from zooming in */
+      background: #fff;
+    }
+
+    .list-tools input { flex: 1 1 240px; }
+    .list-tools input:focus,
+    .list-tools select:focus { outline: none; border-color: #1B4D2E; }
+
+    .list-count { font-size: 0.8rem; color: #888; align-self: center; }
+
+    /* Small photo next to each product name in the list */
+    .product-cell { display: flex; align-items: center; gap: 0.75rem; }
+
+    .product-thumb {
+      width: 48px;
+      height: 48px;
+      flex: 0 0 48px;
+      border-radius: 4px;
+      object-fit: cover;
+      background: #f5f0e8;
+      border: 1px solid #eee;
+    }
+
+    .product-thumb.empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+      color: #b5a98f;
+      text-align: center;
+      line-height: 1.1;
+    }
+
     /* ── Products table ── */
     .table-wrap {
       background: #fff;
@@ -580,6 +627,23 @@
       pointer-events: none;
     }
 
+    /* "Make main" button on the other photos — works on phones too, where
+       dragging doesn't */
+    .image-tile .make-main-btn {
+      position: absolute;
+      bottom: 4px;
+      left: 4px;
+      background: rgba(255,255,255,0.92);
+      color: #1B4D2E;
+      border: none;
+      border-radius: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.62rem;
+      font-weight: 600;
+      padding: 0.2rem 0.4rem;
+      cursor: pointer;
+    }
+
     /* X delete button in the top-right corner of each tile */
     .image-tile .delete-image-btn {
       position: absolute;
@@ -789,6 +853,69 @@
       color: #aaa;
     }
 
+    /* ── "Add many sizes at once" box ── */
+    .quick-add {
+      background: #faf7f2;
+      border: 1px solid #efe6d4;
+      border-radius: 6px;
+      padding: 0.9rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .quick-add h4 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #1B4D2E;
+      margin-bottom: 0.2rem;
+    }
+
+    .quick-add .qa-help { font-size: 0.75rem; color: #888; margin-bottom: 0.6rem; }
+
+    .quick-add .qa-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .quick-add .qa-row .variant-input { flex: 1 1 140px; width: auto; font-size: 16px; }
+
+    .size-group { margin-bottom: 0.5rem; }
+
+    .size-group-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #999;
+      margin-bottom: 0.25rem;
+    }
+
+    .size-checks { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+
+    /* Each size is a tappable chip; the real checkbox is hidden */
+    .size-chip input { position: absolute; opacity: 0; pointer-events: none; }
+
+    .size-chip span {
+      display: inline-block;
+      min-width: 2.6rem;
+      text-align: center;
+      padding: 0.4rem 0.55rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #fff;
+      font-size: 0.8rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .size-chip input:checked + span {
+      background: #1B4D2E;
+      border-color: #1B4D2E;
+      color: #fff;
+    }
+
+    .size-chip input:focus-visible + span { outline: 2px solid #C9A84C; }
+
     /* Monospace style for SKU cells */
     .sku-cell {
       font-family: 'SF Mono', Monaco, Menlo, monospace;
@@ -843,6 +970,25 @@
         <button class="btn-outline" id="exportProductsBtn">Export CSV</button>
         <button class="btn-add" id="addProductBtn">+ Add Product</button>
       </div>
+    </div>
+
+    <!-- Search + category filter. Typing filters the list instantly. -->
+    <div class="list-tools">
+      <input type="search" id="productSearch" placeholder="Search by name or SKU…" autocomplete="off" aria-label="Search products" />
+      <select id="productCategoryFilter" aria-label="Filter by category">
+        <option value="">All categories</option>
+        <option value="polo">Polo</option>
+        <option value="t-shirt">T-Shirt</option>
+        <option value="shorts">Shorts</option>
+        <option value="pants">Pants</option>
+        <option value="others">Others</option>
+      </select>
+      <select id="productVisibilityFilter" aria-label="Filter by visibility">
+        <option value="">Visible + hidden</option>
+        <option value="visible">Visible only</option>
+        <option value="hidden">Hidden only</option>
+      </select>
+      <span class="list-count" id="listCount"></span>
     </div>
 
     <!-- Shown when one or more products are ticked -->
@@ -964,8 +1110,9 @@
 
         <h3 class="images-heading">Product Images</h3>
         <p class="images-subheading">
-          Upload up to 5 images. JPG, PNG, or WEBP — max 5 MB each.
-          Drag to reorder; the first image is shown as the main photo.
+          Up to 5 photos. JPG, PNG, or WEBP — max 5 MB each. You can pick several at once.
+          The first photo is the main one customers see — tap <strong>Make main</strong>
+          on any photo (or drag photos on a computer) to change the order.
         </p>
 
         <div class="images-grid" id="imagesGrid">
@@ -977,6 +1124,7 @@
           type="file"
           id="imageFileInput"
           accept="image/jpeg,image/png,image/webp"
+          multiple
           style="display: none;"
         />
 
@@ -987,10 +1135,26 @@
 
         <h3 class="variants-heading">Variants</h3>
         <p class="variants-subheading">
-          Each color + size combination is a variant. Inventory rows for the
-          <strong>online</strong> and <strong>greenhills_store</strong> channels are
-          created automatically at quantity 0.
+          A variant is one color + size, e.g. "Navy, M". Each one gets its own stock
+          count (online and Greenhills store), starting at 0 — set the stock on the
+          <a href="/admin/inventory.html">Inventory</a> page.
         </p>
+
+        <!-- Fastest way: one color + tick all its sizes -->
+        <div class="quick-add" id="quickAdd">
+          <h4>Add a color in many sizes</h4>
+          <p class="qa-help">Type the color, tap the sizes you have, then press Add. SKU codes are made for you.</p>
+          <div class="qa-row">
+            <input type="text" class="variant-input" id="qaColor" placeholder="Color, e.g. Navy" />
+            <div class="variant-price-wrap" style="flex:1 1 140px;">
+              <span class="currency">₱</span>
+              <input type="number" class="variant-input" id="qaPrice" min="0" step="0.01"
+                     placeholder="Special price (optional)" />
+            </div>
+          </div>
+          <div id="qaSizes"></div>
+          <button type="button" class="variant-action-btn primary" id="qaAddBtn">Add selected sizes</button>
+        </div>
 
         <table class="variants-table">
           <thead>
@@ -998,7 +1162,7 @@
               <th>Color</th>
               <th class="col-size">Size</th>
               <th>SKU</th>
-              <th class="col-price">Override</th>
+              <th class="col-price" title="Leave blank to use the product's base price">Special price</th>
               <th class="col-actions"></th>
             </tr>
           </thead>
@@ -1006,8 +1170,11 @@
         </table>
 
         <button type="button" class="btn-add-variant" id="addVariantBtn">
-          + Add Variant
+          + Add one variant
         </button>
+
+        <!-- Size suggestions for the size boxes (you can still type any size) -->
+        <datalist id="sizeOptions"></datalist>
 
       </section>
 
@@ -1025,6 +1192,7 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { requireAdmin } from '/admin/js/admin-guard.js';
     import { adminBrandFilter, getAdminBrandSlug, ADMIN_ALL } from '/js/brand.js';
     import { openImportModal } from '/admin/js/import-modal.js';
     import { downloadCsv, todayStamp } from '/admin/js/csv.js';
@@ -1033,8 +1201,8 @@
     } from '/admin/js/product-import.js';
 
     // ── Auth guard ──
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) window.location.href = '/admin/index.html';
+    // Only signed-in admins get past this line (see /admin/js/admin-guard.js)
+    const session = await requireAdmin();
 
     // Log out is handled by /components/admin-nav.html
 
@@ -1053,6 +1221,26 @@
     const activeInput    = document.getElementById('productActive');
     const saveBtn        = document.getElementById('saveBtn');
     const toast          = document.getElementById('toast');
+    const searchInput    = document.getElementById('productSearch');
+    const catFilter      = document.getElementById('productCategoryFilter');
+    const visFilter      = document.getElementById('productVisibilityFilter');
+    const listCount      = document.getElementById('listCount');
+
+    // Every product loaded for the current brand. The search box filters this
+    // list in the browser, so typing is instant.
+    let allProducts = [];
+
+    // Brand ('du' or 'rw') of the product open in the panel — decides
+    // whether new SKU codes start with DU- or RW-.
+    let productBrandSlug = null;
+
+    const CATEGORY_LABELS = {
+      polo: 'Polo',
+      't-shirt': 'T-Shirt',
+      shorts: 'Shorts',
+      pants: 'Pants',
+      others: 'Others',
+    };
 
     // ── Toast helper ──
     let toastTimer;
@@ -1074,7 +1262,7 @@
 
       let query = supabase
         .from('products')
-        .select('*, brands!inner ( slug, name ), variants(count)')
+        .select('*, brands!inner ( slug, name ), variants ( sku ), product_images ( image_url, display_order )')
         .order('created_at', { ascending: false });
 
       if (brandFilter) query = query.eq('brands.slug', brandFilter);
@@ -1086,24 +1274,56 @@
         return;
       }
 
-      if (!products || products.length === 0) {
+      allProducts = products || [];
+      renderProducts();
+    }
+
+    // Draw the table from allProducts, keeping only rows that match the
+    // search box and the two filter dropdowns.
+    function renderProducts() {
+      clearSelection();
+
+      if (allProducts.length === 0) {
+        listCount.textContent = '';
         tableBody.innerHTML = `<tr><td colspan="7" class="table-state">No products yet. Click "Add Product" to create your first one, or "Import CSV" to upload many at once.</td></tr>`;
+        return;
+      }
+
+      const q   = searchInput.value.trim().toLowerCase();
+      const cat = catFilter.value;
+      const vis = visFilter.value;
+
+      const shown = allProducts.filter(p => {
+        if (cat && p.category !== cat) return false;
+        if (vis === 'visible' && !p.is_active) return false;
+        if (vis === 'hidden'  &&  p.is_active) return false;
+        if (q) {
+          const skus = (p.variants || []).map(v => v.sku).join(' ');
+          const haystack = `${p.name} ${p.description ?? ''} ${skus}`.toLowerCase();
+          if (!haystack.includes(q)) return false;
+        }
+        return true;
+      });
+
+      listCount.textContent = `${shown.length} of ${allProducts.length} products`;
+
+      if (shown.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="7" class="table-state">No products match your search.</td></tr>`;
         return;
       }
 
       tableBody.innerHTML = '';
 
-      for (const p of products) {
-        // Supabase returns the count as [{ count: N }]
-        const variantCount = p.variants?.[0]?.count ?? 0;
+      for (const p of shown) {
+        const variantCount  = p.variants?.length ?? 0;
+        const categoryLabel = CATEGORY_LABELS[p.category] ?? p.category;
 
-        const categoryLabel = {
-          polo: 'Polo',
-          't-shirt': 'T-Shirt',
-          shorts: 'Shorts',
-          pants: 'Pants',
-          others: 'Others',
-        }[p.category] ?? p.category;
+        // Main photo = the image with the lowest display_order
+        const mainImage = (p.product_images || [])
+          .slice().sort((a, b) => a.display_order - b.display_order)[0];
+        const thumb = mainImage
+          ? `<img class="product-thumb" src="${escapeHtml(mainImage.image_url)}" alt="" loading="lazy" />`
+          : `<div class="product-thumb empty">No photo</div>`;
 
         const row = document.createElement('tr');
         row.dataset.id = p.id; // store product ID on the row for click handler
@@ -1114,14 +1334,21 @@
                    aria-label="Select ${escapeHtml(p.name)}" />
           </td>
           <td>
-            <div class="product-name">${escapeHtml(p.name)}</div>
-            ${p.description
-              ? `<div class="product-desc">${escapeHtml(p.description)}</div>`
-              : ''}
+            <div class="product-cell">
+              ${thumb}
+              <div>
+                <div class="product-name">${escapeHtml(p.name)}</div>
+                ${p.description
+                  ? `<div class="product-desc">${escapeHtml(p.description)}</div>`
+                  : ''}
+              </div>
+            </div>
           </td>
-          <td>${categoryLabel}</td>
+          <td>${escapeHtml(categoryLabel)}</td>
           <td>₱${Number(p.base_price).toLocaleString('en-PH', { minimumFractionDigits: 2 })}</td>
-          <td>${variantCount}</td>
+          <td>${variantCount === 0
+                ? '<span style="color:#b33a3a" title="Customers cannot buy a product with no variants">0 — add some</span>'
+                : variantCount}</td>
           <td>
             <!-- One click flips it. See toggleVisibility() below. -->
             ${visibilityButtonHtml(p.id, p.is_active)}
@@ -1133,17 +1360,19 @@
 
         tableBody.appendChild(row);
       }
-
-      // Clicking anywhere on a row (or its Edit button) opens the edit panel —
-      // EXCEPT the checkbox and the Visible/Hidden button, which do their own thing.
-      tableBody.querySelectorAll('tr').forEach(row => {
-        row.addEventListener('click', (e) => {
-          if (e.target.closest('.col-select, .visibility-btn')) return;
-          const id = e.currentTarget.dataset.id;
-          if (id) openEditPanel(id);
-        });
-      });
     }
+
+    searchInput.addEventListener('input', renderProducts);
+    catFilter.addEventListener('change', renderProducts);
+    visFilter.addEventListener('change', renderProducts);
+
+    // Clicking anywhere on a row (or its Edit button) opens the edit panel —
+    // EXCEPT the checkbox and the Visible/Hidden button, which do their own thing.
+    tableBody.addEventListener('click', (e) => {
+      if (e.target.closest('.col-select, .visibility-btn')) return;
+      const row = e.target.closest('tr');
+      if (row?.dataset.id) openEditPanel(row.dataset.id);
+    });
 
     // ─────────────────────────────────────────────────────────────────────
     // HIDE / SHOW FROM CUSTOMERS
@@ -1179,6 +1408,8 @@
         await setVisibility([btn.dataset.id], makeVisible);
         // Swap just this button instead of reloading the whole table
         btn.outerHTML = visibilityButtonHtml(btn.dataset.id, makeVisible);
+        const cached = allProducts.find(p => p.id === btn.dataset.id);
+        if (cached) cached.is_active = makeVisible;
         showToast(makeVisible ? 'Product is now visible to customers.' : 'Product hidden from customers.');
       } catch (err) {
         console.error(err);
@@ -1305,7 +1536,14 @@
       document.body.style.overflow = 'hidden'; // prevent background scroll
     }
 
+    // Has the admin typed anything in the product form since it was opened or
+    // saved? Used to ask "discard your changes?" before closing.
+    let formDirty = false;
+    document.getElementById('productForm').addEventListener('input', () => { formDirty = true; });
+
     function closePanel() {
+      if (formDirty && !window.confirm('You have unsaved changes to this product. Close without saving?')) return;
+      formDirty = false;
       panel.classList.remove('open');
       overlay.classList.remove('open');
       document.body.style.overflow = '';
@@ -1337,6 +1575,8 @@
       panelTitle.textContent = 'Add Product';
       saveBtn.textContent = 'Save Product';
       clearPanelError();
+      formDirty = false;
+      productBrandSlug = null;
 
       // Show both sections — they'll render their locked state because
       // productIdInput.value is empty.
@@ -1358,7 +1598,7 @@
       // Fetch the product data
       const { data: p, error } = await supabase
         .from('products')
-        .select('*')
+        .select('*, brands ( slug )')
         .eq('id', productId)
         .single();
 
@@ -1374,6 +1614,8 @@
       descInput.value      = p.description ?? '';
       priceInput.value     = p.base_price;
       activeInput.checked  = p.is_active;
+      productBrandSlug     = p.brands?.slug ?? null;
+      formDirty            = false;
 
       // Reveal images and variants sections, then load both in parallel
       document.getElementById('imagesSection').style.display = 'block';
@@ -1442,6 +1684,7 @@
           return;
         }
 
+        formDirty = false;
         closePanel();
         showToast('Product updated.');
         await loadProducts();
@@ -1491,6 +1734,8 @@
       }
 
       // Switch the panel to edit mode for the new product
+      formDirty              = false;
+      productBrandSlug       = brandSlug;
       productIdInput.value   = newProduct.id;
       panelTitle.textContent = 'Edit Product';
       saveBtn.textContent    = 'Save Changes';
@@ -1586,7 +1831,9 @@
 
         tile.innerHTML = `
           <img src="${escapeHtml(img.image_url)}" alt="" />
-          ${img.is_primary ? '<span class="primary-badge">Primary</span>' : ''}
+          ${index === 0
+            ? '<span class="primary-badge">Main</span>'
+            : '<button type="button" class="make-main-btn">Make main</button>'}
           <button type="button" class="delete-image-btn" aria-label="Delete image">×</button>
         `;
         attachDragHandlers(tile, index);
@@ -1617,28 +1864,44 @@
       return null;
     }
 
-    // Handle a file chosen via the hidden file input
+    // Handle the file(s) chosen via the hidden file input. Several photos can
+    // be picked at once; they are uploaded one after another.
     async function handleImageUpload(event) {
-      const file = event.target.files[0];
+      const files = [...event.target.files];
       event.target.value = ''; // clear so re-uploading the same file works
-      if (!file) return;
-
-      const validationError = validateImageFile(file);
-      if (validationError) {
-        showToast(validationError);
-        return;
-      }
+      if (files.length === 0) return;
 
       const productId = productIdInput.value;
       if (!productId) return;
 
+      // Only upload as many as still fit (max 5 per product)
+      const room = MAX_IMAGES_PER_PRODUCT - currentImages.length;
+      if (files.length > room) {
+        showToast(`Only ${room} more photo${room === 1 ? '' : 's'} fit — the extra ones were skipped.`);
+      }
+
+      let uploaded = 0;
+      for (const file of files.slice(0, Math.max(0, room))) {
+        const validationError = validateImageFile(file);
+        if (validationError) {
+          showToast(`${file.name}: ${validationError}`);
+          continue;
+        }
+        showToast(`Uploading ${uploaded + 1} of ${Math.min(files.length, room)}…`);
+        if (await uploadOneImage(productId, file, currentImages.length + uploaded)) uploaded++;
+      }
+
+      if (uploaded > 0) showToast(uploaded === 1 ? 'Photo uploaded.' : `${uploaded} photos uploaded.`);
+      await loadImages(productId);
+    }
+
+    // Upload one file and link it to the product. Returns true on success.
+    async function uploadOneImage(productId, file, displayOrder) {
       // Build storage path: <productId>/<random>.<ext> — keeps each product's
       // images in its own folder so they're easy to find / clean up.
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
       const filename = `${crypto.randomUUID()}.${ext}`;
       const storagePath = `${productId}/${filename}`;
-
-      showToast('Uploading…');
 
       // Step 1 — upload the binary file to Supabase Storage
       const { error: uploadErr } = await supabase.storage
@@ -1648,7 +1911,7 @@
       if (uploadErr) {
         console.error(uploadErr);
         showToast('Upload failed. Please try again.');
-        return;
+        return false;
       }
 
       // Step 2 — get the public URL for the new file
@@ -1657,14 +1920,13 @@
         .getPublicUrl(storagePath);
 
       // Step 3 — insert a row in product_images linking the URL to this product
-      const newDisplayOrder = currentImages.length;
       const { error: dbErr } = await supabase
         .from('product_images')
         .insert({
           product_id:    productId,
           image_url:     publicUrl,
-          display_order: newDisplayOrder,
-          is_primary:    newDisplayOrder === 0, // first image is automatically primary
+          display_order: displayOrder,
+          is_primary:    displayOrder === 0, // first image is automatically primary
         });
 
       if (dbErr) {
@@ -1672,11 +1934,9 @@
         await supabase.storage.from('product-images').remove([storagePath]);
         showToast('Could not save image. Please try again.');
         console.error(dbErr);
-        return;
+        return false;
       }
-
-      showToast('Image uploaded.');
-      await loadImages(productId);
+      return true;
     }
 
     // Delete an image — removes the DB row, the storage file, and re-numbers what's left
@@ -1776,17 +2036,28 @@
         // Reorder the local array, then re-render right away for a snappy feel
         const moved = currentImages.splice(draggedIndex, 1)[0];
         currentImages.splice(index, 0, moved);
-        // Optimistically update is_primary on the local cache so the badge
-        // moves immediately, before the DB roundtrip finishes
-        currentImages.forEach((img, i) => {
-          img.display_order = i;
-          img.is_primary    = (i === 0);
-        });
-        renderImages();
-
-        // Persist the new ordering to the DB
-        await renumberImages(productIdInput.value);
+        // Save the new order (this also redraws the tiles right away)
+        await saveImageOrder();
       });
+    }
+
+    // Save the order shown on screen (currentImages) to the database:
+    // position 0 is the main photo. Only rows that changed are updated.
+    async function saveImageOrder() {
+      const updates = [];
+      currentImages.forEach((img, i) => {
+        const isPrimary = (i === 0);
+        if (img.display_order !== i || img.is_primary !== isPrimary) {
+          img.display_order = i;
+          img.is_primary    = isPrimary;
+          updates.push(supabase.from('product_images')
+            .update({ display_order: i, is_primary: isPrimary })
+            .eq('id', img.id));
+        }
+      });
+      renderImages();
+      const results = await Promise.all(updates);
+      if (results.some(r => r.error)) showToast('Could not save the photo order. Please try again.');
     }
 
     // ── Image event wiring ──
@@ -1795,7 +2066,18 @@
     imageFileInput.addEventListener('change', handleImageUpload);
 
     // Delegate clicks on delete-image buttons (works for dynamically rendered tiles)
-    imagesGrid.addEventListener('click', (e) => {
+    imagesGrid.addEventListener('click', async (e) => {
+      // "Make main" → move that photo to the front, then save the new order
+      const mainBtn = e.target.closest('.make-main-btn');
+      if (mainBtn) {
+        const index = Number(mainBtn.closest('.image-tile').dataset.index);
+        const moved = currentImages.splice(index, 1)[0];
+        currentImages.unshift(moved);
+        await saveImageOrder();
+        showToast('Main photo changed.');
+        return;
+      }
+
       const btn = e.target.closest('.delete-image-btn');
       if (!btn) return;
       const tile = btn.closest('.image-tile');
@@ -1818,6 +2100,37 @@
     // correct apparel-size ordering instead.
     const SIZE_ORDER = { XS: 1, S: 2, M: 3, L: 4, XL: 5, XXL: 6, XXXL: 7 };
 
+    // Sort position for any size: letter sizes first (XS → XXXL), then
+    // number sizes (kids 2–14, waist 28–40) in number order, then anything else.
+    function sizeRank(size) {
+      if (SIZE_ORDER[size] != null) return SIZE_ORDER[size];
+      const n = Number(size);
+      return Number.isFinite(n) ? 100 + n : 999;
+    }
+
+    // The size chips shown in "Add a color in many sizes", and the
+    // suggestions offered in the single-variant size box.
+    const SIZE_GROUPS = [
+      { label: 'Tops',        sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'] },
+      { label: 'Waist (pants & shorts)', sizes: ['28', '30', '32', '34', '36', '38', '40'] },
+      { label: 'Kids',        sizes: ['2', '4', '6', '8', '10', '12', '14'] },
+      { label: 'Other',       sizes: ['One Size'] },
+    ];
+
+    // Fill the size chips + the datalist once
+    document.getElementById('qaSizes').innerHTML = SIZE_GROUPS.map(g => `
+      <div class="size-group">
+        <div class="size-group-label">${g.label}</div>
+        <div class="size-checks">
+          ${g.sizes.map(sz => `
+            <label class="size-chip"><input type="checkbox" value="${sz}" /><span>${sz}</span></label>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+    document.getElementById('sizeOptions').innerHTML = SIZE_GROUPS
+      .flatMap(g => g.sizes).map(sz => `<option value="${sz}"></option>`).join('');
+
     // Take a string and return its first N alphanumeric characters in uppercase.
     // Used for SKU auto-suggestions: "Forest Green" → "FOR", "T-Shirt" → "TSHIR".
     function abbreviate(text, length) {
@@ -1826,11 +2139,14 @@
     }
 
     // Build a SKU suggestion like "DU-POLO-FOR-M" from category + color + size.
+    // Rocwood products start with RW- instead of DU-.
     function suggestSku(category, color, size) {
+      const brand  = productBrandSlug ?? getAdminBrandSlug();
+      const prefix = brand === 'rw' ? 'RW' : 'DU';
       const cat = abbreviate(category, 5);
       const col = abbreviate(color, 3);
       const sz  = abbreviate(size, 4);
-      return `DU-${cat}-${col}-${sz}`;
+      return `${prefix}-${cat}-${col}-${sz}`;
     }
 
     // Fetch this product's variants and render them in the table
@@ -1841,15 +2157,19 @@
       // Variants need a product_id FK, so we can't insert anything until
       // the product exists. Disable the "+ Add Variant" button and show
       // a notice in place of the table.
+      const quickAdd = document.getElementById('quickAdd');
+
       if (!productId) {
         variantsTableBody.innerHTML =
           '<tr><td colspan="5" class="variants-locked-notice">Save the product first to start adding variants.</td></tr>';
         if (addBtn) addBtn.disabled = true;
+        quickAdd.style.display = 'none';
         return;
       }
 
       // Unlocked — re-enable the add button and render normally
       if (addBtn) addBtn.disabled = false;
+      quickAdd.style.display = '';
 
       variantsTableBody.innerHTML =
         '<tr><td colspan="5" class="variants-empty">Loading…</td></tr>';
@@ -1865,16 +2185,19 @@
         return;
       }
 
+      // Keep a copy so Edit and "add many sizes" can see what already exists
+      currentVariants = variants || [];
+
       if (!variants || variants.length === 0) {
         variantsTableBody.innerHTML =
-          '<tr><td colspan="5" class="variants-empty">No variants yet. Click "+ Add Variant" to create one.</td></tr>';
+          '<tr><td colspan="5" class="variants-empty">No variants yet. Use "Add a color in many sizes" above.</td></tr>';
         return;
       }
 
       // Group by color (alphabetical), then sort sizes within each color
       variants.sort((a, b) => {
         if (a.color !== b.color) return a.color.localeCompare(b.color);
-        return (SIZE_ORDER[a.size] ?? 99) - (SIZE_ORDER[b.size] ?? 99);
+        return sizeRank(a.size) - sizeRank(b.size);
       });
 
       variantsTableBody.innerHTML = '';
@@ -1891,13 +2214,144 @@
               ? '₱' + Number(v.price_override).toLocaleString('en-PH', { minimumFractionDigits: 2 })
               : '<span style="color:#bbb">—</span>'
           }</td>
-          <td class="col-actions">
+          <td class="col-actions" style="white-space:nowrap;">
+            <button class="variant-action-btn" data-action="edit">Edit</button>
             <button class="variant-action-btn danger" data-action="delete">Delete</button>
           </td>
         `;
         variantsTableBody.appendChild(tr);
       }
     }
+
+    // The variants currently shown in the table (filled by loadVariants)
+    let currentVariants = [];
+
+    // Turn a display row into editable boxes so color / size / SKU / price can be fixed
+    function editVariantRow(tr) {
+      const v = currentVariants.find(x => x.id === tr.dataset.variantId);
+      if (!v) return;
+      tr.classList.add('editing');
+      tr.innerHTML = `
+        <td><input type="text" class="variant-input" data-field="color" value="${escapeHtml(v.color)}" /></td>
+        <td><input type="text" class="variant-input" data-field="size" list="sizeOptions" value="${escapeHtml(v.size)}" /></td>
+        <td><input type="text" class="variant-input sku-cell" data-field="sku" value="${escapeHtml(v.sku)}" /></td>
+        <td>
+          <div class="variant-price-wrap">
+            <span class="currency">₱</span>
+            <input type="number" class="variant-input" data-field="price" min="0" step="0.01"
+                   placeholder="—" value="${v.price_override ?? ''}" />
+          </div>
+        </td>
+        <td class="col-actions" style="white-space:nowrap;">
+          <button type="button" class="variant-action-btn primary" data-action="save-edit">Save</button>
+          <button type="button" class="variant-action-btn" data-action="cancel-edit">Cancel</button>
+        </td>
+      `;
+      tr.querySelector('[data-field="color"]').focus();
+    }
+
+    // Save an edited variant row
+    async function saveEditedVariant(tr) {
+      const color    = tr.querySelector('[data-field="color"]').value.trim();
+      const size     = tr.querySelector('[data-field="size"]').value.trim();
+      const sku      = tr.querySelector('[data-field="sku"]').value.trim();
+      const priceStr = tr.querySelector('[data-field="price"]').value;
+      const priceOverride = priceStr === '' ? null : parseFloat(priceStr);
+
+      if (!color || !size || !sku) { showToast('Color, size, and SKU are all required.'); return; }
+      if (priceOverride !== null && (isNaN(priceOverride) || priceOverride < 0)) {
+        showToast('Special price must be 0 or more (or leave it blank).');
+        return;
+      }
+
+      const btn = tr.querySelector('[data-action="save-edit"]');
+      btn.disabled = true;
+
+      const { error } = await supabase
+        .from('variants')
+        .update({ color, size, sku, price_override: priceOverride })
+        .eq('id', tr.dataset.variantId);
+
+      if (error) {
+        btn.disabled = false;
+        showToast(error.code === '23505' ? `SKU "${sku}" is already used by another variant.` : 'Could not save variant. Please try again.');
+        console.error(error);
+        return;
+      }
+
+      showToast('Variant updated.');
+      await loadVariants(productIdInput.value);
+    }
+
+    // "Add a color in many sizes": creates one variant per ticked size, plus
+    // its two stock rows (online + store) at 0.
+    async function quickAddVariants() {
+      const color    = document.getElementById('qaColor').value.trim();
+      const priceStr = document.getElementById('qaPrice').value;
+      const priceOverride = priceStr === '' ? null : parseFloat(priceStr);
+      const sizes = [...document.querySelectorAll('#qaSizes input:checked')].map(cb => cb.value);
+
+      if (!color) { showToast('Type the color first.'); document.getElementById('qaColor').focus(); return; }
+      if (sizes.length === 0) { showToast('Tap at least one size.'); return; }
+      if (priceOverride !== null && (isNaN(priceOverride) || priceOverride < 0)) {
+        showToast('Special price must be 0 or more (or leave it blank).');
+        return;
+      }
+
+      const btn = document.getElementById('qaAddBtn');
+      btn.disabled = true;
+      btn.textContent = 'Adding…';
+
+      const added = [];
+      const skipped = [];
+
+      // One at a time, so a single duplicate doesn't stop the rest
+      for (const size of sizes) {
+        // Skip sizes this color already has
+        if (currentVariants.some(v => v.color.toLowerCase() === color.toLowerCase() && v.size === size)) {
+          skipped.push(`${size} (already exists)`);
+          continue;
+        }
+        const sku = suggestSku(categoryInput.value, color, size);
+        const { data: v, error } = await supabase
+          .from('variants')
+          .insert({ product_id: productIdInput.value, color, size, sku, price_override: priceOverride })
+          .select()
+          .single();
+        if (error) {
+          skipped.push(error.code === '23505' ? `${size} (SKU ${sku} already used)` : size);
+          console.error(error);
+          continue;
+        }
+        added.push(v.id);
+      }
+
+      if (added.length > 0) {
+        const { error: invErr } = await supabase.from('inventory').insert(
+          added.flatMap(id => [
+            { variant_id: id, channel: 'online',           quantity: 0 },
+            { variant_id: id, channel: 'greenhills_store', quantity: 0 },
+          ])
+        );
+        if (invErr) console.error(invErr);
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Add selected sizes';
+
+      let msg = `${added.length} variant${added.length === 1 ? '' : 's'} added.`;
+      if (skipped.length) msg += ` Skipped: ${skipped.join(', ')}.`;
+      showToast(msg);
+
+      // Clear the box for the next color
+      document.getElementById('qaColor').value = '';
+      document.getElementById('qaPrice').value = '';
+      document.querySelectorAll('#qaSizes input:checked').forEach(cb => { cb.checked = false; });
+
+      await loadVariants(productIdInput.value);
+    }
+
+    document.getElementById('qaAddBtn').addEventListener('click', quickAddVariants);
 
     // Append an empty editable row at the bottom of the variants table
     function addVariantRow() {
@@ -1913,16 +2367,8 @@
                  placeholder="e.g. Forest Green" />
         </td>
         <td>
-          <select class="variant-input" data-field="size">
-            <option value="" disabled selected>—</option>
-            <option value="XS">XS</option>
-            <option value="S">S</option>
-            <option value="M">M</option>
-            <option value="L">L</option>
-            <option value="XL">XL</option>
-            <option value="XXL">XXL</option>
-            <option value="XXXL">XXXL</option>
-          </select>
+          <input type="text" class="variant-input" data-field="size"
+                 list="sizeOptions" placeholder="e.g. M or 32" />
         </td>
         <td>
           <input type="text" class="variant-input sku-cell" data-field="sku"
@@ -1958,7 +2404,7 @@
         skuEl.value = suggestSku(categoryInput.value, colorEl.value, sizeEl.value);
       };
       colorEl.addEventListener('input',  refreshSku);
-      sizeEl.addEventListener('change',  refreshSku);
+      sizeEl.addEventListener('input',   refreshSku);
 
       colorEl.focus();
     }
@@ -1967,7 +2413,7 @@
     // rows for the 'online' and 'greenhills_store' channels at quantity 0.
     async function saveVariantRow(rowEl) {
       const color    = rowEl.querySelector('[data-field="color"]').value.trim();
-      const size     = rowEl.querySelector('[data-field="size"]').value;
+      const size     = rowEl.querySelector('[data-field="size"]').value.trim();
       const sku      = rowEl.querySelector('[data-field="sku"]').value.trim();
       const priceStr = rowEl.querySelector('[data-field="price"]').value;
       const priceOverride = priceStr === '' ? null : parseFloat(priceStr);
@@ -2033,12 +2479,15 @@
     // Delete a variant. Inventory rows are removed automatically via the
     // ON DELETE CASCADE on inventory.variant_id (see schema.sql).
     async function deleteVariant(variantId) {
-      const confirmed = window.confirm('This will also delete its inventory records. Continue?');
+      const confirmed = window.confirm('Delete this variant? Its stock counts will be deleted too.');
       if (!confirmed) return;
 
       const { error } = await supabase.from('variants').delete().eq('id', variantId);
       if (error) {
-        showToast('Could not delete variant.');
+        // 23503 = it's referenced by a past order. We keep it for the order history.
+        showToast(error.code === '23503'
+          ? 'This variant has been ordered before, so it can\'t be deleted. Set its stock to 0 instead.'
+          : 'Could not delete variant.');
         console.error(error);
         return;
       }
@@ -2058,8 +2507,11 @@
       const row    = btn.closest('tr');
       const action = btn.dataset.action;
 
-      if      (action === 'save-new') saveVariantRow(row);
-      else if (action === 'delete')   deleteVariant(row.dataset.variantId);
+      if      (action === 'save-new')    saveVariantRow(row);
+      else if (action === 'edit')        editVariantRow(row);
+      else if (action === 'save-edit')   saveEditedVariant(row);
+      else if (action === 'cancel-edit') loadVariants(productIdInput.value);
+      else if (action === 'delete')      deleteVariant(row.dataset.variantId);
     });
 
 

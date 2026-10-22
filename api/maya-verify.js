@@ -30,6 +30,20 @@ function normalizeOrderNumber(raw) {
 async function markPaid(order) {
   const sandbox = isMayaSandbox();
 
+  // Paid after staff cancelled it → record the payment, don't take stock,
+  // and flag it so staff refund the customer in Maya Manager.
+  if (order.fulfillment_status === 'cancelled') {
+    await supabaseAdmin(`orders?id=eq.${order.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        payment_status: 'paid',
+        internal_notes: [order.internal_notes, '⚠ PAID AFTER THIS ORDER WAS CANCELLED — refund the customer in Maya Manager, then record it (Orders → Return / refund).']
+          .filter(Boolean).join('\n'),
+      }),
+    });
+    return;
+  }
+
   await supabaseAdmin(`orders?id=eq.${order.id}`, {
     method: 'PATCH',
     body: JSON.stringify({
@@ -69,7 +83,7 @@ export default async function handler(req, res) {
   try {
     const orders = await supabaseAdmin(
       `orders?order_number=eq.${encodeURIComponent(orderNumber)}` +
-      `&select=id,total_amount,payment_status,payment_reference,internal_notes,order_items(variant_id,quantity)`
+      `&select=id,total_amount,payment_status,fulfillment_status,payment_reference,internal_notes,order_items(variant_id,quantity)`
     );
     const order = orders?.[0];
     if (!order) return res.status(404).json({ error: 'Order not found.' });

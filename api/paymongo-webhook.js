@@ -111,6 +111,21 @@ function extractLinkId(event) {
   return inner?.source?.id || attrs?.data?.id || null;
 }
 
+// Find PayMongo's payment id (pay_…) in the event. We save it on the order
+// because refunds (/api/admin-order) need it. Returns null if not found.
+function extractPaymentId(event) {
+  const attrs = event?.data?.attributes;
+  const obj   = attrs?.data;
+
+  // payment.paid: the event's object IS the payment
+  if (obj?.id?.startsWith?.('pay_')) return obj.id;
+
+  // link.payment.paid: the link lists its payments (sometimes wrapped in "data")
+  const payments = (obj?.attributes?.payments || []).map(p => p?.data ?? p);
+  const paid = payments.find(p => p?.attributes?.status === 'paid') ?? payments[0];
+  return paid?.id?.startsWith?.('pay_') ? paid.id : null;
+}
+
 // ─────────────────────────────────────────────────────────────────────
 // HANDLER
 // ─────────────────────────────────────────────────────────────────────
@@ -167,7 +182,7 @@ export default async function handler(req, res) {
   try {
     const orders = await supabase(
       `orders?paymongo_payment_id=eq.${encodeURIComponent(linkId)}` +
-      `&select=id,payment_status,order_items(variant_id,quantity)`
+      `&select=id,payment_status,fulfillment_status,internal_notes,order_items(variant_id,quantity)`
     );
     order = orders?.[0];
   } catch (err) {
@@ -190,10 +205,27 @@ export default async function handler(req, res) {
 
   try {
     // ── 6. Mark the order as paid ──
+    // If staff already cancelled this order, the customer paid anyway (e.g.
+    // the payment page was still open). Record the payment but leave stock
+    // alone, and flag it so staff refund the customer.
+    const paidAfterCancel = order.fulfillment_status === 'cancelled';
+    const paymentId = extractPaymentId(event);
+
     await supabase(`orders?id=eq.${order.id}`, {
       method: 'PATCH',
-      body: JSON.stringify({ payment_status: 'paid' }),
+      body: JSON.stringify({
+        payment_status: 'paid',
+        ...(paymentId ? { provider_payment_id: paymentId } : {}),
+        ...(paidAfterCancel ? {
+          internal_notes: [order.internal_notes, '⚠ PAID AFTER THIS ORDER WAS CANCELLED — refund the customer (Orders → Return / refund).']
+            .filter(Boolean).join('\n'),
+        } : {}),
+      }),
     });
+
+    if (paidAfterCancel) {
+      return res.status(200).json({ received: true, processed: true, paid_after_cancel: true });
+    }
 
     // ── 7. Decrement online inventory for each line item ──
     // We do this AFTER marking paid so re-running this block (in case of a

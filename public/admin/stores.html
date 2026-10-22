@@ -73,7 +73,7 @@
 
   <main class="admin-main">
     <h1 class="admin-h1">Stores</h1>
-    <p class="admin-sub">Physical locations shown on /stores.html. Toggle is_active to hide a store without deleting it.</p>
+    <p class="admin-sub">Your store locations, shown on the website's Stores page. To hide a store without deleting it, untick <strong>Active</strong>.</p>
 
     <section class="admin-panel">
       <h2 id="formTitle">Add New Store</h2>
@@ -82,7 +82,7 @@
 
         <div class="form-row cols-2">
           <div class="field"><label class="field-label" for="name">Name *</label><input class="input" id="name" required></div>
-          <div class="field"><label class="field-label" for="display_order">Display order</label><input class="input" type="number" id="display_order" value="0"></div>
+          <div class="field"><label class="field-label" for="display_order">Position in list (0 = first)</label><input class="input" type="number" id="display_order" value="0"></div>
         </div>
 
         <div class="form-row">
@@ -104,7 +104,7 @@
           <div class="field"><label class="field-label" for="lat">Latitude</label><input class="input" type="number" step="0.000001" id="lat" placeholder="14.6047"></div>
           <div class="field"><label class="field-label" for="lng">Longitude</label><input class="input" type="number" step="0.000001" id="lng" placeholder="121.0411"></div>
         </div>
-        <p class="help-text">Right-click on Google Maps → "What's here?" to grab precise lat/lng. Leave blank to fall back to address-based map search.</p>
+        <p class="help-text">Optional. On Google Maps, right-click the store and click the numbers at the top of the menu to copy them. Leave blank and the map will search by address instead.</p>
 
         <div class="form-row">
           <div class="field"><label class="field-label" for="description">Description</label><textarea class="textarea" id="description" rows="3"></textarea></div>
@@ -116,7 +116,7 @@
                  See /admin/js/image-uploader.js for the widget implementation. -->
             <div data-image-uploader="image_url"></div>
             <input type="hidden" id="image_url">
-            <p class="help-text">Upload a JPG, PNG, or WEBP — max 5 MB. Shown on /stores.html.</p>
+            <p class="help-text">Upload a JPG, PNG, or WEBP — max 5 MB. Shown on the Stores page.</p>
           </div>
         </div>
 
@@ -130,7 +130,7 @@
           <div class="field">
             <label class="filter-check" style="display: inline-flex; align-items: center; gap: 0.5rem;">
               <input type="checkbox" id="is_active" checked>
-              <span>Active (shown on /stores.html)</span>
+              <span>Active (shown on the website)</span>
             </label>
           </div>
         </div>
@@ -150,10 +150,11 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { requireAdmin } from '/admin/js/admin-guard.js';
     import { mountImageUploader } from '/admin/js/image-uploader.js';
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { window.location.href = '/admin/index.html'; }
+    // Only signed-in admins get past this line (see /admin/js/admin-guard.js)
+    const session = await requireAdmin();
 
     // Log out is handled by /components/admin-nav.html
 
@@ -274,7 +275,7 @@
     }
 
     async function remove(id) {
-      if (!confirm('Delete this store?')) return;
+      if (!confirm('Delete this store for good? (To hide it for a while instead, edit it and untick Active.)')) return;
       const { error } = await supabase.from('stores').delete().eq('id', id);
       if (error) { alert('Delete failed: ' + error.message); return; }
       load();

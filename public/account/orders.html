@@ -100,7 +100,7 @@
       const orders = data.map(orderFromRow);
 
       // Orders still on the way go first so they're easy to find
-      const active = orders.filter(o => o.paymentStatus === 'paid' && o.fulfillmentStatus !== 'delivered');
+      const active = orders.filter(o => o.paymentStatus === 'paid' && !['delivered', 'cancelled'].includes(o.fulfillmentStatus));
       sub.textContent = `${orders.length} ${orders.length === 1 ? 'order' : 'orders'}` +
         (active.length ? ` · ${active.length} on the way` : '');
 

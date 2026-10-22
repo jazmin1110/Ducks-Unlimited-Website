@@ -22,6 +22,7 @@
 // =============================================================================
 
 import { supabase } from '/lib/supabase.js';
+import { requireAdmin } from '/admin/js/admin-guard.js';
 import { getAdminBrandSlug } from '/js/brand.js';
 import {
   SECTION_SCHEMAS,
@@ -61,8 +62,8 @@ const THEME_FIELDS = [
 // ── Boot ─────────────────────────────────────────────────────────────────────
 (async function boot() {
   // Auth gate
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) { window.location.href = '/admin/index.html'; return; }
+  // Only signed-in admins get past this line (see /admin/js/admin-guard.js)
+  await requireAdmin();
 
   // Resolve the brand we're editing. The admin nav's brand filter is the
   // source of truth; "all" falls back to Ducks for editing (we need to pick
@@ -119,7 +120,7 @@ const THEME_FIELDS = [
   await loadTheme();
 })().catch((err) => {
   console.error('[design] boot failed:', err);
-  alert('Design page failed to load. Check the console.');
+  alert('The Homepage editor could not load. Please refresh the page. If it keeps happening, check your internet connection.');
 });
 
 

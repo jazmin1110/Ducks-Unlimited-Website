@@ -441,6 +441,38 @@
       gap: 0.75rem;
     }
 
+    /* − [ 12 ] + stepper: quick way to change stock by one on a phone */
+    .stepper {
+      display: flex;
+      align-items: stretch;
+      gap: 0.35rem;
+    }
+
+    .stepper input[type="number"] { text-align: center; }
+
+    .stepper button {
+      flex: 0 0 44px;               /* 44px = comfortable finger size */
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background: #faf7f2;
+      font-size: 1.2rem;
+      color: #1B4D2E;
+      cursor: pointer;
+    }
+
+    .stepper button:hover { border-color: #1B4D2E; }
+
+    /* Grey "Hidden" tag for products customers can't see */
+    .cell-hidden {
+      display: inline-block;
+      font-size: 0.7rem;
+      color: #777;
+      border: 1px solid #ccc;
+      padding: 0.1rem 0.45rem;
+      border-radius: 3px;
+      margin-left: 0.3rem;
+    }
+
     /* Last-updated info block */
     .last-updated {
       background: #faf7f2;
@@ -573,7 +605,7 @@
         <input
           type="search"
           id="filterSearch"
-          placeholder="Product name or SKU…"
+          placeholder="Product, color or SKU…"
           autocomplete="off"
         />
       </div>
@@ -594,8 +626,10 @@
         <label for="filterStatus">Status</label>
         <select id="filterStatus">
           <option value="">All</option>
+          <option value="attention">Needs restock (low + out)</option>
           <option value="low">Low Stock</option>
           <option value="out">Out of Stock</option>
+          <option value="in">In Stock</option>
         </select>
       </div>
 
@@ -651,16 +685,30 @@
         <div class="field-row">
           <div class="field">
             <label for="onlineStock">Online Stock</label>
-            <input type="number" id="onlineStock" min="0" step="1" value="0" />
+            <div class="stepper">
+              <button type="button" data-step="onlineStock" data-by="-1" aria-label="One less online">−</button>
+              <input type="number" id="onlineStock" min="0" step="1" value="0" inputmode="numeric" />
+              <button type="button" data-step="onlineStock" data-by="1" aria-label="One more online">+</button>
+            </div>
           </div>
           <div class="field">
-            <label for="storeStock">Store Stock</label>
-            <input type="number" id="storeStock" min="0" step="1" value="0" />
+            <label for="storeStock">Greenhills Store Stock</label>
+            <div class="stepper">
+              <button type="button" data-step="storeStock" data-by="-1" aria-label="One less in store">−</button>
+              <input type="number" id="storeStock" min="0" step="1" value="0" inputmode="numeric" />
+              <button type="button" data-step="storeStock" data-by="1" aria-label="One more in store">+</button>
+            </div>
           </div>
         </div>
 
+        <p class="field-hint" style="margin:-0.5rem 0 1rem;">
+          <strong>Online stock</strong> is what customers can buy on the website — it goes down
+          automatically when an online order is paid. <strong>Store stock</strong> is only counted
+          here; update it yourself after store sales or deliveries.
+        </p>
+
         <div class="field">
-          <label for="lowStockThreshold">Low Stock Threshold</label>
+          <label for="lowStockThreshold">Warn me when total stock is at or below</label>
           <input type="number" id="lowStockThreshold" min="0" step="1" value="5" />
           <p class="field-hint">When total stock drops to this number or below, this row will be flagged as Low Stock.</p>
         </div>
@@ -688,7 +736,9 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { requireAdmin } from '/admin/js/admin-guard.js';
     import { adminBrandFilter } from '/js/brand.js';
+    import { fetchAll } from '/admin/js/bulk-data.js';
     import { openImportModal } from '/admin/js/import-modal.js';
     import { downloadCsv, todayStamp } from '/admin/js/csv.js';
     import {
@@ -696,8 +746,8 @@
     } from '/admin/js/stock-import.js';
 
     // ── Auth guard ──
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) window.location.href = '/admin/index.html';
+    // Only signed-in admins get past this line (see /admin/js/admin-guard.js)
+    const session = await requireAdmin();
 
     // Log out is handled by /components/admin-nav.html
 
@@ -709,6 +759,13 @@
 
     // Used for sorting sizes — alphabetical sort would put 'L' before 'M'
     const SIZE_ORDER = { XS: 1, S: 2, M: 3, L: 4, XL: 5, XXL: 6, XXXL: 7 };
+
+    // Letter sizes first, then number sizes (kids / waist) in number order
+    function sizeRank(size) {
+      if (SIZE_ORDER[size] != null) return SIZE_ORDER[size];
+      const n = Number(size);
+      return Number.isFinite(n) ? 100 + n : 999;
+    }
 
     // Filter + summary
     const searchInput     = document.getElementById('filterSearch');
@@ -817,17 +874,24 @@
       // product's brand doesn't match.
       const brandFilter = adminBrandFilter();
 
-      let query = supabase
-        .from('variants')
-        .select(`
-          id, color, size, sku,
-          products!inner ( id, name, category, is_active, brands!inner ( slug, name ) ),
-          inventory ( channel, quantity, low_stock_threshold, updated_at )
-        `);
-
-      if (brandFilter) query = query.eq('products.brands.slug', brandFilter);
-
-      const { data, error } = await query;
+      // fetchAll() pages through the results so nothing is cut off at 1000 variants
+      let data, error;
+      try {
+        data = await fetchAll(() => {
+          let query = supabase
+            .from('variants')
+            .select(`
+              id, color, size, sku,
+              products!inner ( id, name, category, is_active, brands!inner ( slug, name ) ),
+              inventory ( channel, quantity, low_stock_threshold, updated_at )
+            `)
+            .order('id');
+          if (brandFilter) query = query.eq('products.brands.slug', brandFilter);
+          return query;
+        });
+      } catch (err) {
+        error = err;
+      }
 
       if (error) {
         console.error(error);
@@ -889,7 +953,7 @@
       allVariants.sort((a, b) => {
         if (a.productName !== b.productName) return a.productName.localeCompare(b.productName);
         if (a.color       !== b.color)       return a.color.localeCompare(b.color);
-        return (SIZE_ORDER[a.size] ?? 99) - (SIZE_ORDER[b.size] ?? 99);
+        return sizeRank(a.size) - sizeRank(b.size);
       });
 
       applyFiltersAndRender();
@@ -907,11 +971,16 @@
       filteredView = allVariants.filter(v => {
         // Search matches product name OR SKU (case-insensitive)
         if (q) {
-          const haystack = (v.productName + ' ' + v.sku).toLowerCase();
+          const haystack = (v.productName + ' ' + v.color + ' ' + v.sku).toLowerCase();
           if (!haystack.includes(q)) return false;
         }
         if (cat    && v.category !== cat)    return false;
-        if (status && v.status   !== status) return false;
+        // "attention" = anything that needs restocking (low OR out)
+        if (status === 'attention') {
+          if (v.status === 'in') return false;
+        } else if (status && v.status !== status) {
+          return false;
+        }
         return true;
       });
 
@@ -964,7 +1033,7 @@
 
         tr.innerHTML = `
           <td>
-            <div class="cell-product">${escapeHtml(v.productName)}</div>
+            <div class="cell-product">${escapeHtml(v.productName)}${v.isActive ? '' : '<span class="cell-hidden" title="Customers cannot see this product">Hidden</span>'}</div>
             <div class="cell-variant">${escapeHtml(v.color)} · ${escapeHtml(v.size)}</div>
             <span class="cell-category">${escapeHtml(CATEGORY_LABELS[v.category] ?? v.category)}</span>
           </td>
@@ -1043,6 +1112,15 @@
       const tr = e.target.closest('tr');
       if (!tr || !tr.dataset.variantId) return;
       openEditPanel(tr.dataset.variantId);
+    });
+
+    // − / + buttons next to the stock boxes. Never goes below 0.
+    panel.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-step]');
+      if (!btn) return;
+      const input = document.getElementById(btn.dataset.step);
+      const next  = (parseInt(input.value, 10) || 0) + Number(btn.dataset.by);
+      input.value = Math.max(0, next);
     });
 
     // Panel close handlers
@@ -1167,6 +1245,13 @@
       }
     });
 
+
+    // Pre-select a status filter from the URL, e.g. the dashboard links to
+    // ?status=attention to show everything that needs restocking.
+    const statusParam = new URLSearchParams(window.location.search).get('status');
+    if (statusParam && [...statusSelect.options].some(o => o.value === statusParam)) {
+      statusSelect.value = statusParam;
+    }
 
     // ── Initial load ──
     await loadInventory();

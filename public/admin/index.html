@@ -179,6 +179,7 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { isCurrentUserAdmin } from '/admin/js/admin-guard.js';
 
     const form     = document.getElementById('loginForm');
     const emailEl  = document.getElementById('email');
@@ -186,13 +187,24 @@
     const btn      = document.getElementById('loginBtn');
     const errorMsg = document.getElementById('errorMsg');
 
-    // If admin is already logged in, skip the login page
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) window.location.href = '/admin/dashboard.html';
-
     function showError(message) {
       errorMsg.textContent = message;
       errorMsg.classList.add('visible');
+    }
+
+    // If someone is already signed in, decide where they go:
+    //   - an admin → straight to the dashboard
+    //   - a customer account (not an admin) → stay here and explain why
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      if (await isCurrentUserAdmin()) {
+        window.location.replace('/admin/dashboard.html');
+      } else {
+        showError(`You're signed in as ${session.user.email}, which is not an admin account. Log in below with an admin email to continue.`);
+        emailEl.value = '';
+      }
+    } else if (new URLSearchParams(location.search).get('denied')) {
+      showError('That account does not have admin access. Please log in with an admin email.');
     }
 
     function clearError() {
@@ -221,6 +233,16 @@
       if (error) {
         // Show a friendly message — don't expose raw Supabase error strings
         showError('Incorrect email or password. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Log In';
+        return;
+      }
+
+      // Password was right — but is this account allowed in the admin?
+      // (Customers sign in with the same system to see their orders.)
+      if (!(await isCurrentUserAdmin())) {
+        await supabase.auth.signOut();
+        showError('This account does not have admin access. Ask the owner to add you as an admin.');
         btn.disabled = false;
         btn.textContent = 'Log In';
         return;

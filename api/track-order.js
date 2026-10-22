@@ -62,7 +62,7 @@ export default async function handler(req, res) {
       `&customer_email=eq.${encodeURIComponent(email)}` +
       `&select=id,order_number,user_id,customer_name,shipping_address,total_amount,` +
       `payment_status,fulfillment_status,tracking_number,created_at,` +
-      `paid_at,packed_at,shipped_at,delivered_at,` +
+      `paid_at,packed_at,shipped_at,delivered_at,refunded_amount,` +
       `order_items(quantity,price_at_purchase,variants(color,size,products(id,name,product_images(image_url,is_primary,display_order))))` +
       `&limit=1`
     );
@@ -105,6 +105,7 @@ export default async function handler(req, res) {
         packedAt:          order.packed_at,
         shippedAt:         order.shipped_at,
         deliveredAt:       order.delivered_at,
+        refundedAmount:    Number(order.refunded_amount ?? 0),
         hasAccount:        !!order.user_id,
         linkedToYou,
         items: (order.order_items || []).map(it => {
