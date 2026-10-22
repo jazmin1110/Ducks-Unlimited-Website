@@ -756,6 +756,9 @@
   body.page-focus #searchToggle,
   body.page-focus .site-nav__util-link,
   body.page-focus .site-nav__utility a[aria-label="Wishlist"] { display: none !important; }
+  /* The hidden menu normally fills the middle and pushes the bag right.
+     With it gone, push the bag to the right edge ourselves. */
+  body.page-focus .site-nav__utility { margin-left: auto; }
 
   /* ── Drawer brand switch (mobile only) ── */
   .site-nav__drawer-brands {
