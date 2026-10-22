@@ -48,6 +48,9 @@
       <!-- 1. Brand block -->
       <div class="site-footer__col site-footer__brand-col">
         <!-- Name + tagline follow the brand being browsed (brand.js) -->
+        <!-- Duck badge (hidden on Rocwood pages — see CSS) -->
+        <img class="site-footer__emblem" src="/images/brand/du-logo.png" alt=""
+             width="56" height="56" loading="lazy" />
         <div class="site-footer__logo" data-brand-name>Ducks Unlimited</div>
         <div class="site-footer__est" data-brand-tagline>est. 1995</div>
         <p class="site-footer__tagline">
@@ -96,12 +99,9 @@
       <div class="site-footer__col">
         <h4 class="site-footer__heading">Get in Touch</h4>
         <ul class="site-footer__links">
-          <!-- TODO: add the real phone number, e.g.
-               <li><a href="tel:+639171234567">+63 917 123 4567</a></li>
-               (a placeholder number used to show here — removed so
-               customers never see "9XX XXX XXXX") -->
-          <!-- TODO: replace with real email -->
-          <li><a href="mailto:hello@ducksunlimited.ph">hello@ducksunlimited.ph</a></li>
+          <!-- Real contact details, from the Ducks Unlimited Facebook page -->
+          <li><a href="tel:+639175305428">0917 530 5428</a></li>
+          <li><a href="mailto:ducksunlimited777@yahoo.com">ducksunlimited777@yahoo.com</a></li>
           <li class="site-footer__address">
             Greenhills Shopping Center<br />
             San Juan, Metro Manila
@@ -110,14 +110,14 @@
 
         <ul class="site-footer__socials">
           <li>
-            <a href="https://facebook.com/ducksunlimitedph" target="_blank" rel="noopener" aria-label="Facebook">
+            <a href="https://www.facebook.com/DucksUnlimitedPh/" target="_blank" rel="noopener" aria-label="Facebook">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
                 <path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.5 2.9h-2.3v7A10 10 0 0 0 22 12z"/>
               </svg>
             </a>
           </li>
           <li>
-            <a href="https://instagram.com/ducksunlimitedph" target="_blank" rel="noopener" aria-label="Instagram">
+            <a href="https://www.instagram.com/ducks.ph/" target="_blank" rel="noopener" aria-label="Instagram">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
                    stroke="currentColor" stroke-width="1.8"
                    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -128,12 +128,12 @@
             </a>
           </li>
           <li>
-            <a href="https://shopee.ph/ducksunlimited" target="_blank" rel="noopener" aria-label="Shopee">
+            <a href="https://shp.ee/apd5p42" target="_blank" rel="noopener" aria-label="Shopee">
               <span class="site-footer__social-mono">Shopee</span>
             </a>
           </li>
           <li>
-            <a href="https://lazada.com.ph/shop/ducksunlimited" target="_blank" rel="noopener" aria-label="Lazada">
+            <a href="https://www.lazada.com.ph/shop/ducks-unlimited" target="_blank" rel="noopener" aria-label="Lazada">
               <span class="site-footer__social-mono">Lazada</span>
             </a>
           </li>
@@ -309,6 +309,14 @@
   }
 
   /* Brand block */
+  .site-footer__emblem {
+    display: block;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 0.75rem;
+  }
+  [data-brand="rw"] .site-footer__emblem { display: none; }
+
   .site-footer__logo {
     font-family: var(--font-heading);
     font-size: 1.5rem;

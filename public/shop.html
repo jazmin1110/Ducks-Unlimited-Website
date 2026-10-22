@@ -1012,6 +1012,9 @@
       .shop          { gap: 4rem; grid-template-columns: 260px 1fr; }
     }
   </style>
+  <!-- Browser-tab icon: the Ducks Unlimited duck badge -->
+  <link rel="icon" type="image/png" href="/images/brand/du-favicon.png" />
+  <link rel="apple-touch-icon" href="/images/brand/du-apple-touch-icon.png" />
 </head>
 <body>
 
@@ -1094,7 +1097,7 @@
         <div class="range-display">
           <span>₱<strong id="minPriceDisplay">0</strong></span>
           <span>—</span>
-          <span>₱<strong id="maxPriceDisplay">5,000</strong></span>
+          <span>₱<strong id="maxPriceDisplay">5,000+</strong></span>
         </div>
       </details>
 
@@ -1499,7 +1502,11 @@
       if (f.categories.size > 0 && !f.categories.has(p.category)) return false;
 
       // Price — at least one variant must fall in the selected range
-      const inRange = (price) => price >= f.minPrice && price <= f.maxPrice;
+      // The slider stops at ₱5,000, so "all the way right" means "no upper
+      // limit" — otherwise anything over ₱5,000 (e.g. leather jackets) would
+      // silently disappear from the shop.
+      const inRange = (price) => price >= f.minPrice
+        && (f.maxPrice >= PRICE_MAX || price <= f.maxPrice);
       const variantPrices = p.variants.length
         ? p.variants.map(v => Number(v.price_override ?? p.basePrice))
         : [p.basePrice];
@@ -1722,7 +1729,9 @@
 
     function updatePriceDisplay() {
       minPriceDisplay.textContent = formatPrice(Number(priceMinInput.value));
-      maxPriceDisplay.textContent = formatPrice(Number(priceMaxInput.value));
+      const max = Number(priceMaxInput.value);
+      // "+" at the top end: the slider at max means "₱5,000 and up"
+      maxPriceDisplay.textContent = formatPrice(max) + (max >= PRICE_MAX ? '+' : '');
     }
 
     // Keep the two thumbs from crossing each other

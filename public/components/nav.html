@@ -50,8 +50,15 @@
 
     <!-- Logo — brand name + tagline are swapped by brand.js via data-brand -->
     <a class="site-nav__brand" href="/" data-brand-home>
-      <span class="site-nav__logo"    data-brand-name>Ducks Unlimited</span>
-      <span class="site-nav__tagline" data-brand-tagline>est. 1995</span>
+      <!-- Duck badge (from the Ducks Unlimited Facebook page). Decorative, so
+           alt="" — the brand name next to it is the real link text.
+           Hidden on Rocwood pages by the CSS below (Rocwood has no badge yet). -->
+      <img class="site-nav__emblem" src="/images/brand/du-logo.png" alt=""
+           width="40" height="40" />
+      <span class="site-nav__wordmark">
+        <span class="site-nav__logo"    data-brand-name>Ducks Unlimited</span>
+        <span class="site-nav__tagline" data-brand-tagline>est. 1995</span>
+      </span>
     </a>
 
     <!-- ── Primary menu (center on desktop, drawer on mobile) ── -->
@@ -556,16 +563,37 @@
   .site-nav__toggle:checked ~ .site-nav__hamburger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
   /* Brand block — left-leaning */
+  /* Brand link = duck badge + (name over tagline), side by side */
   .site-nav__brand {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     text-decoration: none;
     line-height: 1.1;
     flex: 1;
     order: 2;
     text-align: center;
   }
+
+  /* Name stacked over the tagline */
+  .site-nav__wordmark {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Duck badge — small on phones, a touch bigger on desktop */
+  .site-nav__emblem {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+  }
+
+  /* Rocwood has no badge yet; very narrow phones need the room for the name */
+  [data-brand="rw"] .site-nav__emblem { display: none; }
+  @media (max-width: 359px) { .site-nav__emblem { display: none; } }
 
   .site-nav__brand:hover { text-decoration: none; }
 
@@ -912,9 +940,11 @@
     .site-nav__brand {
       order: 1;
       flex: 0 0 auto;
-      align-items: flex-start;
+      justify-content: flex-start;
       text-align: left;
     }
+    .site-nav__wordmark { align-items: flex-start; }
+    .site-nav__emblem   { width: 40px; height: 40px; }
 
     .site-nav__logo    { font-size: 1.25rem; letter-spacing: 0.12em; }
     .site-nav__tagline { font-size: 0.6rem; }

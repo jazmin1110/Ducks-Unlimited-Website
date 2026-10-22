@@ -11,7 +11,8 @@
 //
 // To stop using stock photos completely: set USE_STOCK_PHOTOS to false.
 //
-// All photos are from Unsplash (https://unsplash.com/license): free to use,
+// Ducks Unlimited homepage photos are our own (see HOME.du below).
+// Everything else is from Unsplash (https://unsplash.com/license): free to use,
 // including commercially, no permission needed. They're hotlinked from
 // Unsplash's own image server, which is what Unsplash asks for.
 // =============================================================================
@@ -24,16 +25,18 @@ function unsplash(id, w = 1200) {
 }
 
 // ── Homepage photos, per brand ──
-// Ducks Unlimited: polos, cotton, the sewing room — classic and soft.
-// Rocwood: denim, leather, brick — more rugged.
+// Ducks Unlimited: REAL photos of our own stores and products, taken from the
+// Ducks Unlimited Facebook page and Lazada store. They live in /images/brand
+// and /images/products/du on this site (not hotlinked — Facebook links expire).
+// Rocwood: denim, leather, brick — still Unsplash stand-ins (no real photos yet).
 const HOME = {
   du: {
-    hero:     unsplash('1609655106619-9d28f4f79c49', 1800), // man in a polo, old city street
-    men:      unsplash('1491780499145-c497fbe6d1b3', 900),  // man in a dark polo
-    women:    unsplash('1609369350331-4f12b446d487', 900),  // woman in a white cotton shirt
-    kids:     unsplash('1519238263530-99bdd11df2ea', 900),  // boy in a cardigan and shorts
-    material: unsplash('1616431101491-554c0932ea40', 1100), // cotton bolls
-    workshop: unsplash('1745847655362-fc86d76584b2', 1100), // hands at a sewing machine
+    hero:     '/images/brand/du-store-polo-rack.jpg',     // rack of colourful polos in-store
+    men:      '/images/brand/du-store-new-arrivals.jpg',  // navy polo on the new-arrivals rail
+    women:    '/images/products/du/ladies-yneck-pink.jpg', // ladies' Y-neck shirt, pale pink
+    kids:     '/images/products/du/kids-tee-natural.jpg',  // kids' round-neck tee
+    material: '/images/brand/du-flatlay-green-polo.jpg',  // folded green polo, paint splash
+    workshop: '/images/brand/du-flatlay-tipped-polos.jpg', // two tipped-collar polos, flat-lay
   },
   rw: {
     hero:     unsplash('1587072707615-c95b154d3ccb', 1800), // man in a leather jacket by a brick wall
