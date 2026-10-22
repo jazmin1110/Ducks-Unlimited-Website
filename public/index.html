@@ -3,240 +3,305 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ducks Unlimited — Filipino-made Egyptian Cotton Since 1995</title>
-  <meta name="description" content="Affordable luxury garments crafted in the Philippines since 1995. Egyptian cotton polos, t-shirts, and bottoms designed for everyday elegance." />
+  <title>Ducks Unlimited &amp; Rocwood — Made in Greenhills since 1995</title>
+  <meta name="description" content="Two Filipino clothing brands, one shop. Ducks Unlimited: Egyptian cotton, hand-finished in Greenhills since 1995. Rocwood: rugged everyday basics. One account, one bag." />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
   <link rel="stylesheet" href="/css/style.css" />
 
-  <!-- Homepage layout styles (shared with /preview-home.html) -->
-  <link rel="stylesheet" href="/css/home.css" />
+  <!-- =========================================================================
+       SHARED LANDING PAGE  ( / )
+       =========================================================================
+       The front door for both brands. Visitors pick a brand here and land on
+       that brand's home:
+         Ducks Unlimited → /du/      Rocwood → /rw/
+       (Both are served by /home.html — see the rewrites in vercel.json.)
+
+       This page is deliberately brand-neutral: it does NOT load /js/brand.js,
+       so it never "remembers" one brand over the other.
+
+       Works without JavaScript: the two panels are plain links with solid
+       brand colours. If JavaScript runs, each panel picks up its brand's hero
+       photo from Admin → Design (the same picture as that brand's homepage).
+       ========================================================================= -->
+  <style>
+    /* Page uses the warm ivory ground; each brand panel is its own colour field */
+    body { background: var(--color-bg); }
+
+    /* ── Top bar: just the useful links, no logo competition ── */
+    .landing-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.9rem 1rem;
+      font-size: 0.9rem;
+    }
+    .landing-bar a { color: var(--color-text); text-decoration: none; }
+    .landing-bar a:hover { text-decoration: underline; }
+    .landing-bar__right { display: flex; align-items: center; gap: 1.25rem; }
+
+    .landing-bag { display: inline-flex; align-items: center; gap: 0.4rem; }
+    /* Bag count bubble — cart.js fills [data-cart-count] and adds .has-items */
+    .landing-bag__count {
+      display: none;
+      min-width: 1.3rem;
+      height: 1.3rem;
+      padding: 0 0.35rem;
+      border-radius: 999px;
+      background: var(--color-text);
+      color: var(--color-white);
+      font-size: 0.72rem;
+      line-height: 1.3rem;
+      text-align: center;
+    }
+    .landing-bag__count.has-items { display: inline-block; }
+
+    /* ── The two brand panels ──
+       Phone: stacked, each about half the screen, so BOTH choices are
+       visible without scrolling. Desktop: side by side, full height. */
+    .landing-brands {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .brand-panel {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      min-height: calc(50svh - 1.6rem);
+      padding: 1.75rem 1.25rem;
+      color: #fff;
+      text-decoration: none;
+      overflow: hidden;
+      /* Solid brand colour until (or unless) a photo loads */
+      background-color: var(--panel-color);
+      background-size: cover;
+      background-position: center;
+    }
+    .brand-panel:hover { text-decoration: none; }
+
+    .brand-panel--du { --panel-color: #1B4D2E; }
+    .brand-panel--rw { --panel-color: #2A2420; }
+
+    /* A flat dark scrim keeps white text readable on any photo.
+       Only shown once a photo is set (.has-photo). */
+    .brand-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.38);
+      opacity: 0;
+      transition: opacity 0.3s ease, background-color 0.3s ease;
+    }
+    .brand-panel.has-photo::before { opacity: 1; }
+    .brand-panel.has-photo:hover::before { background: rgba(0, 0, 0, 0.28); }
+
+    .brand-panel > * { position: relative; }
+
+    .brand-panel__name {
+      font-family: var(--font-heading);
+      font-weight: 400;
+      font-size: clamp(2.4rem, 9vw, 5.5rem);
+      line-height: 0.95;
+      letter-spacing: -0.01em;
+      color: #fff;
+      margin: 0 0 0.75rem;
+    }
+
+    .brand-panel__line {
+      font-size: 1rem;
+      line-height: 1.5;
+      max-width: 30ch;
+      color: rgba(255, 255, 255, 0.92);
+      margin: 0 0 1.25rem;
+    }
+
+    /* Looks like a button, but the whole panel is the link */
+    .brand-panel__cta {
+      align-self: flex-start;
+      display: inline-block;
+      padding: 0.85rem 1.4rem;
+      background: #fff;
+      color: var(--panel-color);
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-radius: 2px;
+      transition: transform 0.15s ease;
+    }
+    .brand-panel:hover .brand-panel__cta,
+    .brand-panel:focus-visible .brand-panel__cta { transform: translateY(-2px); }
+    .brand-panel:focus-visible { outline: 3px solid var(--color-accent); outline-offset: -3px; }
+
+    /* ── One-line reassurance strip under the panels ── */
+    .landing-facts {
+      display: grid;
+      gap: 1.25rem;
+      padding: 2.5rem 1.25rem;
+      max-width: var(--container-max);
+      margin: 0 auto;
+    }
+    .landing-facts h2 {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0 0 0.3rem;
+    }
+    .landing-facts p { margin: 0; color: var(--color-text); line-height: 1.55; }
+
+    /* ── Small footer ── */
+    .landing-foot {
+      background: #fff;
+      padding: 1.75rem 1.25rem;
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+    }
+    .landing-foot__inner {
+      max-width: var(--container-max);
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .landing-foot ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.25rem;
+    }
+    .landing-foot a { color: var(--color-text); }
+
+    @media (min-width: 768px) {
+      .landing-bar { padding: 1rem 2rem; }
+      .landing-brands { grid-template-columns: 1fr 1fr; }
+      .brand-panel {
+        min-height: calc(100svh - 3.4rem);
+        padding: 3rem;
+      }
+      .brand-panel__line { font-size: 1.1rem; }
+      .landing-facts { grid-template-columns: repeat(3, 1fr); gap: 2.5rem; padding: 3.5rem 2rem; }
+      .landing-foot { padding: 1.75rem 2rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .brand-panel__cta, .brand-panel::before { transition: none; }
+    }
+  </style>
 </head>
 <body>
 
-  <!-- ── Nav (mounted by /js/components.js) ── -->
-  <div data-component="nav"></div>
+  <!-- Top bar: store finder on the left; account + bag on the right.
+       The account and bag are shared by both brands. -->
+  <header class="landing-bar">
+    <a href="/stores.html">Find a store</a>
+    <div class="landing-bar__right">
+      <a href="/account/" id="accountLink">Sign in</a>
+      <a href="/cart.html" class="landing-bag" aria-label="Bag">
+        Bag <span class="landing-bag__count" data-cart-count>0</span>
+      </a>
+    </div>
+  </header>
 
-  <!-- ────────────────────────────────────────────────────────
-       HOMEPAGE SECTIONS — built in /admin/design.html.
-       /js/sections-render.js replaces everything inside <main> with the
-       sections saved for the current brand (page_sections table).
+  <main>
+    <h1 class="sr-only">Ducks Unlimited and Rocwood</h1>
 
-       The hardcoded HTML below is the FALLBACK: it's what visitors see
-       if JavaScript is off or the database can't be reached. It is no
-       longer edited from the admin — change the live homepage in
-       Admin → Design instead.
-       ──────────────────────────────────────────────────────── -->
-  <main id="home-sections">
+    <div class="landing-brands">
+      <a class="brand-panel brand-panel--du" href="/du/" data-brand-panel="du">
+        <h2 class="brand-panel__name">Ducks Unlimited</h2>
+        <p class="brand-panel__line">Egyptian cotton polos and shirts, hand-finished in Greenhills since 1995.</p>
+        <span class="brand-panel__cta">Shop Ducks Unlimited</span>
+      </a>
 
-    <!-- ────────────────────────────────────────────────────────
-         HERO — content driven by /admin/homepage.html (site_content table).
-         Hardcoded text below acts as a fallback if Supabase is unreachable.
-         data-content-key="home.hero" + data-content-field="..." attributes
-         tell /js/site-content.js what to replace.
-         ──────────────────────────────────────────────────────── -->
-    <section class="hero" data-content-key="home.hero" data-content-field="image_url" data-content-bg-image>
-      <div class="hero__inner">
-        <p class="hero__eyebrow"  data-content-key="home.hero" data-content-field="eyebrow">Ducks Unlimited · Est. 1995</p>
-        <h1 class="hero__headline" data-content-key="home.hero" data-content-field="headline" data-content-html>
-          Affordable luxury,<br />
-          hand-finished in the Philippines.
-        </h1>
-        <p class="hero__sub" data-content-key="home.hero" data-content-field="sub">
-          Egyptian cotton garments, woven, cut, and sewn in our Greenhills
-          workshop — the way we've done it for three decades.
-        </p>
-        <a class="btn btn-outline-light"
-           data-content-key="home.hero" data-content-field="cta_link" data-content-attr="href"
-           href="/shop.html">
-          <span data-content-key="home.hero" data-content-field="cta_text">Shop the Collection</span>
-        </a>
+      <a class="brand-panel brand-panel--rw" href="/rw/" data-brand-panel="rw">
+        <h2 class="brand-panel__name">Rocwood</h2>
+        <p class="brand-panel__line">Rugged everyday basics in heavier cottons, made in the Philippines.</p>
+        <span class="brand-panel__cta">Shop Rocwood</span>
+      </a>
+    </div>
+
+    <!-- Three plain facts that answer "why shop here" for both brands -->
+    <section class="landing-facts" aria-label="Shopping with us">
+      <div>
+        <h2>One account, one bag</h2>
+        <p>Sign in once and shop both brands. Your bag and orders are shared.</p>
       </div>
-      <span class="hero__scroll" aria-hidden="true">Scroll</span>
-    </section>
-
-
-    <!-- ────────────────────────────────────────────────────────
-         FEATURED COLLECTIONS MOSAIC
-         Three large editorial tiles linking to category pages.
-         ──────────────────────────────────────────────────────── -->
-    <section class="collections section-xl">
-      <div class="container">
-
-        <div class="collections__intro">
-          <p class="eyebrow">The Collection</p>
-          <h2 class="display-sm">Made for everyday elegance</h2>
-          <span class="editorial-rule"></span>
-        </div>
-
-        <div class="collections__grid">
-
-          <!-- Each tile is editable in /admin/homepage.html. Keys remain
-               home.tile.polo / .tshirt / .bottoms (internal IDs unchanged
-               for backward compatibility) but the displayed content has
-               been re-themed to Men / Women / Kids & Baby audiences.
-               The hardcoded text below is a fallback if Supabase is down. -->
-          <a class="collection-tile"
-             data-content-key="home.tile.polo" data-content-field="link" data-content-attr="href"
-             href="/shop.html?audience=men">
-            <img data-content-key="home.tile.polo" data-content-field="image_url" data-content-attr="src" loading="lazy" decoding="async"
-                 class="is-empty" src="" alt="Men's Collection" />
-            <div class="collection-tile__overlay">
-              <span class="collection-tile__label" data-content-key="home.tile.polo" data-content-field="label">For Him</span>
-              <h3 class="collection-tile__name"   data-content-key="home.tile.polo" data-content-field="name">Men</h3>
-              <span class="collection-tile__cta"  data-content-key="home.tile.polo" data-content-field="cta_text">Shop Men</span>
-            </div>
-          </a>
-
-          <a class="collection-tile"
-             data-content-key="home.tile.tshirt" data-content-field="link" data-content-attr="href"
-             href="/shop.html?audience=women">
-            <img data-content-key="home.tile.tshirt" data-content-field="image_url" data-content-attr="src" loading="lazy" decoding="async"
-                 class="is-empty" src="" alt="Women's Collection" />
-            <div class="collection-tile__overlay">
-              <span class="collection-tile__label" data-content-key="home.tile.tshirt" data-content-field="label">For Her</span>
-              <h3 class="collection-tile__name"   data-content-key="home.tile.tshirt" data-content-field="name">Women</h3>
-              <span class="collection-tile__cta"  data-content-key="home.tile.tshirt" data-content-field="cta_text">Shop Women</span>
-            </div>
-          </a>
-
-          <a class="collection-tile"
-             data-content-key="home.tile.bottoms" data-content-field="link" data-content-attr="href"
-             href="/shop.html?audience=kids">
-            <img data-content-key="home.tile.bottoms" data-content-field="image_url" data-content-attr="src" loading="lazy" decoding="async"
-                 class="is-empty" src="" alt="Kids & Baby Collection" />
-            <div class="collection-tile__overlay">
-              <span class="collection-tile__label" data-content-key="home.tile.bottoms" data-content-field="label">Mini DU</span>
-              <h3 class="collection-tile__name"   data-content-key="home.tile.bottoms" data-content-field="name">Kids &amp; Baby</h3>
-              <span class="collection-tile__cta"  data-content-key="home.tile.bottoms" data-content-field="cta_text">Shop Kids</span>
-            </div>
-          </a>
-
-        </div>
+      <div>
+        <h2>Free shipping over ₱3,000</h2>
+        <p>Every order ships from Greenhills, San Juan. Pay by card, Maya or QR Ph.</p>
+      </div>
+      <div>
+        <h2>Visit the store</h2>
+        <p>Try everything on at Greenhills Shopping Center. <a href="/stores.html">Store hours and directions</a>.</p>
       </div>
     </section>
-
-
-    <!-- ────────────────────────────────────────────────────────
-         EDITORIAL — alternating image / text blocks
-         Two rows: first image-left, second image-right.
-         ──────────────────────────────────────────────────────── -->
-    <section class="editorial">
-
-      <!-- Row 1 (image left, copy right) — editable as home.editorial.cotton -->
-      <div class="editorial__row">
-        <div class="editorial__media">
-          <img data-content-key="home.editorial.cotton" data-content-field="image_url" data-content-attr="src" loading="lazy" decoding="async"
-               class="is-empty" src=""
-               alt="Egyptian cotton being woven" />
-        </div>
-        <div class="editorial__copy">
-          <p class="eyebrow"     data-content-key="home.editorial.cotton" data-content-field="eyebrow">The Material</p>
-          <h2 class="display-sm" data-content-key="home.editorial.cotton" data-content-field="headline">Woven from the finest Egyptian cotton.</h2>
-          <span class="editorial-rule editorial-rule--left"></span>
-          <div data-content-key="home.editorial.cotton" data-content-field="body_html" data-content-html>
-            <p>
-              Every Ducks Unlimited garment begins with long-staple Egyptian
-              cotton — softer to the touch, stronger in the seam, and built to
-              outlast trend cycles. We weave the cloth ourselves so we can
-              guarantee what's inside each piece.
-            </p>
-          </div>
-          <p>
-            <a class="btn btn-outline-dark"
-               data-content-key="home.editorial.cotton" data-content-field="cta_link" data-content-attr="href"
-               href="/shop.html">
-              <span data-content-key="home.editorial.cotton" data-content-field="cta_text">Shop the Collection</span>
-            </a>
-          </p>
-        </div>
-      </div>
-
-      <!-- Row 2 (copy left, image right) — editable as home.editorial.workshop -->
-      <div class="editorial__row editorial__row--reverse">
-        <div class="editorial__media">
-          <img data-content-key="home.editorial.workshop" data-content-field="image_url" data-content-attr="src" loading="lazy" decoding="async"
-               class="is-empty" src=""
-               alt="Hand-finishing in the Greenhills workshop" />
-        </div>
-        <div class="editorial__copy">
-          <p class="eyebrow"     data-content-key="home.editorial.workshop" data-content-field="eyebrow">The Workshop</p>
-          <h2 class="display-sm" data-content-key="home.editorial.workshop" data-content-field="headline">Hand-finished, one piece at a time.</h2>
-          <span class="editorial-rule editorial-rule--left"></span>
-          <div data-content-key="home.editorial.workshop" data-content-field="body_html" data-content-html>
-            <p>
-              From the first cut to the final hem, every Ducks Unlimited piece
-              is finished by hand in our family-run workshop in Greenhills.
-              No middlemen, no outsourcing — just three decades of craft
-              passed down through our team.
-            </p>
-          </div>
-          <p>
-            <a class="btn btn-outline-dark"
-               data-content-key="home.editorial.workshop" data-content-field="cta_link" data-content-attr="href"
-               href="/shop.html">
-              <span data-content-key="home.editorial.workshop" data-content-field="cta_text">Shop the Collection</span>
-            </a>
-          </p>
-        </div>
-      </div>
-
-    </section>
-
-
-    <!-- ────────────────────────────────────────────────────────
-         NEW ARRIVALS — filled by inline script (Supabase fetch)
-         ──────────────────────────────────────────────────────── -->
-    <section class="new-arrivals section-xl">
-      <div class="container">
-        <div class="new-arrivals__head">
-          <p class="eyebrow">Just In</p>
-          <h2 class="display-sm">New Arrivals</h2>
-          <span class="editorial-rule"></span>
-        </div>
-
-        <div class="products-grid" id="newArrivalsGrid">
-          <!-- Skeletons inserted here on load, replaced by real products -->
-        </div>
-
-        <div class="new-arrivals__cta">
-          <a href="/shop.html" class="btn btn-outline-dark">Shop All New</a>
-        </div>
-      </div>
-    </section>
-
   </main>
 
-  <!-- ── Footer (mounted by /js/components.js) ── -->
-  <div data-component="footer"></div>
+  <footer class="landing-foot">
+    <div class="landing-foot__inner">
+      <ul>
+        <li><a href="/customer-service/help.html">Help &amp; FAQ</a></li>
+        <li><a href="/customer-service/shipping.html">Shipping</a></li>
+        <li><a href="/customer-service/returns.html">Returns</a></li>
+        <li><a href="/track-order.html">Track an order</a></li>
+        <li><a href="/customer-service/privacy.html">Privacy</a></li>
+      </ul>
+      <span>&copy; <span id="landingYear">2026</span> Ducks Unlimited &amp; Rocwood</span>
+    </div>
+  </footer>
 
-
-  <!-- ────────────────────────────────────────────────────────────
-       Scripts
-       ──────────────────────────────────────────────────────────── -->
-
-  <script type="module" src="/js/components.js"></script>
+  <!-- Bag count (cart.js fills [data-cart-count]) -->
   <script type="module" src="/js/cart.js"></script>
 
-  <!-- Paint the homepage from the sections saved in Admin → Design. -->
   <script type="module">
-    import { renderPageSections } from '/js/sections-render.js';
+    import { supabase } from '/lib/supabase.js';
 
-    const main = document.getElementById('home-sections');
-    renderPageSections('home', main)
-      .then(() => {
-        // Links like /#section-id jump before the sections exist — re-jump now.
-        if (location.hash) {
-          const target = document.querySelector(location.hash);
-          if (target) target.scrollIntoView();
-        }
-      })
-      .catch((err) => {
-        // The fallback HTML inside <main> stays on screen.
-        console.error('[home] sections failed to render:', err);
-      });
+    document.getElementById('landingYear').textContent = new Date().getFullYear();
+
+    // ── "Sign in" → "My account" when the visitor already has a session ──
+    // getSession() reads the saved session from the browser — no network call.
+    const { data: { session } } = await supabase.auth.getSession();
+    const accountLink = document.getElementById('accountLink');
+    if (session) {
+      accountLink.textContent = 'My account';
+      accountLink.href = '/account/';
+    } else {
+      accountLink.href = '/auth/sign-in.html';
+    }
+
+    // ── Give each panel its brand's hero photo ──
+    // Uses the published hero section of each brand's homepage
+    // (Admin → Design), so the owner manages these pictures in one place.
+    // No photo saved → the panel keeps its solid brand colour.
+    const { data: brands } = await supabase.from('brands').select('id, slug');
+    const { data: heroes } = await supabase
+      .from('page_sections')
+      .select('brand_id, published')
+      .eq('page_key', 'home')
+      .eq('section_type', 'hero')
+      .is('deleted_at', null);
+
+    for (const b of brands || []) {
+      const panel = document.querySelector(`[data-brand-panel="${b.slug}"]`);
+      const hero  = (heroes || []).find(h => h.brand_id === b.id);
+      const url   = hero?.published?.image_url;
+      if (!panel || !url) continue;
+
+      // Only swap the colour for the photo once it has actually loaded,
+      // so a slow or broken image never leaves an empty panel.
+      const img = new Image();
+      img.onload = () => {
+        panel.style.backgroundImage = `url("${url.replace(/"/g, '%22')}")`;
+        panel.classList.add('has-photo');
+      };
+      img.src = url;
+    }
   </script>
 
 </body>

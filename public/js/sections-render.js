@@ -232,14 +232,13 @@ const TEMPLATES = {
       ? ` style="background-image: linear-gradient(rgba(0,0,0,${overlay}), rgba(0,0,0,${Math.min(overlay + 0.15, 0.9)})), url('${escCssUrl(s.image_url)}'); background-size: cover; background-position: center;"`
       : '';
     return `
-      <section class="hero"${bgStyle}>
+      <section class="hero${s.image_url ? ' hero--photo' : ''}"${bgStyle}>
         <div class="hero__inner">
           ${s.eyebrow  ? `<p class="hero__eyebrow">${esc(s.eyebrow)}</p>` : ''}
           ${s.headline ? `<h1 class="hero__headline">${s.headline}</h1>` : ''}
           ${s.sub      ? `<p class="hero__sub">${esc(s.sub)}</p>` : ''}
           ${s.cta_text && s.cta_link ? `<a class="btn btn-outline-light" href="${escAttr(s.cta_link)}">${esc(s.cta_text)}</a>` : ''}
         </div>
-        <span class="hero__scroll" aria-hidden="true">Scroll</span>
       </section>
     `;
   },
@@ -281,16 +280,17 @@ const TEMPLATES = {
 
   'editorial-block'(s) {
     const reverse = s.layout === 'image-right';
+    // No photo yet → a text-only block (no big empty picture box).
+    const media = s.image_url
+      ? `<div class="editorial__media">${imgHtml(s.image_url, s.image_alt)}</div>`
+      : '';
     return `
-      <section class="editorial">
+      <section class="editorial${s.image_url ? '' : ' editorial--text'}">
         <div class="editorial__row${reverse ? ' editorial__row--reverse' : ''}">
-          <div class="editorial__media">
-            ${imgHtml(s.image_url, s.image_alt)}
-          </div>
+          ${media}
           <div class="editorial__copy">
             ${s.eyebrow  ? `<p class="eyebrow">${esc(s.eyebrow)}</p>` : ''}
             ${s.headline ? `<h2 class="display-sm">${esc(s.headline)}</h2>` : ''}
-            <span class="editorial-rule editorial-rule--left"></span>
             ${s.body ? `<div>${s.body}</div>` : ''}
             ${s.cta_text && s.cta_link ? `<p><a class="btn btn-outline-dark" href="${escAttr(s.cta_link)}">${esc(s.cta_text)}</a></p>` : ''}
           </div>
@@ -322,7 +322,6 @@ function introHtml(eyebrow, heading, className) {
     <div class="${className}">
       ${eyebrow ? `<p class="eyebrow">${esc(eyebrow)}</p>` : ''}
       ${heading ? `<h2 class="display-sm">${esc(heading)}</h2>` : ''}
-      <span class="editorial-rule"></span>
     </div>
   `;
 }
@@ -336,9 +335,11 @@ function imgHtml(url, alt) {
 }
 
 function tileHtml(b) {
+  // No photo yet → a plain tile in the brand's warm tone (CSS: --blank),
+  // instead of an empty <img> that some browsers draw as a broken image.
   return `
-    <a class="collection-tile" href="${escAttr(b.link || '/shop.html')}">
-      ${imgHtml(b.image_url, b.image_alt || b.name)}
+    <a class="collection-tile${b.image_url ? '' : ' collection-tile--blank'}" href="${escAttr(b.link || '/shop.html')}">
+      ${b.image_url ? imgHtml(b.image_url, b.image_alt || b.name) : ''}
       <div class="collection-tile__overlay">
         ${b.label    ? `<span class="collection-tile__label">${esc(b.label)}</span>` : ''}
         ${b.name     ? `<h3 class="collection-tile__name">${esc(b.name)}</h3>` : ''}

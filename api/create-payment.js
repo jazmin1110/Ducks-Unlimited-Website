@@ -31,7 +31,11 @@
 import { getUserFromRequest } from './_lib/supabase-admin.js';
 import { createMayaCheckout } from './_lib/maya.js';
 
+// Flat shipping fee, waived when the items add up to the free-shipping
+// threshold or more. Keep these two numbers the same as the ones at the top
+// of /public/checkout.html and /public/cart.html.
 const SHIPPING_FEE_PHP = 150;
+const FREE_SHIPPING_THRESHOLD_PHP = 3000;
 
 // Which payment company handles checkout. Maya is the default; set
 // PAYMENT_PROVIDER=paymongo in the environment to switch back to PayMongo.
@@ -203,7 +207,8 @@ export default async function handler(req, res) {
     }
     const brandId = brandIds[0];
 
-    const shippingFee = SHIPPING_FEE_PHP;
+    // Free shipping over the threshold (the site promises this everywhere)
+    const shippingFee = subtotal >= FREE_SHIPPING_THRESHOLD_PHP ? 0 : SHIPPING_FEE_PHP;
     const total = subtotal + shippingFee;
 
     // ── Combine shipping fields into the single shipping_address column ──

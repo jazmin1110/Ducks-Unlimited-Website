@@ -237,6 +237,7 @@
     }
 
     .swatch__dot {
+      display: block; /* it's a <span>; without this the width/height are ignored */
       width: 40px;
       height: 40px;
       border-radius: 50%;
@@ -877,7 +878,7 @@
 
     <!-- Breadcrumb — content set by JS once product loads -->
     <nav class="breadcrumb" id="breadcrumb" aria-label="Breadcrumb">
-      <a href="/">Home</a>
+      <a href="/" data-brand-home>Home</a>
       <span class="breadcrumb__sep">/</span>
       <a href="/shop.html">Shop</a>
     </nav>
@@ -937,6 +938,7 @@
     import { supabase } from '/lib/supabase.js';
     import { addToCart } from '/js/cart.js';
     import { toggleWishlist, isInWishlist } from '/js/wishlist.js';
+    import { getCurrentBrand, adoptBrand } from '/js/brand.js';
 
     // ─────────────────────────────────────────────────────────────────
     // CONSTANTS + helpers
@@ -1048,7 +1050,8 @@
       const { data, error } = await supabase
         .from('products')
         .select(`
-          id, name, description, category, base_price, is_active,
+          id, name, description, category, base_price, is_active, brand_id,
+          brands ( slug ),
           variants (
             id, color, size, sku, price_override,
             inventory ( channel, quantity, low_stock_threshold )
@@ -1065,7 +1068,8 @@
       return data;
     }
 
-    async function loadRelatedProducts(category, excludeId) {
+    // Related products come from the same brand only
+    async function loadRelatedProducts(category, excludeId, brandId) {
       const { data, error } = await supabase
         .from('products')
         .select(`
@@ -1074,6 +1078,7 @@
         `)
         .eq('is_active', true)
         .eq('category', category)
+        .eq('brand_id', brandId)
         .neq('id', excludeId)
         .order('created_at', { ascending: false })
         .limit(4);
@@ -1140,7 +1145,7 @@
       // Breadcrumb update
       const breadcrumb = document.getElementById('breadcrumb');
       breadcrumb.innerHTML = `
-        <a href="/">Home</a>
+        <a href="${getCurrentBrand().homePath}">Home</a>
         <span class="breadcrumb__sep">/</span>
         <a href="/shop.html?category=${encodeURIComponent(p.category)}">${escapeHtml(CATEGORY_LABELS[p.category] ?? p.category)}</a>
         <span class="breadcrumb__sep">/</span>
@@ -1592,8 +1597,8 @@
           price:        v.price,
           imageUrl:     state.images[0]?.image_url ?? '',
         });
-
-        showToast('Added to cart');
+        // No toast here: the mini-cart drawer slides in on every add
+        // (it listens for cart:add), so a second "Added" message is noise.
       });
     }
 
@@ -1692,6 +1697,10 @@
         return;
       }
 
+      // Show the page as the product's own brand (logo, colours, links),
+      // even if the shopper was last browsing the other brand.
+      if (product.brands?.slug) adoptBrand(product.brands.slug);
+
       // Populate state
       state.product = product;
       state.images  = sortImages(product.product_images);
@@ -1707,7 +1716,7 @@
       renderProduct();
 
       // Related — load in parallel-ish (after main render so the page feels fast)
-      const related = await loadRelatedProducts(product.category, product.id);
+      const related = await loadRelatedProducts(product.category, product.id, product.brand_id);
       renderRelated(related);
     }
 

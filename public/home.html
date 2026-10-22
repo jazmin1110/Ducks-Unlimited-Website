@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home — Ducks Unlimited</title>
+  <meta name="description" content="Affordable luxury garments crafted in the Philippines since 1995. Egyptian cotton polos, t-shirts, and bottoms designed for everyday elegance." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <!-- Homepage layout styles (shared with /preview-home.html) -->
+  <link rel="stylesheet" href="/css/home.css" />
+</head>
+<body class="has-newsletter">
+  <!-- has-newsletter: the newsletter sign-up shows on brand home pages only
+       (it used to repeat on every page, including cart and checkout). -->
+
+  <!-- ── Nav (mounted by /js/components.js) ── -->
+  <div data-component="nav"></div>
+
+  <!-- ────────────────────────────────────────────────────────
+       HOMEPAGE SECTIONS — built in /admin/design.html.
+       /js/sections-render.js replaces everything inside <main> with the
+       sections saved for the current brand (page_sections table).
+
+       The hardcoded HTML below is the FALLBACK: it's what visitors see
+       if JavaScript is off or the database can't be reached. It is no
+       longer edited from the admin — change the live homepage in
+       Admin → Design instead.
+       ──────────────────────────────────────────────────────── -->
+  <main id="home-sections">
+
+    <!-- ────────────────────────────────────────────────────────
+         HERO — content driven by /admin/homepage.html (site_content table).
+         Hardcoded text below acts as a fallback if Supabase is unreachable.
+         data-content-key="home.hero" + data-content-field="..." attributes
+         tell /js/site-content.js what to replace.
+         ──────────────────────────────────────────────────────── -->
+    <section class="hero" data-content-key="home.hero" data-content-field="image_url" data-content-bg-image>
+      <div class="hero__inner">
+        <p class="hero__eyebrow"  data-content-key="home.hero" data-content-field="eyebrow">Ducks Unlimited · Est. 1995</p>
+        <h1 class="hero__headline" data-content-key="home.hero" data-content-field="headline" data-content-html>
+          Affordable luxury,<br />
+          hand-finished in the Philippines.
+        </h1>
+        <p class="hero__sub" data-content-key="home.hero" data-content-field="sub">
+          Egyptian cotton garments, woven, cut, and sewn in our Greenhills
+          workshop — the way we've done it for three decades.
+        </p>
+        <a class="btn btn-outline-light"
+           data-content-key="home.hero" data-content-field="cta_link" data-content-attr="href"
+           href="/shop.html">
+          <span data-content-key="home.hero" data-content-field="cta_text">Shop the Collection</span>
+        </a>
+      </div>
+    </section>
+
+
+    <!-- ────────────────────────────────────────────────────────
+         FEATURED COLLECTIONS MOSAIC
+         Three large editorial tiles linking to category pages.
+         ──────────────────────────────────────────────────────── -->
+    <section class="collections section-xl">
+      <div class="container">
+
+        <div class="collections__intro">
+          <p class="eyebrow">The Collection</p>
+          <h2 class="display-sm">Made for everyday elegance</h2>
+          <span class="editorial-rule"></span>
+        </div>
+
+        <div class="collections__grid">
+
+          <!-- Each tile is editable in /admin/homepage.html. Keys remain
+               home.tile.polo / .tshirt / .bottoms (internal IDs unchanged
+               for backward compatibility) but the displayed content has
+               been re-themed to Men / Women / Kids & Baby audiences.
+               The hardcoded text below is a fallback if Supabase is down. -->
+          <a class="collection-tile"
+             data-content-key="home.tile.polo" data-content-field="link" data-content-attr="href"
+             href="/shop.html?audience=men">
+            <img data-content-key="home.tile.polo" data-content-field="image_url" data-content-attr="src" loading="lazy" decoding="async"
+                 class="is-empty" src="" alt="Men's Collection" />
+            <div class="collection-tile__overlay">
+              <span class="collection-tile__label" data-content-key="home.tile.polo" data-content-field="label">For Him</span>
+              <h3 class="collection-tile__name"   data-content-key="home.tile.polo" data-content-field="name">Men</h3>
+              <span class="collection-tile__cta"  data-content-key="home.tile.polo" data-content-field="cta_text">Shop Men</span>
+            </div>
+          </a>
+
+          <a class="collection-tile"
+             data-content-key="home.tile.tshirt" data-content-field="link" data-content-attr="href"
+             href="/shop.html?audience=women">
+            <img data-content-key="home.tile.tshirt" data-content-field="image_url" data-content-attr="src" loading="lazy" decoding="async"
+                 class="is-empty" src="" alt="Women's Collection" />
+            <div class="collection-tile__overlay">
+              <span class="collection-tile__label" data-content-key="home.tile.tshirt" data-content-field="label">For Her</span>
+              <h3 class="collection-tile__name"   data-content-key="home.tile.tshirt" data-content-field="name">Women</h3>
+              <span class="collection-tile__cta"  data-content-key="home.tile.tshirt" data-content-field="cta_text">Shop Women</span>
+            </div>
+          </a>
+
+          <a class="collection-tile"
+             data-content-key="home.tile.bottoms" data-content-field="link" data-content-attr="href"
+             href="/shop.html?audience=kids">
+            <img data-content-key="home.tile.bottoms" data-content-field="image_url" data-content-attr="src" loading="lazy" decoding="async"
+                 class="is-empty" src="" alt="Kids & Baby Collection" />
+            <div class="collection-tile__overlay">
+              <span class="collection-tile__label" data-content-key="home.tile.bottoms" data-content-field="label">Mini DU</span>
+              <h3 class="collection-tile__name"   data-content-key="home.tile.bottoms" data-content-field="name">Kids &amp; Baby</h3>
+              <span class="collection-tile__cta"  data-content-key="home.tile.bottoms" data-content-field="cta_text">Shop Kids</span>
+            </div>
+          </a>
+
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ────────────────────────────────────────────────────────
+         EDITORIAL — alternating image / text blocks
+         Two rows: first image-left, second image-right.
+         ──────────────────────────────────────────────────────── -->
+    <section class="editorial">
+
+      <!-- Row 1 (image left, copy right) — editable as home.editorial.cotton -->
+      <div class="editorial__row">
+        <div class="editorial__media">
+          <img data-content-key="home.editorial.cotton" data-content-field="image_url" data-content-attr="src" loading="lazy" decoding="async"
+               class="is-empty" src=""
+               alt="Egyptian cotton being woven" />
+        </div>
+        <div class="editorial__copy">
+          <p class="eyebrow"     data-content-key="home.editorial.cotton" data-content-field="eyebrow">The Material</p>
+          <h2 class="display-sm" data-content-key="home.editorial.cotton" data-content-field="headline">Woven from the finest Egyptian cotton.</h2>
+          <span class="editorial-rule editorial-rule--left"></span>
+          <div data-content-key="home.editorial.cotton" data-content-field="body_html" data-content-html>
+            <p>
+              Every Ducks Unlimited garment begins with long-staple Egyptian
+              cotton — softer to the touch, stronger in the seam, and built to
+              outlast trend cycles. We weave the cloth ourselves so we can
+              guarantee what's inside each piece.
+            </p>
+          </div>
+          <p>
+            <a class="btn btn-outline-dark"
+               data-content-key="home.editorial.cotton" data-content-field="cta_link" data-content-attr="href"
+               href="/shop.html">
+              <span data-content-key="home.editorial.cotton" data-content-field="cta_text">Shop the Collection</span>
+            </a>
+          </p>
+        </div>
+      </div>
+
+      <!-- Row 2 (copy left, image right) — editable as home.editorial.workshop -->
+      <div class="editorial__row editorial__row--reverse">
+        <div class="editorial__media">
+          <img data-content-key="home.editorial.workshop" data-content-field="image_url" data-content-attr="src" loading="lazy" decoding="async"
+               class="is-empty" src=""
+               alt="Hand-finishing in the Greenhills workshop" />
+        </div>
+        <div class="editorial__copy">
+          <p class="eyebrow"     data-content-key="home.editorial.workshop" data-content-field="eyebrow">The Workshop</p>
+          <h2 class="display-sm" data-content-key="home.editorial.workshop" data-content-field="headline">Hand-finished, one piece at a time.</h2>
+          <span class="editorial-rule editorial-rule--left"></span>
+          <div data-content-key="home.editorial.workshop" data-content-field="body_html" data-content-html>
+            <p>
+              From the first cut to the final hem, every Ducks Unlimited piece
+              is finished by hand in our family-run workshop in Greenhills.
+              No middlemen, no outsourcing — just three decades of craft
+              passed down through our team.
+            </p>
+          </div>
+          <p>
+            <a class="btn btn-outline-dark"
+               data-content-key="home.editorial.workshop" data-content-field="cta_link" data-content-attr="href"
+               href="/shop.html">
+              <span data-content-key="home.editorial.workshop" data-content-field="cta_text">Shop the Collection</span>
+            </a>
+          </p>
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- ────────────────────────────────────────────────────────
+         NEW ARRIVALS — filled by inline script (Supabase fetch)
+         ──────────────────────────────────────────────────────── -->
+    <section class="new-arrivals section-xl">
+      <div class="container">
+        <div class="new-arrivals__head">
+          <p class="eyebrow">Just In</p>
+          <h2 class="display-sm">New Arrivals</h2>
+          <span class="editorial-rule"></span>
+        </div>
+
+        <div class="products-grid" id="newArrivalsGrid">
+          <!-- Skeletons inserted here on load, replaced by real products -->
+        </div>
+
+        <div class="new-arrivals__cta">
+          <a href="/shop.html" class="btn btn-outline-dark">Shop All New</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── Footer (mounted by /js/components.js) ── -->
+  <div data-component="footer"></div>
+
+
+  <!-- ────────────────────────────────────────────────────────────
+       Scripts
+       ──────────────────────────────────────────────────────────── -->
+
+  <script type="module" src="/js/components.js"></script>
+  <script type="module" src="/js/cart.js"></script>
+
+  <!-- Paint the homepage from the sections saved in Admin → Design. -->
+  <script type="module">
+    import { renderPageSections } from '/js/sections-render.js';
+
+    const main = document.getElementById('home-sections');
+    renderPageSections('home', main)
+      .then(() => {
+        // Links like /#section-id jump before the sections exist — re-jump now.
+        if (location.hash) {
+          const target = document.querySelector(location.hash);
+          if (target) target.scrollIntoView();
+        }
+      })
+      .catch((err) => {
+        // The fallback HTML inside <main> stays on screen.
+        console.error('[home] sections failed to render:', err);
+      });
+  </script>
+
+</body>
+</html>

@@ -4,7 +4,7 @@
 // Imports brand.js for its side effect — resolves the current brand and sets
 // `data-brand` on <html> before any component is mounted, so the nav paints
 // with the right accent on first render.
-import '/js/brand.js';
+import { getCurrentBrand } from '/js/brand.js';
 
 // =============================================================================
 // Auto-mounts shared HTML snippets from /public/components/ into placeholder
@@ -70,6 +70,11 @@ export async function mountComponents(root = document) {
   // Tell other modules the DOM changed. cart.js listens for this and
   // re-paints any cart count badges that just appeared (e.g. inside the nav).
   window.dispatchEvent(new CustomEvent('cart:change'));
+
+  // Same for the brand: the footer (and anything else mounted just now) has
+  // [data-brand-name] text that brand.js filled in BEFORE it existed.
+  // Re-announcing the current brand repaints it (logo, footer name, tabs).
+  window.dispatchEvent(new CustomEvent('brand:change', { detail: getCurrentBrand() }));
 }
 
 // Auto-run on load

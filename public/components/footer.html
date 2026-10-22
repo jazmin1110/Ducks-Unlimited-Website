@@ -13,11 +13,9 @@
 <!-- ── Newsletter band ────────────────────────────────────────────────── -->
 <section class="site-newsletter">
   <div class="container site-newsletter__inner">
-    <p class="eyebrow">Stay in Touch</p>
-    <h2 class="display-sm">Join the Ducks Unlimited family</h2>
+    <h2 class="display-sm">New arrivals, first</h2>
     <p class="site-newsletter__sub">
-      Be first to hear about new arrivals, lookbooks, and stories from our
-      workshop in Greenhills. No spam — just thoughtfully made garments.
+      One email when something new comes out of the Greenhills workshop. No spam.
     </p>
 
     <form class="site-newsletter__form" data-newsletter onsubmit="return false;">
@@ -49,11 +47,14 @@
 
       <!-- 1. Brand block -->
       <div class="site-footer__col site-footer__brand-col">
-        <div class="site-footer__logo">Ducks Unlimited</div>
-        <div class="site-footer__est">est. 1995</div>
+        <!-- Name + tagline follow the brand being browsed (brand.js) -->
+        <div class="site-footer__logo" data-brand-name>Ducks Unlimited</div>
+        <div class="site-footer__est" data-brand-tagline>est. 1995</div>
         <p class="site-footer__tagline">
-          Filipino-made garments crafted in Greenhills since 1995.
-          Affordable luxury, hand-finished, one piece at a time.
+          Filipino-made clothing from our workshop in Greenhills, San Juan.
+        </p>
+        <p class="site-footer__tagline">
+          <a class="site-footer__all-brands" href="/">See all our brands →</a>
         </p>
       </div>
 
@@ -71,7 +72,7 @@
 
       <!-- 3. The World of DU -->
       <div class="site-footer__col">
-        <h4 class="site-footer__heading">The World of DU</h4>
+        <h4 class="site-footer__heading">Explore</h4>
         <ul class="site-footer__links">
           <li><a href="/lookbooks">Lookbooks</a></li>
           <li><a href="/stores.html">Find a Store</a></li>
@@ -95,8 +96,10 @@
       <div class="site-footer__col">
         <h4 class="site-footer__heading">Get in Touch</h4>
         <ul class="site-footer__links">
-          <!-- TODO: replace with real phone -->
-          <li><a href="tel:+639XXXXXXXXX">+63 9XX XXX XXXX</a></li>
+          <!-- TODO: add the real phone number, e.g.
+               <li><a href="tel:+639171234567">+63 917 123 4567</a></li>
+               (a placeholder number used to show here — removed so
+               customers never see "9XX XXX XXXX") -->
           <!-- TODO: replace with real email -->
           <li><a href="mailto:hello@ducksunlimited.ph">hello@ducksunlimited.ph</a></li>
           <li class="site-footer__address">
@@ -126,12 +129,12 @@
           </li>
           <li>
             <a href="https://shopee.ph/ducksunlimited" target="_blank" rel="noopener" aria-label="Shopee">
-              <span class="site-footer__social-mono">S</span>
+              <span class="site-footer__social-mono">Shopee</span>
             </a>
           </li>
           <li>
             <a href="https://lazada.com.ph/shop/ducksunlimited" target="_blank" rel="noopener" aria-label="Lazada">
-              <span class="site-footer__social-mono">L</span>
+              <span class="site-footer__social-mono">Lazada</span>
             </a>
           </li>
         </ul>
@@ -141,7 +144,7 @@
 
     <!-- ── Bottom bar ── -->
     <div class="site-footer__bottom">
-      <p>&copy; <span id="footerYear">2025</span> Ducks Unlimited. All rights reserved.</p>
+      <p>&copy; <span id="footerYear">2025</span> <span data-brand-name>Ducks Unlimited</span>. All rights reserved.</p>
       <ul class="site-footer__legal">
         <li><a href="/customer-service/privacy.html">Privacy Policy</a></li>
         <li><a href="/customer-service/terms.html">Terms of Use</a></li>
@@ -207,6 +210,15 @@
 
 <style>
   /* ── Newsletter band ────────────────────────────────────────────────── */
+  /* Hidden unless the page opts in with <body class="has-newsletter">
+     (the brand home pages). Repeating it on every page was clutter. */
+  .site-newsletter { display: none; }
+  body.has-newsletter .site-newsletter { display: block; }
+
+  /* Checkout (<body class="page-focus">): just the bottom bar */
+  body.page-focus .site-footer__grid { display: none; }
+  body.page-focus .site-footer { padding-block: 1.5rem; }
+
   .site-newsletter {
     background: var(--color-bg-warm);
     padding-block: var(--space-2xl);
@@ -388,27 +400,22 @@
     color: var(--color-accent);
   }
 
+  /* Shopee / Lazada have no simple icon, so they show their name.
+     Their link circle stretches into a rounded pill to fit the word. */
   .site-footer__social-mono {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
     font-family: var(--font-body);
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: var(--color-primary);
-    background: currentColor;
-    border-radius: 2px;
-  }
-
-  .site-footer__socials a .site-footer__social-mono {
+    font-size: 0.75rem;
+    font-weight: 500;
     color: inherit;
   }
 
-  .site-footer__socials a:hover .site-footer__social-mono {
-    color: var(--color-accent);
+  .site-footer__socials a:has(.site-footer__social-mono) {
+    width: auto;
+    padding: 0 0.8rem;
+    border-radius: 999px;
   }
+
+  .site-footer__all-brands { color: var(--color-white); text-decoration: underline; }
 
   /* Bottom bar */
   .site-footer__bottom {

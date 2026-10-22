@@ -292,7 +292,9 @@
     .check-row[hidden] { display: none; }
   </style>
 </head>
-<body>
+<body class="page-focus">
+  <!-- page-focus: checkout shows a calm header (logo + bag only) and a slim
+       footer, so nothing pulls the shopper away mid-payment. See nav.html. -->
 
   <div data-component="nav"></div>
 
@@ -319,7 +321,7 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
-    import { getCart, clearCart } from '/js/cart.js';
+    import { getCart } from '/js/cart.js';
     import { getCurrentUser, getAccessToken } from '/js/auth.js';
     import { fillProvinceSelect } from '/js/ph-locations.js';
 
@@ -327,7 +329,15 @@
     // CONSTANTS
     // ─────────────────────────────────────────────────────────────────
 
+    // Flat shipping fee, waived at or above the free-shipping threshold.
+    // Keep these the same as api/create-payment.js (the server decides the
+    // real amount; these are only for showing it here).
     const SHIPPING_FEE = 150;
+    const FREE_SHIPPING_THRESHOLD = 3000;
+
+    function shippingFor(subtotal) {
+      return subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
+    }
 
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     // PH phone: 11 digits starting with 09, or +63 followed by 10 digits
@@ -397,6 +407,7 @@
         .select(`
           id, color, size, sku, price_override,
           products ( id, name, base_price, is_active,
+            brands ( slug, name ),
             product_images ( image_url, is_primary, display_order )
           ),
           inventory ( channel, quantity )
@@ -421,6 +432,8 @@
           sku:           v.sku,
           price:         Number(v.price_override ?? product?.base_price ?? 0),
           imageUrl:      pickPrimaryImage(product?.product_images),
+          brandSlug:     product?.brands?.slug ?? '',
+          brandName:     product?.brands?.name ?? '',
         };
       }
       return map;
@@ -442,6 +455,12 @@
           h: 'Cart contains unavailable items',
           p: 'Please head back to your cart and remove items that are no longer available.',
         },
+        // Each order belongs to one brand (DU-… or RW-… order number), so a
+        // bag with both brands is checked out one brand at a time from the cart.
+        mixed: {
+          h: 'Your bag has two brands',
+          p: 'Ducks Unlimited and Rocwood items are checked out separately. Choose which one to check out first in your bag.',
+        },
       };
       const msg = messages[reason] ?? messages.empty;
 
@@ -450,7 +469,7 @@
           <h2>${escapeHtml(msg.h)}</h2>
           <p>${escapeHtml(msg.p)}</p>
           ${reason === 'empty'
-            ? `<a href="/shop.html" class="btn btn-primary btn-lg">Continue Shopping</a>`
+            ? `<a href="/" class="btn btn-primary btn-lg">Continue Shopping</a>`
             : `<a href="/cart.html" class="btn btn-primary btn-lg">Back to Cart</a>`}
         </div>
       `;
@@ -484,7 +503,8 @@
       }).join('');
 
       const subtotal = computeSubtotal();
-      const total = subtotal + SHIPPING_FEE;
+      const shipping = shippingFor(subtotal);
+      const total = subtotal + shipping;
 
       root.innerHTML = `
         <form id="checkoutForm" novalidate>
@@ -610,7 +630,7 @@
 
               <div class="summary-row">
                 <span class="summary-row__label">Shipping</span>
-                <span class="summary-row__value">${formatPrice(SHIPPING_FEE)}</span>
+                <span class="summary-row__value">${shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
               </div>
 
               <div class="summary-row summary-row--total">
@@ -813,10 +833,11 @@
 
         // Build the payload — server re-validates everything authoritative
         const payload = {
+          // Only the items shown in the summary (in stock, still for sale)
           items: state.cart.map(i => ({
             variantId: i.variantId,
-            quantity:  Math.min(i.quantity, state.stockMap[i.variantId]?.stock ?? i.quantity),
-          })),
+            quantity:  Math.min(i.quantity, state.stockMap[i.variantId]?.stock ?? 0),
+          })).filter(i => i.quantity > 0 && state.stockMap[i.variantId]?.productActive),
           customer: {
             name:  data.name,
             email: data.email,
@@ -858,15 +879,16 @@
             return;
           }
 
-          // Clear the cart — the order is recorded server-side now.
-          // If payment fails, the customer can rebuild the cart from /shop.html.
-          clearCart();
+          // The bag is NOT emptied here: if the payment fails or the shopper
+          // cancels on Maya, they come back to a full bag and can try again.
+          // /order-confirmation.html removes these items once Maya says "paid".
 
           // Remember the order for the confirmation / tracking pages (this tab only).
           try {
             sessionStorage.setItem('du:lastOrder', JSON.stringify({
               orderNumber: result.orderNumber,
               email:       data.email.trim().toLowerCase(),
+              variantIds:  payload.items.map(i => i.variantId),
             }));
           } catch { /* private browsing — the pages still work, just less pre-filled */ }
 
@@ -922,6 +944,22 @@
       // Fetch fresh data for the order summary
       const ids = state.cart.map(i => i.variantId);
       state.stockMap = await fetchStockMap(ids);
+
+      // ── One brand per order ──
+      // The cart page links here with ?brand=du or ?brand=rw when the bag
+      // holds both brands. Only that brand's items are checked out now; the
+      // others stay in the bag for a second checkout.
+      const bagBrands = [...new Set(state.cart
+        .map(i => state.stockMap[i.variantId]?.brandSlug)
+        .filter(Boolean))];
+      const wanted = params.get('brand');
+      if (bagBrands.length > 1) {
+        if (!bagBrands.includes(wanted)) {
+          renderEmpty('mixed');
+          return;
+        }
+        state.cart = state.cart.filter(i => state.stockMap[i.variantId]?.brandSlug === wanted);
+      }
 
       // If every cart item has gone away or is out of stock, send them back
       const validItems = state.cart.filter(item => {

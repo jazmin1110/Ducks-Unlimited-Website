@@ -51,6 +51,7 @@
 
   <script type="module">
     import { getCurrentUser, getAccessToken } from '/js/auth.js';
+    import { removeFromCart } from '/js/cart.js';
     import {
       escapeHtml, formatPrice, renderTimeline, renderOrderItems, wireCopyButtons,
     } from '/js/account.js';
@@ -83,7 +84,19 @@
       return (await res.json()).order;
     }
 
+    // Once the order is paid, take the bought items out of the bag. Checkout
+    // leaves them in until now so a failed or cancelled payment loses nothing.
+    // (Only lines from this order — the other brand's items stay put.)
+    let bagCleared = false;
+    function clearPaidItemsFromBag(o) {
+      if (bagCleared || o.paymentStatus !== 'paid') return;
+      if (lastOrder?.orderNumber !== orderNumber) return;
+      (lastOrder.variantIds || []).forEach(id => removeFromCart(id));
+      bagCleared = true;
+    }
+
     function render(o) {
+      clearPaidItemsFromBag(o);
       const subtotal = o.items.reduce((sum, it) => sum + it.price * it.quantity, 0);
 
       if (o.firstName) document.getElementById('heading').textContent = `Thank you, ${o.firstName}`;

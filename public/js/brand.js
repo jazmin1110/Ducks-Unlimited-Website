@@ -11,7 +11,7 @@
 //      Lets other scripts filter products, build links, etc.
 //
 // Resolution order (first match wins):
-//   1. URL path prefix:  /rw/anything  → rw
+//   1. URL path prefix:  /du/anything → du, /rw/anything → rw
 //   2. Query param:      ?brand=rw     → rw
 //   3. localStorage:     'brand'       → whatever was persisted last
 //   4. Default:          du
@@ -28,7 +28,7 @@ const KNOWN_BRANDS = {
     primaryColor: '#1B4D2E',
     accentColor: '#C9A84C',
     orderPrefix: 'DU',
-    homePath: '/'
+    homePath: '/du/'
   },
   rw: {
     slug: 'rw',
@@ -117,12 +117,22 @@ export function setBrand(slug) {
   // newly-applied brand. Making one place reload is cheaper and more
   // reliable than making every consumer subscribe to brand:change.
   const path   = window.location.pathname;
-  const atHome = path === '/' || /^\/[a-z]{2,4}\/?$/.test(path);
+  const atHome = /^\/[a-z]{2,4}\/?$/.test(path);
   if (atHome && brand.homePath !== path) {
     window.location.href = brand.homePath;
   } else {
     window.location.reload();
   }
+  return brand;
+}
+
+// Switch to a brand quietly — no reload. Used by pages that already know
+// which brand they belong to (a product page shows its product's brand).
+// The nav, footer and colours repaint via the brand:change event.
+export function adoptBrand(slug) {
+  if (!KNOWN_BRANDS[slug] || getCurrentBrand().slug === slug) return getCurrentBrand();
+  const brand = applyBrand(slug);
+  applyBrandToTitle(brand);
   return brand;
 }
 

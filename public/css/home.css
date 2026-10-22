@@ -29,7 +29,10 @@
 
 .hero {
   position: relative;
-  min-height: calc(100vh - var(--nav-total-h));
+  /* Without a photo the hero is a colour field — a full screen of flat
+     green read as empty, so it's shorter until a photo is uploaded. */
+  min-height: 62svh;
+  padding-block: var(--space-2xl);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -78,7 +81,16 @@
   line-height: 1.7;
 }
 
-/* Scroll indicator at the bottom of the hero */
+/* With a photo the hero fills the first screen */
+.hero--photo { min-height: calc(100svh - var(--nav-total-h)); }
+
+/* The bouncing "Scroll" label and the little gold divider rules were
+   decoration that crowded every section. They're no longer rendered; these
+   rules also hide them in the no-JavaScript fallback HTML in home.html. */
+.hero__scroll,
+#home-sections .editorial-rule { display: none; }
+
+/* Legacy styles for the old scroll indicator (kept so nothing breaks) */
 .hero__scroll {
   position: absolute;
   bottom: 2rem;
@@ -119,7 +131,8 @@
 
 .collection-tile {
   position: relative;
-  aspect-ratio: 4 / 5;
+  /* Wide on phones so the three tiles don't take three full screens */
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   display: block;
   text-decoration: none;
@@ -144,6 +157,15 @@
   justify-content: flex-end;
   padding: 1.75rem;
 }
+
+/* No photo yet: flat warm tile, dark text, no dark gradient over it */
+.collection-tile--blank {
+  background: var(--color-bg);
+  color: var(--color-primary);
+}
+.collection-tile--blank .collection-tile__overlay { background: none; }
+.collection-tile--blank .collection-tile__cta { border-bottom-color: currentColor; }
+.collection-tile--blank:hover { background: var(--color-border-light); }
 
 .collection-tile__label {
   font-size: 0.7rem;
@@ -212,6 +234,15 @@
   line-height: 1.8;
   color: var(--color-text);
   margin-bottom: 1.25rem;
+}
+
+/* Text-only editorial block (no photo uploaded yet): one centred column */
+.editorial--text .editorial__row { grid-template-columns: 1fr !important; }
+.editorial--text .editorial__copy {
+  max-width: 640px;
+  text-align: center;
+  align-items: center;
+  padding-block: var(--space-2xl);
 }
 
 /* ── NEW ARRIVALS ──────────────────────────────────────────── */
@@ -347,7 +378,8 @@
 
 @media (min-width: 768px) {
 
-  .hero { background-attachment: fixed; }
+  /* (background-attachment: fixed removed — it's ignored on phones and
+     makes desktop scrolling stutter) */
   .hero__sub { font-size: 1.2rem; }
 
   /* 3-tile collections mosaic — first tile spans tall */
@@ -355,6 +387,7 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 1.25rem;
   }
+  .collection-tile { aspect-ratio: 4 / 5; }
   .collection-tile__name { font-size: 2.5rem; }
 
   /* Editorial rows: image left, copy right (and flip on alt rows) */

@@ -14,8 +14,11 @@
   },
 
   "rewrites": [
-    { "source": "/rw", "destination": "/" },
-    { "source": "/rw/", "destination": "/" },
+    { "source": "/du", "destination": "/home.html" },
+    { "source": "/du/", "destination": "/home.html" },
+    { "source": "/du/:path*", "destination": "/:path*" },
+    { "source": "/rw", "destination": "/home.html" },
+    { "source": "/rw/", "destination": "/home.html" },
     { "source": "/rw/:path*", "destination": "/:path*" }
   ]
 }

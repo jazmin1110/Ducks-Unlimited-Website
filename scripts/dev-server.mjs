@@ -79,7 +79,13 @@ async function runApi(name, req, res) {
 
 // ── Serve a file from /public ──
 function serveStatic(urlPath, res) {
-  let p = decodeURIComponent(urlPath.replace(/^\/rw(\/|$)/, '/')); // vercel.json rewrite
+  // Same rewrites as vercel.json:
+  //   /du/ and /rw/ (a brand's home)  → home.html
+  //   /du/anything, /rw/anything      → /anything
+  //   /                               → index.html (the shared landing page)
+  let p = decodeURIComponent(urlPath);
+  if (/^\/(du|rw)\/?$/.test(p)) p = '/home.html';
+  else p = p.replace(/^\/(du|rw)\//, '/');
   let file = path.join(PUBLIC, p);
   if (!file.startsWith(PUBLIC)) { res.writeHead(403); return res.end(); }
   if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');

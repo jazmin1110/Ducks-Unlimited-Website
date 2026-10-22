@@ -269,7 +269,7 @@
     const total     = (Number(detail.price) || 0) * (Number(detail.quantity) || 1);
     const thumbHtml = detail.imageUrl
       ? `<img src="${esc(detail.imageUrl)}" alt="" />`
-      : `<span>No image</span>`;
+      : '';  // empty tile in the brand's warm tone (no "No image" text)
 
     latestSlot.innerHTML = `
       <div class="mini-cart__thumb ${detail.imageUrl ? '' : 'mini-cart__thumb--empty'}">${thumbHtml}</div>

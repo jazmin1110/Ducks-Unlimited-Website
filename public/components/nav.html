@@ -77,6 +77,13 @@
           </form>
         </li>
 
+        <!-- Mobile-only brand switch. On phones the brand-tab strip above the
+             nav is hidden to save room, so switching brands lives here. -->
+        <li class="site-nav__item site-nav__item--mobile-only site-nav__drawer-brands">
+          <button type="button" class="site-nav__drawer-brand" data-brand-slug="du" aria-pressed="false">Ducks Unlimited</button>
+          <button type="button" class="site-nav__drawer-brand" data-brand-slug="rw" aria-pressed="false">Rocwood</button>
+        </li>
+
         <!-- Top-level audience nav: Men / Women / Kids & Baby.
              URLs use ?audience=... so they're future-proof when products
              get tagged by audience. Until then, the shop page ignores the
@@ -645,11 +652,11 @@
 
   .site-nav__toggle:checked ~ .site-nav__menu {
     /* Screen height minus everything above the drawer (announcement bar +
-       brand tabs + header row ≈ 180px), so
+       header row ≈ 140px; the brand tabs are hidden on phones), so
        the last links never fall below the bottom of the screen. dvh = the
        visible height on phones; the vh line is a fallback for old browsers. */
-    max-height: calc(100vh - 180px);
-    max-height: calc(100dvh - 180px);
+    max-height: calc(100vh - 140px);
+    max-height: calc(100dvh - 140px);
     overscroll-behavior: contain; /* scrolling the menu doesn't scroll the page */
     overflow-y: auto;
     margin-top: 0.75rem;
@@ -689,11 +696,47 @@
 
   .site-nav__mega[hidden] { display: none; }
 
-  /* On the mobile drawer (< 900px), force mega panels visible inline so the
-     [hidden] attribute set by hover behavior doesn't hide them in the drawer. */
+  /* On the phone/tablet drawer (< 900px) the mega panels stay hidden: the
+     top-level links (Men, Women, Kids & Baby) go straight to the shop, where
+     the filters do the rest. Listing every sub-category made the menu several
+     screens long. Same reason the brand-tab strip is hidden on small screens:
+     the brand switch lives at the top of the drawer instead. */
   @media (max-width: 899.98px) {
-    .site-nav__mega { display: block !important; }
-    .site-nav__mega[hidden] { display: block !important; }
+    .site-nav__mega,
+    .site-nav__mega[hidden] { display: none !important; }
+    .site-nav__brandbar { display: none; }
+  }
+
+  /* ── Focus mode (checkout) ──
+     <body class="page-focus"> keeps only the logo and the bag. */
+  body.page-focus .announcement-bar,
+  body.page-focus .site-nav__brandbar,
+  body.page-focus .site-nav__menu,
+  body.page-focus .site-nav__hamburger,
+  body.page-focus #searchToggle,
+  body.page-focus .site-nav__util-link,
+  body.page-focus .site-nav__utility a[aria-label="Wishlist"] { display: none !important; }
+
+  /* ── Drawer brand switch (mobile only) ── */
+  .site-nav__drawer-brands {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 0 0.9rem;
+  }
+  .site-nav__drawer-brand {
+    flex: 1;
+    padding: 0.7rem 0.5rem;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--color-text);
+    background: var(--color-bg-warm);
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .site-nav__drawer-brand.is-active {
+    background: var(--color-primary);
+    color: var(--color-white);
   }
 
   .site-nav__mega-inner {
