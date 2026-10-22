@@ -85,9 +85,10 @@
         </li>
 
         <!-- Top-level audience nav: Men / Women / Kids & Baby.
-             URLs use ?audience=... so they're future-proof when products
-             get tagged by audience. Until then, the shop page ignores the
-             param and shows all products — no broken state. -->
+             ?audience=men|women|kids filters the shop by the product's
+             Audience (set per product in Admin → Products). Sub-links add
+             &category=... on top. (Formalwear / Sale / Boys / Girls / Baby
+             links were removed: nothing in the catalog supports them yet.) -->
 
         <li class="site-nav__item">
           <a href="/shop.html?audience=men" data-mega="men">Men</a>
@@ -98,21 +99,20 @@
                 <ul>
                   <li><a href="/shop.html?audience=men">All Men</a></li>
                   <li><a href="/shop.html?audience=men&sort=newest">New Arrivals</a></li>
-                  <li><a href="/shop.html?audience=men&category=polo">Polos</a></li>
-                  <li><a href="/shop.html?audience=men&category=t-shirt">T-Shirts</a></li>
-                  <li><a href="/shop.html?audience=men&category=bottoms">Bottoms</a></li>
                 </ul>
               </div>
               <div class="site-nav__mega-col">
-                <h4>Featured</h4>
+                <h4>By Category</h4>
                 <ul>
-                  <li><a href="/shop.html?audience=men&category=outerwear">Outerwear</a></li>
-                  <li><a href="/shop.html?audience=men&style=formal">Formalwear</a></li>
-                  <li><a href="/shop.html?audience=men&sale=true">Sale</a></li>
+                  <!-- Same categories as Admin → Products (polo, t-shirt, shorts, pants) -->
+                  <li><a href="/shop.html?audience=men&category=polo">Polos</a></li>
+                  <li><a href="/shop.html?audience=men&category=t-shirt">T-Shirts</a></li>
+                  <li><a href="/shop.html?audience=men&category=shorts">Shorts</a></li>
+                  <li><a href="/shop.html?audience=men&category=pants">Pants</a></li>
                 </ul>
               </div>
               <a class="site-nav__mega-feature" href="/lookbooks">
-                <img class="is-empty" src="" alt="" />
+                <img class="is-empty" src="" alt="" data-mega-photo="men" />
                 <span class="site-nav__mega-feature-label">The Men's Lookbook</span>
               </a>
             </div>
@@ -128,21 +128,20 @@
                 <ul>
                   <li><a href="/shop.html?audience=women">All Women</a></li>
                   <li><a href="/shop.html?audience=women&sort=newest">New Arrivals</a></li>
-                  <li><a href="/shop.html?audience=women&category=tops">Tops</a></li>
-                  <li><a href="/shop.html?audience=women&category=bottoms">Bottoms</a></li>
-                  <li><a href="/shop.html?audience=women&category=dresses">Dresses</a></li>
                 </ul>
               </div>
               <div class="site-nav__mega-col">
-                <h4>Featured</h4>
+                <h4>By Category</h4>
                 <ul>
-                  <li><a href="/shop.html?audience=women&category=outerwear">Outerwear</a></li>
-                  <li><a href="/shop.html?audience=women&style=formal">Formalwear</a></li>
-                  <li><a href="/shop.html?audience=women&sale=true">Sale</a></li>
+                  <!-- Same categories as Admin → Products (polo, t-shirt, shorts, pants) -->
+                  <li><a href="/shop.html?audience=women&category=polo">Polos</a></li>
+                  <li><a href="/shop.html?audience=women&category=t-shirt">T-Shirts</a></li>
+                  <li><a href="/shop.html?audience=women&category=shorts">Shorts</a></li>
+                  <li><a href="/shop.html?audience=women&category=pants">Pants</a></li>
                 </ul>
               </div>
               <a class="site-nav__mega-feature" href="/lookbooks">
-                <img class="is-empty" src="" alt="" />
+                <img class="is-empty" src="" alt="" data-mega-photo="women" />
                 <span class="site-nav__mega-feature-label">The Women's Lookbook</span>
               </a>
             </div>
@@ -158,21 +157,20 @@
                 <ul>
                   <li><a href="/shop.html?audience=kids">All Kids &amp; Baby</a></li>
                   <li><a href="/shop.html?audience=kids&sort=newest">New Arrivals</a></li>
-                  <li><a href="/shop.html?audience=kids&group=boys">Boys</a></li>
-                  <li><a href="/shop.html?audience=kids&group=girls">Girls</a></li>
-                  <li><a href="/shop.html?audience=kids&group=baby">Baby</a></li>
                 </ul>
               </div>
               <div class="site-nav__mega-col">
                 <h4>By Category</h4>
                 <ul>
-                  <li><a href="/shop.html?audience=kids&category=tops">Tops</a></li>
-                  <li><a href="/shop.html?audience=kids&category=bottoms">Bottoms</a></li>
-                  <li><a href="/shop.html?audience=kids&category=sets">Sets</a></li>
+                  <!-- Same categories as Admin → Products (polo, t-shirt, shorts, pants) -->
+                  <li><a href="/shop.html?audience=kids&category=polo">Polos</a></li>
+                  <li><a href="/shop.html?audience=kids&category=t-shirt">T-Shirts</a></li>
+                  <li><a href="/shop.html?audience=kids&category=shorts">Shorts</a></li>
+                  <li><a href="/shop.html?audience=kids&category=pants">Pants</a></li>
                 </ul>
               </div>
               <a class="site-nav__mega-feature" href="/lookbooks">
-                <img class="is-empty" src="" alt="" />
+                <img class="is-empty" src="" alt="" data-mega-photo="kids" />
                 <span class="site-nav__mega-feature-label">Mini Ducks Unlimited</span>
               </a>
             </div>
@@ -368,6 +366,7 @@
   // on the brand tabs. Keeps the nav in sync when brand changes elsewhere
   // (e.g. a product page's "View in Rocwood" link).
   import { getCurrentBrand, setBrand, allBrands } from '/js/brand.js';
+  import { homePhoto } from '/js/stock-photos.js';
 
   function paintBrand(brand) {
     // Logo text
@@ -395,11 +394,24 @@
     });
   }
 
+  // Lookbook photos in the desktop dropdowns: the brand's Men / Women /
+  // Kids stock photo until real lookbook photos exist (/js/stock-photos.js)
+  function paintMegaPhotos(brand) {
+    document.querySelectorAll('[data-mega-photo]').forEach((img) => {
+      const url = homePhoto('', brand.slug, img.dataset.megaPhoto);
+      if (!url) return;
+      img.src = url;
+      img.loading = 'lazy';
+      img.classList.remove('is-empty');
+    });
+  }
+
   // Paint on first load
   paintBrand(getCurrentBrand());
+  paintMegaPhotos(getCurrentBrand());
 
   // Repaint when brand changes elsewhere
-  window.addEventListener('brand:change', (e) => paintBrand(e.detail));
+  window.addEventListener('brand:change', (e) => { paintBrand(e.detail); paintMegaPhotos(e.detail); });
 
   // Wire the tabs
   document.querySelectorAll('[data-brand-slug]').forEach((btn) => {

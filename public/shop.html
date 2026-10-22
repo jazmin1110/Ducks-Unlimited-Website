@@ -1164,6 +1164,7 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { productPhotos } from '/js/stock-photos.js';
     import { toggleWishlist, isInWishlist } from '/js/wishlist.js';
     import { applySiteContent } from '/js/site-content.js';
 
@@ -1243,6 +1244,10 @@
         // Free-text search query (from the nav search bar via ?q=...).
         // Empty string = no search active.
         query:      '',
+        // Who it's for: 'men', 'women' or 'kids' (from ?audience=..., set by
+        // the Men / Women / Kids & Baby links). Empty = everyone.
+        // It works like a section of the shop, so "Clear filters" keeps it.
+        audience:   '',
       },
 
       sort: 'newest',
@@ -1327,10 +1332,11 @@
       // DB layer — nothing extra traveling over the wire.
       const brandSlug = (window.CURRENT_BRAND?.slug) || 'du';
 
-      const { data, error } = await supabase
+      const query = (withAudience) => supabase
         .from('products')
         .select(`
           id, name, description, base_price, category, created_at,
+          ${withAudience ? 'audience,' : ''}
           brands!inner ( slug ),
           variants (
             id, color, size, price_override,
@@ -1340,6 +1346,15 @@
         `)
         .eq('is_active', true)
         .eq('brands.slug', brandSlug);
+
+      let { data, error } = await query(true);
+
+      // 42703 = "column does not exist": the audience migration
+      // (database/migrations/024_product_audience.sql) hasn't been run yet.
+      // Load without it so the shop still works, just unfiltered.
+      if (error?.code === '42703') {
+        ({ data, error } = await query(false));
+      }
 
       if (error) {
         console.error('Failed to load products:', error);
@@ -1351,6 +1366,8 @@
     // Add computed fields to each product so we can filter and render quickly.
     function enrichProduct(p) {
       const variants = p.variants ?? [];
+      // No photos uploaded yet → stock photos for its category (/js/stock-photos.js)
+      const images = p.product_images?.length ? p.product_images : productPhotos(p.category);
 
       const prices  = variants.map(v => Number(v.price_override ?? p.base_price));
       const minPrice = prices.length ? Math.min(...prices) : Number(p.base_price);
@@ -1371,6 +1388,7 @@
         name:        p.name,
         description: p.description ?? '',
         category:    p.category,
+        audience:    p.audience ?? null,
         basePrice:   Number(p.base_price),
         createdAt:   p.created_at,
         variants,
@@ -1380,8 +1398,8 @@
         sizes,
         onlineStock,
         outOfStock:  onlineStock === 0,
-        imageUrl:    pickPrimaryImage(p.product_images),
-        imageAltUrl: pickSecondaryImage(p.product_images),
+        imageUrl:    pickPrimaryImage(images),
+        imageAltUrl: pickSecondaryImage(images),
       };
     }
 
@@ -1465,6 +1483,16 @@
         const q = f.query.toLowerCase();
         const haystack = `${p.name ?? ''} ${p.description ?? ''}`.toLowerCase();
         if (!haystack.includes(q)) return false;
+      }
+
+      // Audience — Men / Women / Kids & Baby.
+      //   'unisex' products show under Men and Women (not Kids).
+      //   Products with no audience set yet show everywhere, so nothing
+      //   disappears from the shop before it's been tagged in the admin.
+      if (f.audience && p.audience) {
+        const fits = p.audience === f.audience
+          || (p.audience === 'unisex' && f.audience !== 'kids');
+        if (!fits) return false;
       }
 
       // Category — product's category must be in the selected set
@@ -1715,6 +1743,7 @@
     function applyFiltersToURL() {
       const p = new URLSearchParams();
       const f = state.filters;
+      if (f.audience)        p.set('audience', f.audience);
       if (f.query)           p.set('q',        f.query);
       if (f.categories.size) p.set('category', [...f.categories].join(','));
       if (f.sizes.size)      p.set('size',     [...f.sizes].join(','));
@@ -1737,6 +1766,7 @@
 
       // Free-text search query (the nav search form submits to ?q=)
       state.filters.query      = (p.get('q') ?? '').trim();
+      state.filters.audience   = AUDIENCE_LABELS[p.get('audience')] ? p.get('audience') : '';
       state.filters.categories = parseSet('category');
       state.filters.sizes      = parseSet('size');
       state.filters.colors     = parseSet('color');
@@ -1791,6 +1821,9 @@
     // applySiteContent has painted the CMS version. That way the reset path
     // uses the brand's CMS copy, not the HTML fallback.
     let shopHeaderDefaults = null;
+
+    // ?audience= values the shop understands, and the heading for each
+    const AUDIENCE_LABELS = { men: 'Men', women: 'Women', kids: 'Kids & Baby' };
     function renderShopHeader() {
       const eyebrow  = document.getElementById('shopEyebrow');
       const heading  = document.getElementById('shopHeading');
@@ -1807,10 +1840,16 @@
       }
 
       const q = state.filters.query;
+      const aud = state.filters.audience;
       if (q) {
         eyebrow.textContent  = 'Search Results';
         heading.textContent  = `Results for "${q}"`;
         subtitle.textContent = 'Filter or sort below to refine your search.';
+      } else if (aud) {
+        // Men / Women / Kids & Baby section of the shop
+        eyebrow.textContent  = shopHeaderDefaults.eyebrow;
+        heading.textContent  = AUDIENCE_LABELS[aud];
+        subtitle.textContent = shopHeaderDefaults.subtitle;
       } else {
         eyebrow.textContent  = shopHeaderDefaults.eyebrow;
         heading.textContent  = shopHeaderDefaults.heading;

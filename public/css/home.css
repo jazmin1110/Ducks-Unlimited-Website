@@ -176,6 +176,8 @@
 }
 
 .collection-tile__name {
+  /* White over a photo, brand colour on a blank tile (follows the tile) */
+  color: inherit;
   font-family: var(--font-heading);
   font-size: 2rem;
   letter-spacing: 0.02em;

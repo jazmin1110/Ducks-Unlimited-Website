@@ -909,6 +909,20 @@
           </select>
         </div>
 
+        <!-- Who it's for. Decides where it shows on the shop:
+             Men / Women / Kids & Baby. Unisex shows under Men AND Women.
+             Leave blank and it shows in every section. -->
+        <div class="field">
+          <label for="productAudience">Audience</label>
+          <select id="productAudience">
+            <option value="">Not set (shows everywhere)</option>
+            <option value="men">Men</option>
+            <option value="women">Women</option>
+            <option value="unisex">Unisex (Men and Women)</option>
+            <option value="kids">Kids &amp; Baby</option>
+          </select>
+        </div>
+
         <div class="field">
           <label for="productDescription">Description</label>
           <textarea id="productDescription" placeholder="Describe the product — fabric, fit, care instructions…"></textarea>
@@ -1026,6 +1040,7 @@
     const productIdInput = document.getElementById('productId');
     const nameInput      = document.getElementById('productName');
     const categoryInput  = document.getElementById('productCategory');
+    const audienceInput  = document.getElementById('productAudience');
     const descInput      = document.getElementById('productDescription');
     const priceInput     = document.getElementById('productPrice');
     const activeInput    = document.getElementById('productActive');
@@ -1308,6 +1323,7 @@
       productIdInput.value = '';
       nameInput.value = '';
       categoryInput.value = '';
+      audienceInput.value = '';
       descInput.value = '';
       priceInput.value = '';
       activeInput.checked = true;
@@ -1347,6 +1363,7 @@
       productIdInput.value = p.id;
       nameInput.value      = p.name;
       categoryInput.value  = p.category;
+      audienceInput.value  = p.audience ?? '';
       descInput.value      = p.description ?? '';
       priceInput.value     = p.base_price;
       activeInput.checked  = p.is_active;
@@ -1398,6 +1415,7 @@
       const payload = {
         name,
         category,
+        audience: audienceInput.value || null,
         description: desc || null,
         base_price: price,
         is_active: isActive,

@@ -25,6 +25,8 @@
 
 import { supabase }        from '/lib/supabase.js';
 import { getCurrentBrand } from '/js/brand.js';
+// Stand-in photos for any slot that has no uploaded photo yet
+import { homePhoto, tilePhoto, editorialPhoto, productPhotos } from '/js/stock-photos.js';
 
 
 // ── Public API ──────────────────────────────────────────────────────────────
@@ -167,7 +169,8 @@ async function loadProductCollection(collection, brandId, limit) {
     id:        p.id,
     name:      p.name,
     price:     p.base_price,
-    image_url: pickPrimaryImage(p.product_images)
+    // No product photo uploaded yet → a stock photo for its category
+    image_url: pickPrimaryImage(p.product_images) || pickPrimaryImage(productPhotos(p.category))
   }));
 }
 
@@ -226,7 +229,9 @@ function renderOne(section, ctx) {
 const TEMPLATES = {
 
   hero(s) {
-    // No image → the CSS default (solid brand color) shows through.
+    // No image → a stock photo (see /js/stock-photos.js), or failing that
+    // the CSS default (solid brand color) shows through.
+    s = { ...s, image_url: homePhoto(s.image_url, getCurrentBrand().slug, 'hero') };
     const overlay = typeof s.overlay === 'number' ? s.overlay / 100 : 0.35;
     const bgStyle = s.image_url
       ? ` style="background-image: linear-gradient(rgba(0,0,0,${overlay}), rgba(0,0,0,${Math.min(overlay + 0.15, 0.9)})), url('${escCssUrl(s.image_url)}'); background-size: cover; background-position: center;"`
@@ -279,6 +284,7 @@ const TEMPLATES = {
   },
 
   'editorial-block'(s) {
+    s = { ...s, image_url: editorialPhoto(s.image_url, getCurrentBrand().slug, `${s.eyebrow} ${s.headline}`) };
     const reverse = s.layout === 'image-right';
     // No photo yet → a text-only block (no big empty picture box).
     const media = s.image_url
@@ -335,6 +341,7 @@ function imgHtml(url, alt) {
 }
 
 function tileHtml(b) {
+  b = { ...b, image_url: tilePhoto(b.image_url, getCurrentBrand().slug, b.link) };
   // No photo yet → a plain tile in the brand's warm tone (CSS: --blank),
   // instead of an empty <img> that some browsers draw as a broken image.
   return `

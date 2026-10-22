@@ -939,6 +939,7 @@
     import { addToCart } from '/js/cart.js';
     import { toggleWishlist, isInWishlist } from '/js/wishlist.js';
     import { getCurrentBrand, adoptBrand } from '/js/brand.js';
+    import { productPhotos } from '/js/stock-photos.js';
 
     // ─────────────────────────────────────────────────────────────────
     // CONSTANTS + helpers
@@ -1703,7 +1704,10 @@
 
       // Populate state
       state.product = product;
-      state.images  = sortImages(product.product_images);
+      // No photos uploaded yet → stock photos for its category (/js/stock-photos.js)
+      state.images  = sortImages(product.product_images?.length
+        ? product.product_images
+        : productPhotos(product.category));
       Object.assign(state, indexVariants(product));
 
       // Auto-select the first color so price shows immediately

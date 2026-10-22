@@ -34,7 +34,7 @@ const KNOWN_BRANDS = {
     slug: 'rw',
     name: 'Rocwood',
     tagline: null,
-    primaryColor: '#2A2420',
+    primaryColor: '#1F2A44', // club navy
     accentColor: '#8C6B3F',
     orderPrefix: 'RW',
     homePath: '/rw/'

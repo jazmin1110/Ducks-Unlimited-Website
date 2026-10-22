@@ -97,11 +97,11 @@
    ============================================================================= */
 
 :root[data-brand="rw"] {
-  --color-primary:        #2A2420;  /* Rocwood: deep espresso */
-  --color-primary-dark:   #1C1816;
+  --color-primary:        #1F2A44;  /* Rocwood: club navy */
+  --color-primary-dark:   #151D30;
   --color-accent:         #8C6B3F;  /* Rocwood: warm bronze */
   --color-accent-dark:    #74582F;
-  --color-success:        #2A2420;
+  --color-success:        #1F2A44;
 }
 
 

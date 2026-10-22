@@ -85,7 +85,7 @@
     .brand-panel:hover { text-decoration: none; }
 
     .brand-panel--du { --panel-color: #1B4D2E; }
-    .brand-panel--rw { --panel-color: #2A2420; }
+    .brand-panel--rw { --panel-color: #1F2A44; } /* club navy */
 
     /* A flat dark scrim keeps white text readable on any photo.
        Only shown once a photo is set (.has-photo). */
@@ -261,6 +261,7 @@
 
   <script type="module">
     import { supabase } from '/lib/supabase.js';
+    import { homePhoto } from '/js/stock-photos.js';
 
     document.getElementById('landingYear').textContent = new Date().getFullYear();
 
@@ -290,7 +291,8 @@
     for (const b of brands || []) {
       const panel = document.querySelector(`[data-brand-panel="${b.slug}"]`);
       const hero  = (heroes || []).find(h => h.brand_id === b.id);
-      const url   = hero?.published?.image_url;
+      // Saved photo, or a stock stand-in until one is uploaded
+      const url   = homePhoto(hero?.published?.image_url, b.slug, 'hero');
       if (!panel || !url) continue;
 
       // Only swap the colour for the photo once it has actually loaded,
