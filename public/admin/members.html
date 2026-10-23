@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
+  <title>Members — Admin · Ducks Unlimited</title>
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    body { background: var(--color-bg-warm); }
+
+    /* Nav styles live in /components/admin-nav.html (shared across admin) */
+
+    main.admin-main { padding: var(--space-md); max-width: 1200px; margin: 0 auto; }
+    .admin-h1 { font-family: var(--font-heading); color: var(--color-primary); font-size: 2rem; margin-bottom: 0.5rem; }
+    .admin-sub { color: var(--color-text-muted); margin-bottom: var(--space-md); }
+
+    .admin-panel { background: var(--color-white); padding: var(--space-md); margin-bottom: var(--space-md); border: 1px solid var(--color-border-light); }
+
+    .admin-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); }
+    @media (min-width: 768px) { .admin-stats { grid-template-columns: repeat(4, 1fr); } }
+    .stat { background: var(--color-bg); padding: var(--space-sm); }
+    .stat__label { font-size: 0.65rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 0.25rem; }
+    .stat__value { font-family: var(--font-heading); font-size: 1.6rem; color: var(--color-primary); }
+
+    /* Action buttons under the heading */
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: var(--space-md); }
+    .btn-action {
+      border: 1px solid var(--color-primary); background: var(--color-white); color: var(--color-primary);
+      padding: 0.55rem 1rem; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+    }
+    .btn-action:hover { background: var(--color-bg); }
+    .btn-action--primary { background: var(--color-primary); color: var(--color-white); }
+    .btn-action--primary:hover { background: var(--color-primary); opacity: 0.9; }
+
+    .toolbar { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: var(--space); }
+    .toolbar .input { max-width: 340px; flex: 1 1 220px; }
+
+    .filter-pill {
+      background: none; border: 1px solid var(--color-border); padding: 0.4rem 0.85rem;
+      font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-text-muted); cursor: pointer;
+    }
+    .filter-pill.is-active { background: var(--color-primary); color: var(--color-white); border-color: var(--color-primary); }
+
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th, .admin-table td { text-align: left; padding: 0.55rem 0.5rem; border-bottom: 1px solid var(--color-border-light); font-size: 0.88rem; }
+    .admin-table th { font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted); font-weight: 500; }
+    .admin-table small { color: var(--color-text-muted); }
+    .admin-table code { background: var(--color-bg); padding: 0.1rem 0.35rem; font-size: 0.82rem; }
+    .member-row { cursor: pointer; }
+    .member-row:hover td { background: var(--color-bg); }
+    @media (max-width: 640px) { .hide-sm { display: none; } }
+
+    .badge { display: inline-block; padding: 0.2rem 0.5rem; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; border-radius: var(--radius-pill); white-space: nowrap; }
+    .badge-member { background: var(--color-success-bg); color: var(--color-success); }
+    .badge-elite  { background: var(--color-primary); color: var(--color-accent, #C9A84C); }
+    .badge-linked { background: var(--color-bg-warm); color: var(--color-text-muted); }
+
+    .muted { color: var(--color-text-muted); }
+    .table-note { font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.75rem; }
+
+    /* ── Add / edit member window ── */
+    dialog.member-dialog { border: none; padding: 0; width: min(560px, 100%); max-height: calc(100dvh - 2rem); overflow: hidden; }
+    dialog.member-dialog::backdrop { background: rgba(0,0,0,0.4); }
+    /* Header and buttons stay put; only the fields in the middle scroll */
+    dialog.member-dialog form { display: flex; flex-direction: column; max-height: calc(100dvh - 2rem); }
+    @media (max-width: 600px) {
+      dialog.member-dialog { width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; max-width: 100%; }
+      dialog.member-dialog form { height: 100dvh; max-height: 100dvh; }
+    }
+    .dlg-header { background: var(--color-primary); color: var(--color-white); padding: 0 1.25rem; height: 56px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
+    .dlg-header h2 { font-family: var(--font-heading); font-size: 1.3rem; font-weight: 400; color: var(--color-white); }
+    .dlg-close { background: none; border: none; color: var(--color-white); font-size: 1.6rem; cursor: pointer; line-height: 1; }
+    .dlg-body { padding: 1.25rem; display: grid; gap: 0.85rem; overflow-y: auto; flex: 1 1 auto; }
+    .dlg-row { display: grid; gap: 0.85rem; grid-template-columns: 1fr; }
+    @media (min-width: 500px) { .dlg-row { grid-template-columns: 1fr 1fr; } }
+    .dlg-body label { display: grid; gap: 0.3rem; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-text-muted); }
+    .dlg-body .input, .dlg-body select, .dlg-body textarea { font-size: 0.95rem; letter-spacing: normal; text-transform: none; color: var(--color-text); }
+    .dlg-body select { padding: 0.6rem; border: 1px solid var(--color-border); background: var(--color-white); }
+    .dlg-body textarea { padding: 0.6rem; border: 1px solid var(--color-border); min-height: 70px; font-family: inherit; }
+    .dlg-hint { font-size: 0.78rem; color: var(--color-text-muted); }
+    .dlg-error { color: var(--color-error); font-size: 0.85rem; }
+    .dlg-footer { display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-top: 1px solid var(--color-border-light); flex-shrink: 0; background: var(--color-white); }
+    .dlg-footer .right { display: flex; gap: 0.5rem; }
+    .btn-delete { background: none; border: none; color: var(--color-error); text-decoration: underline; cursor: pointer; font-size: 0.8rem; }
+
+    .toast { position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%); background: var(--color-primary); color: var(--color-white);
+             padding: 0.75rem 1.25rem; font-size: 0.9rem; z-index: 500; max-width: calc(100% - 2rem); }
+    [hidden] { display: none !important; }
+  </style>
+  <!-- Browser-tab icon: the Ducks Unlimited duck badge -->
+  <link rel="icon" type="image/png" href="/images/brand/du-favicon.png" />
+  <link rel="apple-touch-icon" href="/images/brand/du-apple-touch-icon.png" />
+  <!-- "Add to Home Screen": app name, icon list (Android) and the green phone status bar -->
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="apple-mobile-web-app-title" content="DU Admin" />
+  <meta name="theme-color" content="#1B4D2E" />
+</head>
+<body>
+
+  <!-- Shared admin nav — see /components/admin-nav.html -->
+  <div data-component="admin-nav"></div>
+
+  <main class="admin-main">
+    <h1 class="admin-h1">Members</h1>
+    <p class="admin-sub">Store membership card holders. <strong>Member</strong> = 10% off the whole bill, <strong>Elite</strong> = 20% off, both for life.
+      This list replaces the Access database.</p>
+
+    <div class="actions">
+      <button type="button" class="btn-action btn-action--primary" id="addBtn">+ Add member</button>
+      <button type="button" class="btn-action" id="importBtn">Import from Access</button>
+      <button type="button" class="btn-action" id="obodaBtn">Download for Oboda</button>
+      <button type="button" class="btn-action" id="linkBtn">Match website accounts</button>
+    </div>
+
+    <section class="admin-panel">
+      <div class="admin-stats">
+        <div class="stat"><div class="stat__label">All members</div><div class="stat__value" id="statTotal">—</div></div>
+        <div class="stat"><div class="stat__label">Member · 10%</div><div class="stat__value" id="statMember">—</div></div>
+        <div class="stat"><div class="stat__label">Elite · 20%</div><div class="stat__value" id="statElite">—</div></div>
+        <div class="stat"><div class="stat__label">Has website account</div><div class="stat__value" id="statLinked">—</div></div>
+      </div>
+    </section>
+
+    <section class="admin-panel">
+      <div class="toolbar">
+        <input type="search" id="memberSearch" class="input" placeholder="Search card no., name, mobile or email…"
+               autocomplete="off" aria-label="Search members" />
+      </div>
+      <div class="toolbar" id="filters">
+        <button type="button" class="filter-pill is-active" data-filter="">All</button>
+        <button type="button" class="filter-pill" data-filter="member">Member</button>
+        <button type="button" class="filter-pill" data-filter="elite">Elite</button>
+        <button type="button" class="filter-pill" data-filter="linked">Has website account</button>
+        <button type="button" class="filter-pill" data-filter="nophone">No mobile</button>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr><th>Card no.</th><th>Name</th><th class="hide-sm">Mobile</th><th>Tier</th><th class="hide-sm">Website</th></tr>
+          </thead>
+          <tbody id="memberTable"><tr><td colspan="5">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <p class="table-note" id="tableNote"></p>
+    </section>
+  </main>
+
+  <!-- ═════════════ Add / edit member window ═════════════ -->
+  <dialog class="member-dialog" id="memberDialog" aria-labelledby="dlgTitle">
+    <form method="dialog" id="memberForm">
+      <div class="dlg-header">
+        <h2 id="dlgTitle">Add member</h2>
+        <button type="button" class="dlg-close" data-close aria-label="Close">×</button>
+      </div>
+      <div class="dlg-body">
+        <div class="dlg-row">
+          <label>Card number *
+            <input class="input" name="member_number" required autocomplete="off" />
+          </label>
+          <label>Tier
+            <select name="tier">
+              <option value="member">Member · 10%</option>
+              <option value="elite">Elite · 20%</option>
+            </select>
+          </label>
+        </div>
+        <label>Full name *
+          <input class="input" name="name" required autocomplete="off" />
+        </label>
+        <div class="dlg-row">
+          <label>Mobile
+            <input class="input" name="phone" type="tel" inputmode="tel" placeholder="09XX XXX XXXX" autocomplete="off" />
+          </label>
+          <label>Email
+            <input class="input" name="email" type="email" autocomplete="off" />
+          </label>
+        </div>
+        <div class="dlg-row">
+          <label>Member since
+            <input class="input" name="member_since" type="date" />
+          </label>
+          <label>Elite since
+            <input class="input" name="elite_since" type="date" />
+          </label>
+        </div>
+        <label>Notes
+          <textarea name="notes"></textarea>
+        </label>
+        <p class="dlg-hint" id="dlgLinked"></p>
+        <p class="dlg-error" id="dlgError" hidden></p>
+      </div>
+      <div class="dlg-footer">
+        <button type="button" class="btn-delete" id="deleteBtn" hidden>Remove member</button>
+        <span></span>
+        <div class="right">
+          <button type="button" class="btn-action" data-close>Cancel</button>
+          <button type="submit" class="btn-action btn-action--primary" id="saveBtn" value="save">Save</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+    import { requireAdmin } from '/admin/js/admin-guard.js';
+    import { openImportModal } from '/admin/js/import-modal.js';
+    import { downloadCsv, todayStamp } from '/admin/js/csv.js';
+    import {
+      loadAllMembers, analyzeMembersFile, applyMembersPlan, blankMembersTemplate,
+      buildObodaCustomersCsv, cleanPhone,
+    } from '/admin/js/members-import.js';
+
+    // Only signed-in admins get past this line (see /admin/js/admin-guard.js)
+    await requireAdmin();
+
+    // Log out is handled by /components/admin-nav.html
+
+    // ─────────────────────────────────────────────────────────────────────
+    // SMALL HELPERS
+    // ─────────────────────────────────────────────────────────────────────
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    // Last 10 digits of a mobile number, so 0917…, +63917… and 917… all match
+    function phoneDigits(phone) {
+      const d = String(phone ?? '').replace(/\D/g, '');
+      if (d.startsWith('63')) return d.slice(2);
+      if (d.startsWith('0'))  return d.slice(1);
+      return d;
+    }
+    let toastTimer;
+    function showToast(message) {
+      const t = document.getElementById('toast');
+      t.textContent = message;
+      t.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { t.hidden = true; }, 4000);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // LOAD + SHOW THE LIST
+    // ─────────────────────────────────────────────────────────────────────
+    let members = [];
+    let currentFilter = '';
+    let shown = [];          // the members currently in the table (after search + filter)
+
+    async function load() {
+      try {
+        members = await loadAllMembers();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('memberTable').innerHTML =
+          '<tr><td colspan="5">Could not load members. Try refreshing the page.</td></tr>';
+        return;
+      }
+      renderStats();
+      renderList();
+    }
+
+    function renderStats() {
+      document.getElementById('statTotal').textContent  = members.length;
+      document.getElementById('statMember').textContent = members.filter(m => m.tier === 'member').length;
+      document.getElementById('statElite').textContent  = members.filter(m => m.tier === 'elite').length;
+      document.getElementById('statLinked').textContent = members.filter(m => m.user_id).length;
+    }
+
+    function renderList() {
+      const q      = document.getElementById('memberSearch').value.trim().toLowerCase();
+      const qPhone = phoneDigits(q);
+
+      shown = members.filter(m => {
+        if (currentFilter === 'member'  && m.tier !== 'member') return false;
+        if (currentFilter === 'elite'   && m.tier !== 'elite')  return false;
+        if (currentFilter === 'linked'  && !m.user_id)          return false;
+        if (currentFilter === 'nophone' && m.phone)             return false;
+        if (!q) return true;
+        if ([m.member_number, m.name, m.email].join(' ').toLowerCase().includes(q)) return true;
+        return qPhone.length >= 4 && phoneDigits(m.phone).includes(qPhone);
+      });
+
+      const tbody = document.getElementById('memberTable');
+      document.getElementById('tableNote').textContent =
+        shown.length === members.length ? '' : `Showing ${shown.length} of ${members.length} members.`;
+
+      if (members.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="muted">No members yet. Use <strong>Import from Access</strong> to bring in the existing list.</td></tr>';
+        return;
+      }
+      if (shown.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="muted">No members found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = shown.map(m => `
+        <tr class="member-row" data-id="${escapeHtml(m.id)}">
+          <td><code>${escapeHtml(m.member_number)}</code></td>
+          <td>${escapeHtml(m.name)}<br /><small>${escapeHtml(m.email ?? '')}</small></td>
+          <td class="hide-sm">${escapeHtml(m.phone ?? '—')}</td>
+          <td><span class="badge badge-${m.tier}">${m.tier === 'elite' ? 'Elite' : 'Member'}</span></td>
+          <td class="hide-sm">${m.user_id ? '<span class="badge badge-linked">Linked</span>' : '<span class="muted">—</span>'}</td>
+        </tr>`).join('');
+
+      tbody.querySelectorAll('.member-row').forEach(row =>
+        row.addEventListener('click', () => openDialog(members.find(m => m.id === row.dataset.id))));
+    }
+
+    let searchTimer;
+    document.getElementById('memberSearch').addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(renderList, 150);
+    });
+    document.querySelectorAll('#filters .filter-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#filters .filter-pill').forEach(b => b.classList.toggle('is-active', b === btn));
+        currentFilter = btn.dataset.filter;
+        renderList();
+      });
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // ADD / EDIT WINDOW
+    // ─────────────────────────────────────────────────────────────────────
+    const dialog  = document.getElementById('memberDialog');
+    const form    = document.getElementById('memberForm');
+    const errorEl = document.getElementById('dlgError');
+    let editing = null;     // the member being edited, or null when adding
+
+    function openDialog(member) {
+      editing = member ?? null;
+      form.reset();
+      errorEl.hidden = true;
+      document.getElementById('dlgTitle').textContent = editing ? 'Edit member' : 'Add member';
+      document.getElementById('deleteBtn').hidden = !editing;
+      document.getElementById('dlgLinked').textContent = editing?.user_id
+        ? 'Linked to a website account (matched by mobile number or email).'
+        : (editing ? 'Not linked to a website account yet.' : '');
+
+      if (editing) {
+        for (const f of ['member_number', 'name', 'phone', 'email', 'tier', 'member_since', 'elite_since', 'notes']) {
+          form.elements[f].value = editing[f] ?? '';
+        }
+      } else {
+        form.elements.member_since.value = todayStamp();
+      }
+      dialog.showModal();
+      form.elements.member_number.focus();
+    }
+
+    dialog.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => dialog.close()));
+    document.getElementById('addBtn').addEventListener('click', () => openDialog(null));
+
+    // Picking Elite fills in today's date for "Elite since" if it's empty
+    form.elements.tier.addEventListener('change', () => {
+      if (form.elements.tier.value === 'elite' && !form.elements.elite_since.value) {
+        form.elements.elite_since.value = todayStamp();
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl.hidden = true;
+
+      const v = Object.fromEntries(new FormData(form));
+      const { phone, ok } = cleanPhone(v.phone);
+      if (!ok) {
+        errorEl.textContent = 'That mobile number doesn\'t look right. Use 11 digits, like 09171234567.';
+        errorEl.hidden = false;
+        return;
+      }
+      const row = {
+        member_number: v.member_number.trim(),
+        name:          v.name.trim(),
+        phone,
+        email:         v.email.trim().toLowerCase() || null,
+        tier:          v.tier,
+        member_since:  v.member_since || null,
+        elite_since:   v.elite_since || null,
+        notes:         v.notes.trim() || null,
+      };
+
+      const saveBtn = document.getElementById('saveBtn');
+      saveBtn.disabled = true;
+      const { error } = editing
+        ? await supabase.from('members').update(row).eq('id', editing.id)
+        : await supabase.from('members').insert(row);
+      saveBtn.disabled = false;
+
+      if (error) {
+        // 23505 = "that value already exists" (the card number is unique)
+        errorEl.textContent = error.code === '23505'
+          ? `Card number ${row.member_number} is already used by another member.`
+          : 'Could not save: ' + error.message;
+        errorEl.hidden = false;
+        return;
+      }
+
+      dialog.close();
+      await supabase.rpc('admin_link_member_accounts');   // match to a website account if possible
+      showToast(editing ? 'Member saved.' : `Member ${row.member_number} added.`);
+      load();
+    });
+
+    document.getElementById('deleteBtn').addEventListener('click', async () => {
+      if (!editing) return;
+      if (!confirm(`Remove member ${editing.member_number} (${editing.name})? This can't be undone.`)) return;
+      const { error } = await supabase.from('members').delete().eq('id', editing.id);
+      if (error) { errorEl.textContent = 'Could not remove: ' + error.message; errorEl.hidden = false; return; }
+      dialog.close();
+      showToast('Member removed.');
+      load();
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // IMPORT FROM ACCESS
+    // ─────────────────────────────────────────────────────────────────────
+    document.getElementById('importBtn').addEventListener('click', () => {
+      openImportModal({
+        title: 'Import members from Access',
+        intro: `
+          In Access, export the members table to <strong>Excel</strong> (External Data → Excel), then choose that file here.
+          A CSV file works too.<br><br>
+          The file needs a <strong>membership number</strong> column and a <strong>name</strong> column.
+          Mobile, email, tier (Member / Elite) and dates are picked up if they're there.
+          Common column names like "Membership No", "Card No", "Mobile" or "E-mail" are recognised.<br><br>
+          You'll see a preview first. <strong>Nothing is saved until you click Confirm.</strong>
+          Members already on the list are updated by card number; nobody is deleted.`,
+        templateName: 'members-template.csv',
+        templateCsv:  blankMembersTemplate,
+        analyze: (text) => analyzeMembersFile(text),
+        apply:   (result) => applyMembersPlan(result.plan),
+        onDone:  (message) => { showToast(message); load(); },
+      });
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // DOWNLOAD FOR OBODA
+    // Downloads the members currently shown (all of them, unless you've
+    // searched or filtered) in Oboda's "Bulk Create Customers" format.
+    // ─────────────────────────────────────────────────────────────────────
+    document.getElementById('obodaBtn').addEventListener('click', () => {
+      if (shown.length === 0) { showToast('No members to download.'); return; }
+      const which = shown.length === members.length ? 'all' : 'shown';
+      downloadCsv(`oboda-customers-${which}-${todayStamp()}.csv`, buildObodaCustomersCsv(shown));
+      showToast(`Downloaded ${shown.length} members. In Oboda: Customers → Bulk Create & Update → Create Customers.`);
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // MATCH WEBSITE ACCOUNTS (also runs automatically after imports/saves)
+    // ─────────────────────────────────────────────────────────────────────
+    document.getElementById('linkBtn').addEventListener('click', async () => {
+      const { data: linked, error } = await supabase.rpc('admin_link_member_accounts');
+      if (error) { showToast('Matching failed: ' + error.message); return; }
+      showToast(linked ? `${linked} members matched to website accounts.` : 'No new matches found.');
+      if (linked) load();
+    });
+
+    load();
+  </script>
+
+  <!-- Mounts the shared <div data-component="admin-nav"> at the top of <body> -->
+  <script type="module" src="/js/components.js"></script>
+</body>
+</html>

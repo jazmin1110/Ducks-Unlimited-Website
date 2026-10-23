@@ -385,16 +385,37 @@
         contact.push(['Birthday', c.birthday ? escapeHtml(formatDate(c.birthday)) : '—']);
         contact.push(['Marketing emails', c.marketing_opt_in ? 'Yes, opted in' : 'No']);
       }
+      contact.push(['Store membership', '<span id="detailMember" class="muted">Checking…</span>']);
       document.getElementById('detailContact').innerHTML = contact.map(([label, value]) => `
         <div>
           <div class="detail-item__label">${label}</div>
           <div class="detail-item__value">${value}</div>
         </div>`).join('');
 
-      // Saved addresses + orders load in parallel
+      // Saved addresses, orders and membership load in parallel
       document.getElementById('detailOrderTable').innerHTML = '<tr><td colspan="4">Loading…</td></tr>';
       document.getElementById('addressPanel').hidden = true;
-      await Promise.all([loadAddresses(c), loadOrders(c)]);
+      await Promise.all([loadAddresses(c), loadOrders(c), loadMembership(c)]);
+    }
+
+    // Store membership card (see /admin/members.html). Found by linked
+    // website account first, then by the same mobile number.
+    async function loadMembership(c) {
+      const el = document.getElementById('detailMember');
+      let member = null;
+      if (c.user_id) {
+        const { data } = await supabase.from('members').select('member_number, tier').eq('user_id', c.user_id).maybeSingle();
+        member = data;
+      }
+      const digits = phoneDigits(c.phone);
+      if (!member && digits.length === 10) {
+        const { data } = await supabase.from('members').select('member_number, tier').eq('phone_key', digits).limit(1);
+        member = data?.[0] ?? null;
+      }
+      if (!member) { el.textContent = 'Not a member'; return; }
+      el.classList.remove('muted');
+      el.innerHTML = `<a href="/admin/members.html">${escapeHtml(member.member_number)}</a> · `
+        + (member.tier === 'elite' ? 'Elite (20%)' : 'Member (10%)');
     }
 
     async function loadAddresses(c) {

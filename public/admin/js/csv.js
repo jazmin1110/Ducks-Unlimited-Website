@@ -32,6 +32,38 @@ export function readFileAsText(file) {
 }
 
 
+// Read a CSV *or* an Excel file (.xlsx / .xls) and always hand back CSV text,
+// so the import code only ever has to understand one format.
+// For Excel files, only the FIRST sheet is read. Dates come out as
+// YYYY-MM-DD (e.g. 2019-01-15) no matter how Excel displays them.
+export async function readSpreadsheetAsCsvText(file) {
+  if (!/\.xlsx?$/i.test(file.name)) return readFileAsText(file);
+
+  const XLSX   = await loadSheetJs();
+  const data   = await file.arrayBuffer();
+  const book   = XLSX.read(data, { type: 'array', cellDates: true });
+  const sheet  = book.Sheets[book.SheetNames[0]];
+  return XLSX.utils.sheet_to_csv(sheet, { dateNF: 'yyyy-mm-dd', blankrows: false });
+}
+
+// SheetJS is the free library that reads Excel files. It's fairly big, so we
+// only download it the first time someone actually picks an Excel file.
+let sheetJsPromise = null;
+function loadSheetJs() {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (!sheetJsPromise) {
+    sheetJsPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      script.onload  = () => resolve(window.XLSX);
+      script.onerror = () => { sheetJsPromise = null; reject(new Error('Could not load the Excel reader. Check your internet, or save the file as CSV and try again.')); };
+      document.head.appendChild(script);
+    });
+  }
+  return sheetJsPromise;
+}
+
+
 // Turn CSV text into a grid: an array of rows, each row an array of cell strings.
 function parseGrid(text) {
   // Strip Excel's invisible BOM marker if present

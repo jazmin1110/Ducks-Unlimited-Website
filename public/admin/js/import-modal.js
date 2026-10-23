@@ -27,7 +27,7 @@
 //     changeCount: number }               // 0 → nothing to save
 // =============================================================================
 
-import { readFileAsText, downloadCsv } from '/admin/js/csv.js';
+import { readSpreadsheetAsCsvText, downloadCsv } from '/admin/js/csv.js';
 
 // How many preview rows to draw before "…and N more"
 const PREVIEW_LIMIT = 100;
@@ -144,7 +144,7 @@ export function openImportModal({ title, intro, templateName, templateCsv, analy
       <div class="imp-body">
         <div class="imp-intro">${intro}</div>
         <div class="imp-file-row">
-          <input type="file" accept=".csv,text/csv" />
+          <input type="file" accept=".csv,text/csv,.xlsx,.xls" />
           <button type="button" class="imp-link" data-template>Download template</button>
         </div>
         <div data-results></div>
@@ -190,7 +190,8 @@ export function openImportModal({ title, intro, templateName, templateCsv, analy
 
     resultsEl.innerHTML = '<div class="imp-status">Checking the file…</div>';
     try {
-      const text = await readFileAsText(file);
+      // CSV or Excel — either way we get CSV text back (see /admin/js/csv.js)
+      const text = await readSpreadsheetAsCsvText(file);
       current = await analyze(text);
     } catch (err) {
       console.error(err);
