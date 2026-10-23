@@ -667,6 +667,23 @@
 
     .image-tile .delete-image-btn:hover { background: #b33a3a; }
 
+    /* "Which color is this photo?" dropdown along the top of each tile */
+    .image-tile .image-color-select {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      max-width: calc(100% - 34px); /* leave room for the × button */
+      background: rgba(255,255,255,0.92);
+      color: #1B4D2E;
+      border: none;
+      border-radius: 3px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.62rem;
+      font-weight: 600;
+      padding: 0.15rem 0.2rem;
+      cursor: pointer;
+    }
+
     /* Visual feedback during drag-and-drop */
     .image-tile.dragging { opacity: 0.4; }
 
@@ -675,7 +692,7 @@
       outline-offset: -2px;
     }
 
-    /* "+" tile that opens the file picker (only shown when under 5 images) */
+    /* "+" tile that opens the file picker (only shown when there is room for more) */
     .upload-tile {
       aspect-ratio: 1 / 1;
       border: 2px dashed #ccc;
@@ -1110,9 +1127,12 @@
 
         <h3 class="images-heading">Product Images</h3>
         <p class="images-subheading">
-          Up to 5 photos. JPG, PNG, or WEBP — max 5 MB each. You can pick several at once.
+          Up to 12 photos. JPG, PNG, or WEBP — max 5 MB each. You can pick several at once.
           The first photo is the main one customers see — tap <strong>Make main</strong>
           on any photo (or drag photos on a computer) to change the order.
+          Use the dropdown on each photo to say which <strong>color</strong> it shows —
+          when a shopper picks that color, its photos appear. Leave it on
+          <strong>All colors</strong> for photos that suit every color.
         </p>
 
         <div class="images-grid" id="imagesGrid">
@@ -1768,12 +1788,13 @@
 
     // ─────────────────────────────────────────────────────────────────────
     // PRODUCT IMAGES
-    // Up to 5 images per product. Files live in Supabase Storage in the
+    // Up to 12 images per product. Files live in Supabase Storage in the
     // 'product-images' bucket; their URLs and ordering are stored in the
     // product_images table.
     // ─────────────────────────────────────────────────────────────────────
 
-    const MAX_IMAGES_PER_PRODUCT = 5;
+    // 12 leaves room for a few photos per colorway
+    const MAX_IMAGES_PER_PRODUCT = 12;
     const MAX_IMAGE_SIZE_BYTES   = 5 * 1024 * 1024; // 5 MB
     const ALLOWED_IMAGE_TYPES    = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -1831,6 +1852,7 @@
 
         tile.innerHTML = `
           <img src="${escapeHtml(img.image_url)}" alt="" />
+          ${renderImageColorSelect(img)}
           ${index === 0
             ? '<span class="primary-badge">Main</span>'
             : '<button type="button" class="make-main-btn">Make main</button>'}
@@ -1850,6 +1872,51 @@
         uploadTile.addEventListener('click', () => imageFileInput.click());
         imagesGrid.appendChild(uploadTile);
       }
+    }
+
+    // The colors this product comes in, taken from its variants (A–Z, no repeats)
+    function productColors() {
+      const colors = new Set(currentVariants.map(v => v.color).filter(Boolean));
+      return [...colors].sort((a, b) => a.localeCompare(b));
+    }
+
+    // Dropdown on each photo tile: "All colors" or one of the product's colors.
+    // If a photo is tagged with a color that no longer has variants, we still
+    // list it so the tag isn't silently lost.
+    function renderImageColorSelect(img) {
+      const colors = productColors();
+      if (img.color && !colors.includes(img.color)) colors.push(img.color);
+
+      const options = colors.map(c => `
+        <option value="${escapeHtml(c)}" ${c === img.color ? 'selected' : ''}>${escapeHtml(c)}</option>
+      `).join('');
+
+      return `
+        <select class="image-color-select" aria-label="Color shown in this photo">
+          <option value="" ${img.color ? '' : 'selected'}>All colors</option>
+          ${options}
+        </select>
+      `;
+    }
+
+    // Save the color picked in a tile's dropdown
+    async function saveImageColor(index, color) {
+      const img = currentImages[index];
+      if (!img) return;
+
+      const { error } = await supabase
+        .from('product_images')
+        .update({ color: color || null })   // empty = "All colors"
+        .eq('id', img.id);
+
+      if (error) {
+        console.error(error);
+        showToast('Could not save the photo color. Please try again.');
+        renderImages(); // put the dropdown back to what's saved
+        return;
+      }
+      img.color = color || null;
+      showToast(color ? `Photo tagged as ${color}.` : 'Photo shown for all colors.');
     }
 
     // Validate that the user-chosen file is an allowed type and not too big.
@@ -1874,7 +1941,7 @@
       const productId = productIdInput.value;
       if (!productId) return;
 
-      // Only upload as many as still fit (max 5 per product)
+      // Only upload as many as still fit (MAX_IMAGES_PER_PRODUCT)
       const room = MAX_IMAGES_PER_PRODUCT - currentImages.length;
       if (files.length > room) {
         showToast(`Only ${room} more photo${room === 1 ? '' : 's'} fit — the extra ones were skipped.`);
@@ -2065,6 +2132,14 @@
     // File picker change → upload
     imageFileInput.addEventListener('change', handleImageUpload);
 
+    // Color dropdown on a photo tile → save which color the photo shows
+    imagesGrid.addEventListener('change', (e) => {
+      const select = e.target.closest('.image-color-select');
+      if (!select) return;
+      const index = Number(select.closest('.image-tile').dataset.index);
+      saveImageColor(index, select.value);
+    });
+
     // Delegate clicks on delete-image buttons (works for dynamically rendered tiles)
     imagesGrid.addEventListener('click', async (e) => {
       // "Make main" → move that photo to the front, then save the new order
@@ -2187,6 +2262,9 @@
 
       // Keep a copy so Edit and "add many sizes" can see what already exists
       currentVariants = variants || [];
+
+      // The photo color dropdowns list the variant colors — refresh them
+      renderImages();
 
       if (!variants || variants.length === 0) {
         variantsTableBody.innerHTML =

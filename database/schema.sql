@@ -266,6 +266,10 @@ create table product_images (
   -- Public URL to the image file in Supabase Storage
   image_url     text not null,
 
+  -- Which colorway this photo shows (matches variants.color).
+  -- Null = the photo is shown for every color. (Added in migration 030.)
+  color         text,
+
   -- Position in the gallery, 0-indexed. The image with display_order = 0
   -- is the main/featured image shown first on the storefront.
   display_order integer not null default 0 check (display_order >= 0),

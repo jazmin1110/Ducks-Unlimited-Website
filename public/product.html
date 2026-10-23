@@ -1037,7 +1037,8 @@
 
     const state = {
       product:        null,    // Raw product data
-      images:         [],      // Sorted images
+      allImages:      [],      // Every photo of the product, sorted
+      images:         [],      // Photos shown right now (depends on the selected color)
       variantMap:     {},      // "color|size" → { id, price, sku, stock, threshold }
       allColors:      [],      // Distinct colors in order
       allSizes:       [],      // Distinct sizes in apparel order
@@ -1064,7 +1065,7 @@
             id, color, size, sku, price_override,
             inventory ( channel, quantity, low_stock_threshold )
           ),
-          product_images ( image_url, is_primary, display_order )
+          product_images ( image_url, is_primary, display_order, color )
         `)
         .eq('id', productId)
         .single();
@@ -1358,6 +1359,33 @@
       `).join('');
     }
 
+    // Pick which photos to show for a color:
+    //   1. photos tagged with that color (e.g. the Navy shots)
+    //   2. then photos with no color — they suit every colorway
+    // If the color has no photos of its own yet, show every photo instead,
+    // so the gallery never shows the wrong color's photos on their own.
+    function imagesForColor(color) {
+      const all = state.allImages;
+      if (!color) return all;
+
+      const sameColor = (img) =>
+        img.color && img.color.trim().toLowerCase() === color.trim().toLowerCase();
+
+      const colorImages = all.filter(sameColor);
+      if (colorImages.length === 0) return all;
+
+      const sharedImages = all.filter(img => !img.color);
+      return [...colorImages, ...sharedImages];
+    }
+
+    // Swap the gallery to the selected color's photos and jump to the first one
+    function showImagesForColor(color) {
+      state.images       = imagesForColor(color);
+      state.currentImage = 0;
+      document.getElementById('galleryMain').innerHTML   = renderMainImage();
+      document.getElementById('galleryThumbs').innerHTML = renderThumbs();
+    }
+
     function setMainImage(index) {
       if (index < 0 || index >= state.images.length) return;
       state.currentImage = index;
@@ -1530,6 +1558,7 @@
         }
 
         state.quantity = 1; // reset qty when selection changes
+        showImagesForColor(color); // show this colorway's photos
         renderSwatches();
         renderSizes();
         renderStockStatus();
@@ -1712,9 +1741,10 @@
       // Populate state
       state.product = product;
       // No photos uploaded yet → stock photos for its category (/js/stock-photos.js)
-      state.images  = sortImages(product.product_images?.length
+      state.allImages = sortImages(product.product_images?.length
         ? product.product_images
         : productPhotos(product.category));
+      state.images    = state.allImages;
       Object.assign(state, indexVariants(product));
 
       // Auto-select the first color so price shows immediately
@@ -1722,6 +1752,8 @@
       // the "Select a color..." hint from being the first thing they see)
       if (state.allColors.length > 0) {
         state.selectedColor = state.allColors[0];
+        // Start the gallery on the first color's photos
+        state.images = imagesForColor(state.selectedColor);
       }
 
       renderProduct();
