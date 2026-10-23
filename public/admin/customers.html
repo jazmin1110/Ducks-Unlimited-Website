@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
+  <title>Customers — Admin · Ducks Unlimited</title>
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    body { background: var(--color-bg-warm); }
+
+    /* Nav styles live in /components/admin-nav.html (shared across admin) */
+
+    main.admin-main { padding: var(--space-md); max-width: 1200px; margin: 0 auto; }
+    .admin-h1 { font-family: var(--font-heading); color: var(--color-primary); font-size: 2rem; margin-bottom: 0.5rem; }
+    .admin-sub { color: var(--color-text-muted); margin-bottom: var(--space-md); }
+
+    .admin-panel { background: var(--color-white); padding: var(--space-md); margin-bottom: var(--space-md); border: 1px solid var(--color-border-light); }
+    .admin-panel h2 { font-family: var(--font-heading); font-size: 1.3rem; color: var(--color-primary); margin-bottom: var(--space); }
+
+    .admin-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); }
+    @media (min-width: 768px) { .admin-stats { grid-template-columns: repeat(4, 1fr); } }
+    .stat { background: var(--color-bg); padding: var(--space-sm); }
+    .stat__label { font-size: 0.65rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 0.25rem; }
+    .stat__value { font-family: var(--font-heading); font-size: 1.6rem; color: var(--color-primary); }
+
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th, .admin-table td { text-align: left; padding: 0.55rem 0.5rem; border-bottom: 1px solid var(--color-border-light); font-size: 0.88rem; }
+    .admin-table th { font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted); font-weight: 500; }
+    .admin-table .num { text-align: right; white-space: nowrap; }
+    .admin-table small { color: var(--color-text-muted); }
+
+    /* Whole customer row is clickable */
+    .customer-row { cursor: pointer; }
+    .customer-row:hover td { background: var(--color-bg); }
+    .customer-row a { color: var(--color-primary); font-weight: 500; text-decoration: none; }
+
+    /* On phones, hide the less important columns so the table fits */
+    @media (max-width: 640px) {
+      .hide-sm { display: none; }
+    }
+
+    .badge { display: inline-block; padding: 0.2rem 0.5rem; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; border-radius: var(--radius-pill); white-space: nowrap; }
+    .badge-account { background: var(--color-success-bg); color: var(--color-success); }
+    .badge-guest   { background: var(--color-bg-warm);    color: var(--color-text-muted); }
+    .badge-repeat  { background: var(--color-warning-bg); color: var(--color-warning); }
+
+    .toolbar { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-bottom: var(--space); }
+    .toolbar .input { max-width: 340px; flex: 1 1 220px; }
+    .toolbar select { padding: 0.45rem 0.6rem; border: 1px solid var(--color-border); background: var(--color-white); font-size: 0.85rem; }
+
+    .filter-pill {
+      background: none;
+      border: 1px solid var(--color-border);
+      padding: 0.4rem 0.85rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--color-text-muted);
+      cursor: pointer;
+    }
+    .filter-pill.is-active { background: var(--color-primary); color: var(--color-white); border-color: var(--color-primary); }
+
+    /* ── Customer detail view ── */
+    .back-link { display: inline-block; margin-bottom: var(--space); color: var(--color-text-muted); font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none; }
+    .back-link:hover { color: var(--color-primary); }
+
+    .detail-grid { display: grid; gap: var(--space-sm) var(--space-md); grid-template-columns: 1fr; }
+    @media (min-width: 768px) { .detail-grid { grid-template-columns: repeat(3, 1fr); } }
+    .detail-item__label { font-size: 0.65rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 0.2rem; }
+    .detail-item__value { font-size: 0.95rem; word-break: break-word; }
+    .detail-item__value a { color: var(--color-primary); }
+
+    .address-list { display: grid; gap: var(--space-sm); grid-template-columns: 1fr; }
+    @media (min-width: 768px) { .address-list { grid-template-columns: repeat(2, 1fr); } }
+    .address-card { background: var(--color-bg); padding: var(--space-sm); font-size: 0.88rem; line-height: 1.5; }
+
+    .muted { color: var(--color-text-muted); }
+
+    /* Order status badges — same colors as /admin/orders.html */
+    .status-badge { display: inline-block; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.2rem 0.65rem; border-radius: 20px; white-space: nowrap; }
+    .pay-pending  { background: #fff4d6; color: #997f33; }
+    .pay-paid     { background: #e6f2ec; color: #1B4D2E; }
+    .pay-failed   { background: #fdf0f0; color: #b33a3a; }
+    .ful-pending   { background: #f0ebe1; color: #777; }
+    .ful-packed    { background: #e0ebf5; color: #2d5a87; }
+    .ful-shipped   { background: #fff4d6; color: #997f33; }
+    .ful-delivered { background: #e6f2ec; color: #1B4D2E; }
+    .ful-cancelled { background: #eee; color: #555; text-decoration: line-through; }
+    .refund-badge  { background: #fdf0f0; color: #b33a3a; }
+
+    [hidden] { display: none !important; }
+  </style>
+  <!-- Browser-tab icon: the Ducks Unlimited duck badge -->
+  <link rel="icon" type="image/png" href="/images/brand/du-favicon.png" />
+  <link rel="apple-touch-icon" href="/images/brand/du-apple-touch-icon.png" />
+  <!-- "Add to Home Screen": app name, icon list (Android) and the green phone status bar -->
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="apple-mobile-web-app-title" content="DU Admin" />
+  <meta name="theme-color" content="#1B4D2E" />
+</head>
+<body>
+
+  <!-- Shared admin nav — see /components/admin-nav.html -->
+  <div data-component="admin-nav"></div>
+
+  <main class="admin-main">
+
+    <!-- ═════════════ LIST VIEW (shown by default) ═════════════ -->
+    <div id="listView">
+      <h1 class="admin-h1">Customers</h1>
+      <p class="admin-sub">Everyone who has an account or has ordered online. Tap a customer to see their details and orders.
+        Only <strong>paid</strong> orders count toward orders and spending, with refunds taken off.</p>
+
+      <section class="admin-panel">
+        <div class="admin-stats">
+          <div class="stat"><div class="stat__label">Customers</div><div class="stat__value" id="statTotal">—</div></div>
+          <div class="stat"><div class="stat__label">With account</div><div class="stat__value" id="statAccounts">—</div></div>
+          <div class="stat"><div class="stat__label">Repeat buyers</div><div class="stat__value" id="statRepeat">—</div></div>
+          <div class="stat"><div class="stat__label">Total spent</div><div class="stat__value" id="statSpent">—</div></div>
+        </div>
+      </section>
+
+      <section class="admin-panel">
+        <div class="toolbar">
+          <input type="search" id="customerSearch" class="input" placeholder="Search name, phone or email…"
+                 autocomplete="off" aria-label="Search customers" />
+          <label class="muted" style="font-size:0.8rem;">
+            Sort
+            <select id="sortSelect" aria-label="Sort customers">
+              <option value="last_order">Latest order</option>
+              <option value="spent">Most spent</option>
+              <option value="orders">Most orders</option>
+              <option value="joined">Newest</option>
+              <option value="name">Name A–Z</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="toolbar" id="filters">
+          <button type="button" class="filter-pill is-active" data-type="">All</button>
+          <button type="button" class="filter-pill" data-type="account">With account</button>
+          <button type="button" class="filter-pill" data-type="guest">Guests</button>
+          <button type="button" class="filter-pill" data-type="repeat">Repeat buyers</button>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th class="hide-sm">Phone</th>
+                <th class="num">Orders</th>
+                <th class="num">Spent</th>
+                <th class="hide-sm">Last order</th>
+              </tr>
+            </thead>
+            <tbody id="customerTable"><tr><td colspan="5">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- ═════════════ DETAIL VIEW (shown for ?c=<customer>) ═════════════ -->
+    <div id="detailView" hidden>
+      <a href="/admin/customers.html" class="back-link" id="backLink">← All customers</a>
+      <h1 class="admin-h1" id="detailName">—</h1>
+      <p class="admin-sub" id="detailBadges"></p>
+
+      <section class="admin-panel">
+        <div class="admin-stats">
+          <div class="stat"><div class="stat__label">Paid orders</div><div class="stat__value" id="detailOrders">—</div></div>
+          <div class="stat"><div class="stat__label">Total spent</div><div class="stat__value" id="detailSpent">—</div></div>
+          <div class="stat"><div class="stat__label">Average order</div><div class="stat__value" id="detailAvg">—</div></div>
+          <div class="stat"><div class="stat__label">Last order</div><div class="stat__value" id="detailLast" style="font-size:1.2rem;">—</div></div>
+        </div>
+      </section>
+
+      <section class="admin-panel">
+        <h2>Contact</h2>
+        <div class="detail-grid" id="detailContact"></div>
+      </section>
+
+      <section class="admin-panel" id="addressPanel" hidden>
+        <h2>Saved addresses</h2>
+        <div class="address-list" id="detailAddresses"></div>
+      </section>
+
+      <section class="admin-panel">
+        <h2>Orders</h2>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead>
+              <tr><th>Order</th><th class="hide-sm">Date</th><th>Status</th><th class="num">Total</th></tr>
+            </thead>
+            <tbody id="detailOrderTable"><tr><td colspan="4">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+    import { requireAdmin } from '/admin/js/admin-guard.js';
+
+    // Only signed-in admins get past this line (see /admin/js/admin-guard.js)
+    await requireAdmin();
+
+    // Log out is handled by /components/admin-nav.html
+
+    // ─────────────────────────────────────────────────────────────────────
+    // SMALL HELPERS
+    // ─────────────────────────────────────────────────────────────────────
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function formatPHP(n) {
+      return '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function formatDate(iso) {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    // Turns any PH mobile number into its last 10 digits, so these all match:
+    //   0917 798 8286   +63 917 798 8286   639177988286   9177988286
+    // Used for searching by phone no matter how it was typed.
+    function phoneDigits(phone) {
+      const digits = String(phone ?? '').replace(/\D/g, '');
+      if (digits.startsWith('63')) return digits.slice(2);
+      if (digits.startsWith('0'))  return digits.slice(1);
+      return digits;
+    }
+
+    const PAYMENT_LABELS     = { pending: 'Pending', paid: 'Paid', failed: 'Failed' };
+    const FULFILLMENT_LABELS = { pending: 'Pending', packed: 'Packed', shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled' };
+    const GENDER_LABELS      = { male: 'Male', female: 'Female', prefer_not_to_say: 'Prefer not to say' };
+
+    // ─────────────────────────────────────────────────────────────────────
+    // LOAD ALL CUSTOMERS
+    // The database function admin_list_customers() (migration 028) returns one
+    // row per customer — account holders AND guest buyers — with their order
+    // count and total spent already added up.
+    // ─────────────────────────────────────────────────────────────────────
+    let customers = [];
+    let currentType = '';
+
+    const { data, error } = await supabase.rpc('admin_list_customers');
+    if (error) {
+      console.error(error);
+      document.getElementById('customerTable').innerHTML =
+        '<tr><td colspan="5">Could not load customers. Try refreshing the page.</td></tr>';
+    } else {
+      customers = data ?? [];
+      renderStats();
+    }
+
+    function renderStats() {
+      const total   = customers.length;
+      const withAcc = customers.filter(c => c.has_account).length;
+      const repeat  = customers.filter(c => Number(c.paid_orders) >= 2).length;
+      const spent   = customers.reduce((sum, c) => sum + Number(c.total_spent), 0);
+      document.getElementById('statTotal').textContent    = total;
+      document.getElementById('statAccounts').textContent = withAcc;
+      document.getElementById('statRepeat').textContent   = repeat;
+      document.getElementById('statSpent').textContent    = formatPHP(spent);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // LIST VIEW — search, filter, sort
+    // ─────────────────────────────────────────────────────────────────────
+    function renderList() {
+      const tbody = document.getElementById('customerTable');
+      if (error) return;
+
+      // 1. Search: name, email, or phone (phone matched by digits only)
+      const q      = document.getElementById('customerSearch').value.trim().toLowerCase();
+      const qPhone = phoneDigits(q);
+      let rows = customers.filter(c => {
+        if (!q) return true;
+        if ([c.name, c.email].join(' ').toLowerCase().includes(q)) return true;
+        // Only try a phone match when the search has at least 4 digits
+        return qPhone.length >= 4 && phoneDigits(c.phone).includes(qPhone);
+      });
+
+      // 2. Filter pills
+      if (currentType === 'account') rows = rows.filter(c => c.has_account);
+      if (currentType === 'guest')   rows = rows.filter(c => !c.has_account);
+      if (currentType === 'repeat')  rows = rows.filter(c => Number(c.paid_orders) >= 2);
+
+      // 3. Sort
+      const sort = document.getElementById('sortSelect').value;
+      const time = iso => (iso ? new Date(iso).getTime() : 0);
+      rows.sort((a, b) => {
+        if (sort === 'spent')  return Number(b.total_spent) - Number(a.total_spent);
+        if (sort === 'orders') return Number(b.paid_orders) - Number(a.paid_orders);
+        if (sort === 'joined') return time(b.joined_at) - time(a.joined_at);
+        if (sort === 'name')   return String(a.name ?? '').localeCompare(String(b.name ?? ''));
+        return time(b.last_order_at) - time(a.last_order_at);   // 'last_order' (default)
+      });
+
+      if (rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="muted">No customers found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map(c => {
+        const link = '/admin/customers.html?c=' + encodeURIComponent(c.customer_key);
+        return `
+          <tr class="customer-row" data-key="${escapeHtml(c.customer_key)}">
+            <td>
+              <a href="${link}">${escapeHtml(c.name || '(no name)')}</a>
+              ${c.has_account ? '' : ' <span class="badge badge-guest">Guest</span>'}
+              <br /><small>${escapeHtml(c.email ?? '')}</small>
+            </td>
+            <td class="hide-sm">${escapeHtml(c.phone ?? '—')}</td>
+            <td class="num">${Number(c.paid_orders)}</td>
+            <td class="num">${formatPHP(c.total_spent)}</td>
+            <td class="hide-sm">${escapeHtml(formatDate(c.last_order_at))}</td>
+          </tr>`;
+      }).join('');
+
+      // Clicking anywhere on the row opens that customer
+      tbody.querySelectorAll('.customer-row').forEach(row =>
+        row.addEventListener('click', (e) => {
+          e.preventDefault();
+          openCustomer(row.dataset.key, true);
+        }));
+    }
+
+    // Re-filter as the admin types (small delay so we don't redraw on every key)
+    let searchTimer;
+    document.getElementById('customerSearch').addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(renderList, 150);
+    });
+    document.getElementById('sortSelect').addEventListener('change', renderList);
+    document.querySelectorAll('#filters .filter-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#filters .filter-pill').forEach(b => b.classList.toggle('is-active', b === btn));
+        currentType = btn.dataset.type;
+        renderList();
+      });
+    });
+
+    // ─────────────────────────────────────────────────────────────────────
+    // DETAIL VIEW — one customer
+    // ─────────────────────────────────────────────────────────────────────
+    async function openCustomer(key, addToHistory) {
+      const c = customers.find(x => x.customer_key === key);
+      if (!c) { showList(addToHistory); return; }
+
+      // Update the address bar so the page can be bookmarked / back button works
+      if (addToHistory) history.pushState({ c: key }, '', '?c=' + encodeURIComponent(key));
+
+      document.getElementById('listView').hidden   = true;
+      document.getElementById('detailView').hidden = false;
+      window.scrollTo(0, 0);
+
+      // Heading + badges
+      document.getElementById('detailName').textContent = c.name || '(no name)';
+      const badges = [
+        c.has_account ? '<span class="badge badge-account">Has account</span>' : '<span class="badge badge-guest">Guest checkout</span>',
+        Number(c.paid_orders) >= 2 ? '<span class="badge badge-repeat">Repeat buyer</span>' : '',
+      ];
+      document.getElementById('detailBadges').innerHTML = badges.join(' ');
+
+      // Stats
+      const paid = Number(c.paid_orders);
+      document.getElementById('detailOrders').textContent = paid;
+      document.getElementById('detailSpent').textContent  = formatPHP(c.total_spent);
+      document.getElementById('detailAvg').textContent    = paid ? formatPHP(Number(c.total_spent) / paid) : '—';
+      document.getElementById('detailLast').textContent   = formatDate(c.last_order_at);
+
+      // Contact details
+      const contact = [
+        ['Email', c.email ? `<a href="mailto:${escapeHtml(c.email)}">${escapeHtml(c.email)}</a>` : '—'],
+        ['Phone', c.phone ? `<a href="tel:${escapeHtml(c.phone)}">${escapeHtml(c.phone)}</a>` : '—'],
+        [c.has_account ? 'Signed up' : 'First order', escapeHtml(formatDate(c.joined_at))],
+      ];
+      if (c.has_account) {
+        contact.push(['Birthday', c.birthday ? escapeHtml(formatDate(c.birthday)) : '—']);
+        contact.push(['Marketing emails', c.marketing_opt_in ? 'Yes, opted in' : 'No']);
+      }
+      document.getElementById('detailContact').innerHTML = contact.map(([label, value]) => `
+        <div>
+          <div class="detail-item__label">${label}</div>
+          <div class="detail-item__value">${value}</div>
+        </div>`).join('');
+
+      // Saved addresses + orders load in parallel
+      document.getElementById('detailOrderTable').innerHTML = '<tr><td colspan="4">Loading…</td></tr>';
+      document.getElementById('addressPanel').hidden = true;
+      await Promise.all([loadAddresses(c), loadOrders(c)]);
+    }
+
+    async function loadAddresses(c) {
+      if (!c.has_account) return;   // guests have no saved addresses
+      const { data: rows, error } = await supabase
+        .from('customer_addresses')
+        .select('*')
+        .eq('user_id', c.user_id)
+        .order('is_default', { ascending: false });
+      if (error) { console.error(error); return; }
+      if (!rows || rows.length === 0) return;
+
+      document.getElementById('addressPanel').hidden = false;
+      document.getElementById('detailAddresses').innerHTML = rows.map(a => `
+        <div class="address-card">
+          <strong>${escapeHtml(a.label || 'Address')}</strong>${a.is_default ? ' <span class="badge badge-account">Default</span>' : ''}<br />
+          ${escapeHtml(a.recipient_name)} · ${escapeHtml(a.phone)}<br />
+          ${escapeHtml([a.line1, a.line2].filter(Boolean).join(', '))}<br />
+          ${escapeHtml([a.barangay, a.city, a.province, a.postal_code].filter(Boolean).join(', '))}
+        </div>`).join('');
+    }
+
+    // Orders that belong to this customer:
+    //   * account: orders linked to their account, plus guest orders that used
+    //     the same email (the same rule the customer list uses to add them up)
+    //   * guest:   orders with that email and no account
+    async function loadOrders(c) {
+      const cols = 'id, order_number, created_at, total_amount, refunded_amount, payment_status, fulfillment_status, customer_email, user_id';
+      const queries = [];
+      if (c.has_account) {
+        queries.push(supabase.from('orders').select(cols).eq('user_id', c.user_id));
+      }
+      if (c.email) {
+        queries.push(supabase.from('orders').select(cols).is('user_id', null).ilike('customer_email', c.email));
+      }
+      const results = await Promise.all(queries);
+      const failed  = results.find(r => r.error);
+      const tbody   = document.getElementById('detailOrderTable');
+      if (failed) { console.error(failed.error); tbody.innerHTML = '<tr><td colspan="4">Could not load orders.</td></tr>'; return; }
+
+      // ilike treats "_" as a wildcard, so double-check the email matches exactly
+      const email  = String(c.email ?? '').toLowerCase();
+      const orders = results.flatMap(r => r.data ?? [])
+        .filter(o => o.user_id || String(o.customer_email).toLowerCase() === email)
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      if (orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="muted">No orders yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = orders.map(o => `
+        <tr>
+          <td><a href="/admin/orders.html?order=${encodeURIComponent(o.id)}" style="color:var(--color-primary); font-weight:500;">${escapeHtml(o.order_number)}</a></td>
+          <td class="hide-sm">${escapeHtml(formatDate(o.created_at))}</td>
+          <td>
+            <span class="status-badge pay-${escapeHtml(o.payment_status)}">${escapeHtml(PAYMENT_LABELS[o.payment_status] ?? o.payment_status)}</span>
+            <span class="status-badge ful-${escapeHtml(o.fulfillment_status)}">${escapeHtml(FULFILLMENT_LABELS[o.fulfillment_status] ?? o.fulfillment_status)}</span>
+            ${Number(o.refunded_amount) > 0 ? `<span class="status-badge refund-badge">Refunded ${formatPHP(o.refunded_amount)}</span>` : ''}
+          </td>
+          <td class="num">${formatPHP(o.total_amount)}</td>
+        </tr>`).join('');
+    }
+
+    function showList(addToHistory) {
+      if (addToHistory) history.pushState({}, '', '/admin/customers.html');
+      document.getElementById('detailView').hidden = true;
+      document.getElementById('listView').hidden   = false;
+      renderList();
+    }
+
+    // "← All customers" goes back without reloading the page
+    document.getElementById('backLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      showList(true);
+    });
+
+    // Browser back / forward buttons
+    window.addEventListener('popstate', () => route());
+
+    // Decide which view to show from the address bar (?c=<customer> or the list)
+    function route() {
+      const key = new URLSearchParams(window.location.search).get('c');
+      if (key) openCustomer(key, false);
+      else showList(false);
+    }
+
+    route();
+  </script>
+
+  <!-- Mounts the shared <div data-component="admin-nav"> at the top of <body> -->
+  <script type="module" src="/js/components.js"></script>
+</body>
+</html>
