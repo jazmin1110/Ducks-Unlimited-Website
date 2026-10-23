@@ -33,6 +33,10 @@
        we're on a brand home) navigates to the other brand's home. -->
   <div class="site-nav__brandbar" data-brand-switcher>
     <div class="container site-nav__brandbar-inner">
+      <!-- "All brands" goes back to the shared landing page (index.html) that
+           shows both brands. Plain link — no data-brand-slug, so the brand
+           switcher script leaves it alone and it works without JavaScript. -->
+      <a class="site-nav__brandtab site-nav__brandtab--all" href="/">All brands</a>
       <button type="button" class="site-nav__brandtab" data-brand-slug="du" aria-pressed="false">Ducks Unlimited</button>
       <button type="button" class="site-nav__brandtab" data-brand-slug="rw" aria-pressed="false">Rocwood</button>
     </div>
@@ -89,6 +93,8 @@
         <li class="site-nav__item site-nav__item--mobile-only site-nav__drawer-brands">
           <button type="button" class="site-nav__drawer-brand" data-brand-slug="du" aria-pressed="false">Ducks Unlimited</button>
           <button type="button" class="site-nav__drawer-brand" data-brand-slug="rw" aria-pressed="false">Rocwood</button>
+          <!-- Back to the shared landing page that shows both brands -->
+          <a class="site-nav__drawer-allbrands" href="/">← See all our brands</a>
         </li>
 
         <!-- Top-level audience nav: Men / Women / Kids & Baby.
@@ -513,6 +519,15 @@
     background: var(--color-accent);
   }
 
+  /* "All brands" link — same look as the tabs, with a thin divider after it
+     so it reads as "go up a level" rather than a third brand. */
+  .site-nav__brandtab--all {
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    border-right: 1px solid var(--color-border-light);
+  }
+
   /* ── Main row ── */
   .site-nav__main {
     display: flex;
@@ -763,6 +778,7 @@
   /* ── Drawer brand switch (mobile only) ── */
   .site-nav__drawer-brands {
     display: flex;
+    flex-wrap: wrap;          /* lets the "all brands" link drop to its own row */
     gap: 0.5rem;
     padding: 0.75rem 0 0.9rem;
   }
@@ -780,6 +796,16 @@
   .site-nav__drawer-brand.is-active {
     background: var(--color-primary);
     color: var(--color-white);
+  }
+  /* Full-width text link under the two brand buttons */
+  .site-nav__drawer-allbrands {
+    flex-basis: 100%;
+    padding: 0.35rem 0.1rem 0;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--color-text-light);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   .site-nav__mega-inner {
