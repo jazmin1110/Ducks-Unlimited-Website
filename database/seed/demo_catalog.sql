@@ -105,7 +105,7 @@ insert into products (id, brand_id, name, description, category, audience, base_
   -- DU · others
   ('f1120000-0000-0000-0000-000000000115', (select id from brands where slug = 'du'),
    'Plain Knitted Brief',
-   'A classic brief in 100% Egyptian cotton with the Ducks Unlimited woven waistband. Everyday comfort that lasts.',
+   'A classic brief in 100% Egyptian cotton with the Ducks Unlimited knit waistband. Everyday comfort that lasts.',
    'others', 'men', 177, true),
   -- RW · polo
   ('f1120000-0000-0000-0000-000000000201', (select id from brands where slug = 'rw'),

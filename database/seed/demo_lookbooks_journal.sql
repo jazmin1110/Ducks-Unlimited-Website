@@ -165,7 +165,7 @@ INSERT INTO lookbooks (id, slug, title, subtitle, hero_image, intro, published_a
   ('f2220000-0000-0000-0000-000000000001',
    'demo-holiday-2026',
    'Holiday 2026',
-   'Heritage pieces for the season at home — woven, sewn, and finished by hand in Greenhills.',
+   'Heritage pieces for the season at home — knitted, cut, and sewn in the Philippines.',
    'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&q=80&auto=format&fit=crop',
    'Each look in this collection was photographed in our Greenhills atelier — the same workshop where every piece is hand-finished. Layer the heritage polo over the linen trouser; the cordillera pique with the manila tailored pant. Made for celebrations close to home.',
    now() - interval '7 days'),
@@ -232,7 +232,7 @@ INSERT INTO lookbook_scenes (id, lookbook_id, image_url, caption, display_order)
   ('f2230000-0000-0000-0000-000000000008',
    'f2220000-0000-0000-0000-000000000003',
    'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1600&q=80&auto=format&fit=crop',
-   'Pinoy Heritage Tee — the woven flag at the hem.', 2);
+   'Pinoy Heritage Tee — the flag detail at the hem.', 2);
 
 
 -- ── HOTSPOTS — clickable "Shop the Look" dots on a few scenes ─────────
@@ -305,12 +305,12 @@ INSERT INTO journal_posts (slug, title, excerpt, hero_image, author, body_html, 
    '<p>Most of the cotton in the world is grown for volume, not quality. The fibers — the tiny threads that get spun into yarn — are short, around 22 millimetres on average. Short fibers spin into a rougher yarn that pills, fades, and loses its shape after a season of wear.</p>
 <p>Egyptian cotton is different. Grown along the Nile in some of the most fertile soil on the planet, the fibers are <em>long</em> — closer to 35 millimetres. That single difference cascades through every step that follows.</p>
 <h2>Why long-staple matters</h2>
-<p>Longer fibers spin into a smoother, stronger yarn. That yarn weaves into a cloth with a softer hand-feel, a more consistent surface, and seams that hold up to the weekly wash for years instead of months.</p>
+<p>Longer fibers spin into a smoother, stronger yarn. That yarn knits into a fabric with a softer hand-feel, a more consistent surface, and seams that hold up to the weekly wash for years instead of months.</p>
 <p>If you''ve ever owned a shirt that got softer with wear, that''s long-staple cotton at work. Short-staple cotton just gets worn out.</p>
 <blockquote>It''s not a luxury. It''s the difference between a shirt you keep and a shirt you replace.</blockquote>
 <h2>What we do with it</h2>
-<p>Every Ducks Unlimited garment starts with Egyptian cotton woven on our looms in Greenhills. We don''t outsource the cloth — we make it ourselves, one bolt at a time, so we can guarantee what''s inside every piece that leaves our workshop.</p>
-<p>The polo on your shoulders is the same cloth our family has been weaving since 1995.</p>',
+<p>Every Ducks Unlimited garment starts with Egyptian cotton knitted locally by our sister company, CMT Manufacturing. We don''t outsource the cloth — we make it ourselves, one bolt at a time, so we can guarantee what''s inside every piece that leaves our workshop.</p>
+<p>The polo on your shoulders is the same fabric our family has been knitting since 1995.</p>',
    now() - interval '5 days'),
 
   -- ── Post 2: The Anatomy of a Perfect Polo ──
@@ -329,7 +329,7 @@ INSERT INTO journal_posts (slug, title, excerpt, hero_image, author, body_html, 
 <h3>4. The hem</h3>
 <p>A good polo has a slightly longer back hem so it stays tucked when you reach for something on a high shelf. Ours adds half an inch.</p>
 <h3>5. The cloth</h3>
-<p>Long-staple Egyptian cotton, woven on our own looms. We''ve <a href="/journal/demo-why-egyptian-cotton-matters">written about why it matters</a> — but the short version: it''s why our polos are still soft after a hundred washes.</p>',
+<p>Long-staple Egyptian cotton, knitted in the Philippines. We''ve <a href="/journal/demo-why-egyptian-cotton-matters">written about why it matters</a> — but the short version: it''s why our polos are still soft after a hundred washes.</p>',
    now() - interval '14 days'),
 
   -- ── Post 3: Three Decades in Greenhills ──
@@ -339,9 +339,9 @@ INSERT INTO journal_posts (slug, title, excerpt, hero_image, author, body_html, 
    'https://images.unsplash.com/photo-1604176354204-9268737828e4?w=1600&q=80&auto=format&fit=crop',
    'Renee Ang',
    '<p>My grandfather opened the workshop in 1995 with two sewing machines, a single roll of cotton, and the idea that you could make beautiful clothes in the Philippines without cutting a single corner.</p>
-<p>Thirty years later, we''re still in the same neighborhood. The two sewing machines have become forty. The single roll of cotton is now a small loom room next to the cutting floor. But the idea hasn''t changed.</p>
+<p>Thirty years later, we''re still in the same neighborhood. The two sewing machines have become forty. The single roll of cotton is now a small knitting room next to the cutting floor. But the idea hasn''t changed.</p>
 <h2>What we still do ourselves</h2>
-<p>We weave the cotton. We cut every piece. We finish every hem by hand. There''s no overseas factory, no white-label partner, no shortcut. When you buy a Ducks Unlimited shirt, you''re buying something a small team in Greenhills personally touched at least eight times.</p>
+<p>We knit the cotton. We cut every piece. We finish every hem by hand. There''s no overseas factory, no white-label partner, no shortcut. When you buy a Ducks Unlimited shirt, you''re buying something a small team in Greenhills personally touched at least eight times.</p>
 <p>That''s slower than the industry standard. It''s also the only way we know.</p>
 <h2>What we''re carrying forward</h2>
 <p>The next thirty years are going to look a little different. Online ordering. New audiences. A few new categories — kids and women — that my grandfather wouldn''t recognize.</p>

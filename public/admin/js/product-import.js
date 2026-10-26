@@ -47,9 +47,11 @@ const CATEGORY_LOOKUP = {
   tshirt: 't-shirt', tee: 't-shirt', tees: 't-shirt', tshirts: 't-shirt',
   shorts: 'shorts', short: 'shorts',
   pants: 'pants', pant: 'pants', trousers: 'pants',
+  accessories: 'accessories', accessory: 'accessories',
+  socks: 'accessories', underwear: 'accessories', bags: 'accessories', caps: 'accessories',
   others: 'others', other: 'others',
 };
-const CATEGORY_NAMES = 'Polo, T-Shirt, Shorts, Pants or Others';
+const CATEGORY_NAMES = 'Polo, T-Shirt, Shorts, Pants, Accessories or Others';
 
 function normalizeCategory(raw) {
   const key = raw.toLowerCase().replace(/[\s\-_]/g, '');

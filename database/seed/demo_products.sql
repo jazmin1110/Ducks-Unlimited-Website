@@ -25,12 +25,12 @@ INSERT INTO products (id, name, description, category, base_price, is_active) VA
   -- ── Polo Shirts ──
   ('f1110000-0000-0000-0000-000000000001',
    'Classic Cotton Polo',
-   'Our flagship polo, woven from soft Egyptian cotton with a slight stretch for all-day comfort. Tailored fit, mother-of-pearl buttons, made in the Philippines.',
+   'Our flagship polo, knitted from soft Egyptian cotton with a slight stretch for all-day comfort. Tailored fit, mother-of-pearl buttons, made in the Philippines.',
    'polo', 950, true),
 
   ('f1110000-0000-0000-0000-000000000002',
    'Cordillera Pique Polo',
-   'Heavier pique knit inspired by mountain weekends — substantial weight, breathable weave, holds its shape after countless washes.',
+   'Heavier pique knit inspired by mountain weekends — substantial weight, breathable knit, holds its shape after countless washes.',
    'polo', 1100, true),
 
   ('f1110000-0000-0000-0000-000000000003',
@@ -40,7 +40,7 @@ INSERT INTO products (id, name, description, category, base_price, is_active) VA
 
   ('f1110000-0000-0000-0000-000000000004',
    'Heritage Polo',
-   'Our most refined polo. Long-staple Egyptian cotton, hand-rolled placket, signature woven label at the hem.',
+   'Our most refined polo. Long-staple Egyptian cotton, hand-rolled placket, signature label at the hem.',
    'polo', 1250, true),
 
   ('f1110000-0000-0000-0000-000000000005',
@@ -61,7 +61,7 @@ INSERT INTO products (id, name, description, category, base_price, is_active) VA
 
   ('f1110000-0000-0000-0000-000000000008',
    'Pinoy Heritage Tee',
-   'A tribute to our 30 years in Greenhills — subtle woven flag detail at the hem, otherwise quietly classic.',
+   'A tribute to our 30 years in Greenhills — subtle flag detail at the hem, otherwise quietly classic.',
    't-shirt', 750, true),
 
   ('f1110000-0000-0000-0000-000000000009',

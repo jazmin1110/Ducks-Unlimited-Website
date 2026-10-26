@@ -54,6 +54,7 @@ const PRODUCT = {
   't-shirt': [unsplash('1581655353564-df123a1eb820', 900), unsplash('1562157873-818bc0726f68', 900)],
   shorts:    [unsplash('1562157873-818bc0726f68', 900)],
   pants:     [unsplash('1562157873-818bc0726f68', 900)],
+  accessories: [unsplash('1562157873-818bc0726f68', 900)],
   others:    [unsplash('1562157873-818bc0726f68', 900)],
 };
 
