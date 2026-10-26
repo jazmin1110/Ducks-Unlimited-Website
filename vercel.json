@@ -19,12 +19,6 @@
   ],
 
   "rewrites": [
-    { "source": "/go/ducks", "destination": "/go/ducks.html" },
-    { "source": "/go/ducks-gh", "destination": "/go/ducks.html" },
-    { "source": "/go/ducks-cph", "destination": "/go/ducks.html" },
-    { "source": "/go/rocwood", "destination": "/go/rocwood.html" },
-    { "source": "/go/rocwood-gh", "destination": "/go/rocwood.html" },
-    { "source": "/go/rocwood-cph", "destination": "/go/rocwood.html" },
     { "source": "/du", "destination": "/home.html" },
     { "source": "/du/", "destination": "/home.html" },
     { "source": "/du/:path*", "destination": "/:path*" },
