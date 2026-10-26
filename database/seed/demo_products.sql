@@ -25,7 +25,7 @@ INSERT INTO products (id, name, description, category, base_price, is_active) VA
   -- ── Polo Shirts ──
   ('f1110000-0000-0000-0000-000000000001',
    'Classic Cotton Polo',
-   'Our flagship polo, woven from soft Egyptian cotton with a slight stretch for all-day comfort. Tailored fit, mother-of-pearl buttons, hand-finished in our Greenhills workshop.',
+   'Our flagship polo, woven from soft Egyptian cotton with a slight stretch for all-day comfort. Tailored fit, mother-of-pearl buttons, made in the Philippines.',
    'polo', 950, true),
 
   ('f1110000-0000-0000-0000-000000000002',
@@ -103,7 +103,7 @@ INSERT INTO products (id, name, description, category, base_price, is_active) VA
   -- ── Pants ──
   ('f1110000-0000-0000-0000-000000000016',
    'Classic Chinos',
-   'The chino, perfected. Mid-weight cotton, slim-straight cut, hand-finished hem ready for cuffing.',
+   'The chino, perfected. Mid-weight cotton, slim-straight cut, finished hem ready for cuffing.',
    'pants', 1500, true),
 
   ('f1110000-0000-0000-0000-000000000017',

@@ -80,7 +80,7 @@ insert into products (id, brand_id, name, description, category, audience, base_
   -- DU · pants
   ('f1120000-0000-0000-0000-000000000110', (select id from brands where slug = 'du'),
    'Classic Chinos',
-   'A slim-straight chino in mid-weight stretch cotton. Clean front, hand-finished hem ready for cuffing — the trouser to wear with every polo you own.',
+   'A slim-straight chino in mid-weight stretch cotton. Clean front, finished hem ready for cuffing — the trouser to wear with every polo you own.',
    'pants', 'men', 1495, true),
   -- DU · pants
   ('f1120000-0000-0000-0000-000000000111', (select id from brands where slug = 'du'),
