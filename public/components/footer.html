@@ -69,7 +69,6 @@
           <li><a href="/shop.html?audience=men">Men</a></li>
           <li><a href="/shop.html?audience=women">Women</a></li>
           <li><a href="/shop.html?audience=kids">Kids &amp; Baby</a></li>
-          <li><a href="/gift-cards.html">Gift Cards</a></li>
         </ul>
       </div>
 
@@ -102,13 +101,11 @@
           <!-- Real contact details, from the Ducks Unlimited Facebook page -->
           <li><a href="tel:+639175305428">0917 530 5428</a></li>
           <li><a href="mailto:ducksunlimited777@yahoo.com">ducksunlimited777@yahoo.com</a></li>
-          <li class="site-footer__address">
-            Greenhills Shopping Center<br />
-            San Juan, Metro Manila
-          </li>
         </ul>
 
-        <ul class="site-footer__socials">
+        <!-- Social links: one list per brand. CSS below shows only the list
+             for the brand being browsed (data-brand on <html>). -->
+        <ul class="site-footer__socials" data-socials="du">
           <li>
             <a href="https://www.facebook.com/DucksUnlimitedPh/" target="_blank" rel="noopener" aria-label="Facebook">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
@@ -135,6 +132,27 @@
           <li>
             <a href="https://www.lazada.com.ph/shop/ducks-unlimited" target="_blank" rel="noopener" aria-label="Lazada">
               <span class="site-footer__social-mono">Lazada</span>
+            </a>
+          </li>
+        </ul>
+
+        <ul class="site-footer__socials" data-socials="rw">
+          <li>
+            <a href="https://www.facebook.com/profile.php?id=61594092990311" target="_blank" rel="noopener" aria-label="Rocwood on Facebook">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                <path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.5 2.9h-2.3v7A10 10 0 0 0 22 12z"/>
+              </svg>
+            </a>
+          </li>
+          <li>
+            <a href="https://www.instagram.com/rocwood.ph/" target="_blank" rel="noopener" aria-label="Rocwood on Instagram">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+                   stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="5"/>
+                <circle cx="12" cy="12" r="4"/>
+                <circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>
+              </svg>
             </a>
           </li>
         </ul>
@@ -316,6 +334,10 @@
     margin-bottom: 0.75rem;
   }
   [data-brand="rw"] .site-footer__emblem { display: none; }
+  /* Show only the social links of the brand being browsed (DU is the default) */
+  .site-footer__socials[data-socials="rw"] { display: none; }
+  [data-brand="rw"] .site-footer__socials[data-socials="du"] { display: none; }
+  [data-brand="rw"] .site-footer__socials[data-socials="rw"] { display: flex; }
 
   .site-footer__logo {
     font-family: var(--font-heading);

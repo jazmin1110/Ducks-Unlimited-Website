@@ -13,6 +13,11 @@
     }
   },
 
+  "redirects": [
+    { "source": "/gift-cards.html", "destination": "/shop.html", "permanent": false },
+    { "source": "/:brand(du|rw)/gift-cards.html", "destination": "/:brand/shop.html", "permanent": false }
+  ],
+
   "rewrites": [
     { "source": "/du", "destination": "/home.html" },
     { "source": "/du/", "destination": "/home.html" },

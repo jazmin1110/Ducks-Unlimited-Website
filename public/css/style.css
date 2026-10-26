@@ -591,6 +591,14 @@ p:last-child { margin-bottom: 0; }
 
 .content-shell p { margin-bottom: var(--space); }
 
+/* "For Ducks Unlimited and Rocwood" line on pages both brands share */
+.content-shell .shared-note {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-text-muted, #6b6b6b);
+  margin: calc(-1 * var(--space)) 0 var(--space-lg, 2rem);
+}
+
 .content-shell ul, .content-shell ol {
   margin: 0 0 var(--space) 1.25rem;
 }
