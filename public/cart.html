@@ -561,7 +561,7 @@
   <script type="module">
     import { supabase } from '/lib/supabase.js';
     import {
-      getCart, addToCart, removeFromCart, updateQuantity,
+      getCartNewestFirst, addToCart, removeFromCart, updateQuantity,
     } from '/js/cart.js';
 
     // ─────────────────────────────────────────────────────────────────
@@ -889,16 +889,23 @@
 
     // ── Full layout when cart has items ─────────────────────────
 
-    // Group the bag's items by brand, in the order they were added.
-    // Items whose brand we couldn't load (deleted products) join the first group.
+    // Group the bag's items by brand. state.cart is already newest-first, so
+    // each brand's items stay newest-first and the brand added to most
+    // recently comes first.
+    // Items whose brand we couldn't load (deleted products) join the first
+    // brand we do know.
     function groupByBrand() {
       const groups = [];
+      const fallback = state.cart
+        .map(i => state.stockMap[i.variantId])
+        .find(info => info?.brandSlug);
       for (const item of state.cart) {
         const info = state.stockMap[item.variantId];
-        const slug = info?.brandSlug || groups[0]?.slug || '';
+        const brand = info?.brandSlug ? info : fallback;
+        const slug = brand?.brandSlug || '';
         let g = groups.find(x => x.slug === slug);
         if (!g) {
-          g = { slug, name: info?.brandName || '', items: [] };
+          g = { slug, name: brand?.brandName || '', items: [] };
           groups.push(g);
         }
         g.items.push(item);
@@ -1039,7 +1046,7 @@
       }
 
       updateQuantity(variantId, newQty);
-      state.cart = getCart();
+      state.cart = getCartNewestFirst();
       render();
     }
 
@@ -1050,7 +1057,7 @@
       // Remove immediately so the cart count badge updates right away.
       // Keep the item data around so "Undo" can restore it.
       removeFromCart(variantId);
-      state.cart = getCart();
+      state.cart = getCartNewestFirst();
       showUndoToast(item);
       render();
     }
@@ -1098,9 +1105,12 @@
         sku:          item.sku,
         price:        item.price,
         imageUrl:     item.imageUrl,
+        brandSlug:    item.brandSlug,
+        brandName:    item.brandName,
+        addedAt:      item.addedAt,  // back to its old spot, not the top
       });
 
-      state.cart = getCart();
+      state.cart = getCartNewestFirst();
       state.lastRemoval = null;
       undoToast.classList.remove('show');
       render();
@@ -1126,7 +1136,7 @@
 
     window.addEventListener('cart:change', () => {
       // Only re-read if the cart actually changed externally (not from our own writes)
-      const fresh = getCart();
+      const fresh = getCartNewestFirst();
       if (JSON.stringify(fresh) === JSON.stringify(state.cart)) return;
       state.cart = fresh;
       // Don't re-fetch stock here — too aggressive — just re-render with what we have
@@ -1138,7 +1148,7 @@
     // ─────────────────────────────────────────────────────────────────
 
     async function init() {
-      state.cart = getCart();
+      state.cart = getCartNewestFirst();
       updateHeader();
 
       if (state.cart.length === 0) {

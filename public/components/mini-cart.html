@@ -2,9 +2,10 @@
      Ducks Unlimited + Rocwood — Mini Cart (slide-in confirmation)
      =============================================================================
      Panel that slides in from the right when the customer adds something to
-     their cart. Shows what was just added + a running subtotal, with
-     "View Cart" and "Checkout" buttons. Dismisses on close click, backdrop
-     click, Esc, or after 6 seconds of no interaction.
+     their cart. Shows the whole cart, newest item first and split by brand
+     when it holds both, plus a running subtotal, with "View Cart" and
+     "Checkout" buttons. Dismisses on close click, backdrop click, or Esc.
+     It doesn't close on a timer, so there's time to read a long cart.
 
      Why not a modal: a modal hijacks the page. The mini cart just confirms
      the add without pulling the customer out of browsing — Baymard shows
@@ -23,8 +24,8 @@
       <button type="button" class="mini-cart__close" aria-label="Close">×</button>
     </header>
 
-    <!-- The latest item that was added. Filled by the script below. -->
-    <div class="mini-cart__latest" data-mini-cart-latest></div>
+    <!-- Everything in the cart. Filled by the script below. -->
+    <div class="mini-cart__items" data-mini-cart-items></div>
 
     <div class="mini-cart__summary">
       <div class="mini-cart__summary-row">
@@ -109,8 +110,25 @@
 
   .mini-cart__close:hover { color: var(--color-text); }
 
-  /* ── The item that was just added ── */
-  .mini-cart__latest {
+  /* ── The cart's items. This part scrolls; the buttons stay on screen. ── */
+  .mini-cart__items {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* Brand name over each group when the cart holds both brands */
+  .mini-cart__brand {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 0.25rem;
+  }
+
+  .mini-cart__brand:not(:first-child) { margin-top: 1.25rem; }
+
+  .mini-cart__item {
     display: flex;
     gap: 0.9rem;
     align-items: flex-start;
@@ -243,21 +261,23 @@
 </style>
 
 <script type="module">
-  import { getCart, getCartTotal, getCartCount } from '/js/cart.js';
+  import { getCartNewestFirst, getCartTotal, getCartCount } from '/js/cart.js';
 
   const mc = document.querySelector('[data-mini-cart]');
   // Guard: this script runs via the components loader on every page, but
   // only pages that mount the mini-cart component have the panel in DOM.
   // Using an if-wrap because top-level `return` isn't valid in ES modules.
   if (mc) {
-  const latestSlot    = mc.querySelector('[data-mini-cart-latest]');
+  const itemsSlot     = mc.querySelector('[data-mini-cart-items]');
   const subtotalSlot  = mc.querySelector('[data-mini-cart-subtotal]');
   const countSlot     = mc.querySelector('[data-mini-cart-count]');
   const backdrop      = mc.querySelector('[data-mini-cart-backdrop]');
   const closeBtn      = mc.querySelector('.mini-cart__close');
 
   const PHP = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2 });
-  let autoDismissTimer = null;
+
+  // Brands we had to look up, keyed by variant id (see fetchMissingBrands)
+  const lookedUpBrands = {};
 
   function esc(s) {
     return String(s ?? '').replace(/[&<>"']/g, (c) =>
@@ -265,23 +285,87 @@
     );
   }
 
-  function renderLatest(detail) {
-    const total     = (Number(detail.price) || 0) * (Number(detail.quantity) || 1);
-    const thumbHtml = detail.imageUrl
-      ? `<img src="${esc(detail.imageUrl)}" alt="" />`
+  function renderItem(item) {
+    const total     = (Number(item.price) || 0) * (Number(item.quantity) || 1);
+    const thumbHtml = item.imageUrl
+      ? `<img src="${esc(item.imageUrl)}" alt="" />`
       : '';  // empty tile in the brand's warm tone (no "No image" text)
 
-    latestSlot.innerHTML = `
-      <div class="mini-cart__thumb ${detail.imageUrl ? '' : 'mini-cart__thumb--empty'}">${thumbHtml}</div>
-      <div class="mini-cart__info">
-        <span class="mini-cart__name">${esc(detail.productName || 'Added to bag')}</span>
-        ${detail.variantLabel ? `<span class="mini-cart__variant">${esc(detail.variantLabel)}</span>` : ''}
-        <div class="mini-cart__meta">
-          <span>Qty ${Number(detail.quantity) || 1}</span>
-          <span>${PHP.format(total)}</span>
+    return `
+      <div class="mini-cart__item">
+        <div class="mini-cart__thumb ${item.imageUrl ? '' : 'mini-cart__thumb--empty'}">${thumbHtml}</div>
+        <div class="mini-cart__info">
+          <span class="mini-cart__name">${esc(item.productName || 'Added to bag')}</span>
+          ${item.variantLabel ? `<span class="mini-cart__variant">${esc(item.variantLabel)}</span>` : ''}
+          <div class="mini-cart__meta">
+            <span>Qty ${Number(item.quantity) || 1}</span>
+            <span>${PHP.format(total)}</span>
+          </div>
         </div>
       </div>
     `;
+  }
+
+  // A line's brand: saved on the line, or looked up for older carts.
+  function brandOf(item) {
+    return item.brandSlug
+      ? { slug: item.brandSlug, name: item.brandName }
+      : lookedUpBrands[item.variantId];
+  }
+
+  // Draw the whole cart. The items come newest-first, so each brand stays
+  // newest-first and the brand added to most recently comes first — the
+  // same order as the cart page. Items with no known brand join the first
+  // brand we do know.
+  function renderItems() {
+    const items    = getCartNewestFirst();
+    const fallback = items.map(brandOf).find(Boolean);
+    const groups   = [];
+
+    for (const item of items) {
+      const brand = brandOf(item) || fallback;
+      const slug  = brand?.slug || '';
+      let group   = groups.find((g) => g.slug === slug);
+      if (!group) {
+        group = { slug, name: brand?.name || '', items: [] };
+        groups.push(group);
+      }
+      group.items.push(item);
+    }
+
+    // One brand: a plain list. Two brands: a heading over each.
+    itemsSlot.innerHTML = groups.map((g) => `
+      ${groups.length > 1 ? `<h2 class="mini-cart__brand">${esc(g.name)}</h2>` : ''}
+      ${g.items.map(renderItem).join('')}
+    `).join('');
+    itemsSlot.scrollTop = 0;
+  }
+
+  // Lines added before brands were saved on the cart have no brand, so ask
+  // the database once, then redraw with the brand headings in place.
+  async function fetchMissingBrands() {
+    const ids = getCartNewestFirst()
+      .filter((item) => !brandOf(item))
+      .map((item) => item.variantId);
+    if (ids.length === 0) return;
+
+    try {
+      const { supabase } = await import('/lib/supabase.js');
+      const { data, error } = await supabase
+        .from('variants')
+        .select('id, products ( brands ( slug, name ) )')
+        .in('id', ids);
+      if (error) throw error;
+
+      for (const v of (data ?? [])) {
+        const brand = v.products?.brands;
+        if (brand?.slug) lookedUpBrands[v.id] = brand;
+      }
+      renderItems();
+    } catch (err) {
+      // The cart still shows, just without brand headings
+      console.error('Mini cart: could not look up brands', err);
+    }
   }
 
   function refreshSummary() {
@@ -294,22 +378,19 @@
     mc.hidden = false;
     // Rerun on the next frame so the transition fires from the hidden state.
     requestAnimationFrame(() => mc.classList.add('is-open'));
-
-    clearTimeout(autoDismissTimer);
-    autoDismissTimer = setTimeout(close, 6000);
   }
 
   function close() {
     mc.classList.remove('is-open');
     setTimeout(() => { mc.hidden = true; }, 300); // match CSS transition
-    clearTimeout(autoDismissTimer);
   }
 
   // Opening on add
-  window.addEventListener('cart:add', (e) => {
-    renderLatest(e.detail || {});
+  window.addEventListener('cart:add', () => {
+    renderItems();
     refreshSummary();
     open();
+    fetchMissingBrands();
   });
 
   // Dismiss controls

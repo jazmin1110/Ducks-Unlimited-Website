@@ -1060,7 +1060,7 @@
         .from('products')
         .select(`
           id, name, description, category, base_price, is_active, brand_id,
-          brands ( slug ),
+          brands ( slug, name ),
           variants (
             id, color, size, sku, price_override,
             inventory ( channel, quantity, low_stock_threshold )
@@ -1634,6 +1634,8 @@
           sku:          v.sku,
           price:        v.price,
           imageUrl:     state.images[0]?.image_url ?? '',
+          brandSlug:    state.product.brands?.slug ?? '',
+          brandName:    state.product.brands?.name ?? '',
         });
         // No toast here: the mini-cart drawer slides in on every add
         // (it listens for cart:add), so a second "Added" message is noise.

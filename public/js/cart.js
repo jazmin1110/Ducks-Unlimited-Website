@@ -59,7 +59,12 @@ function toCount(v) {
  *
  * @param {string} variantId
  * @param {number} quantity
- * @param {object} [details]  Optional: { productName, variantLabel, sku, price, imageUrl }
+ * The line's `addedAt` time is what sorts the cart newest-first, so adding
+ * more of something already in the cart moves it back to the top. Pass
+ * `details.addedAt` to keep an older time (the cart page's Undo does this so
+ * a restored item returns to the spot it was removed from).
+ *
+ * @param {object} [details]  Optional: { productName, variantLabel, sku, price, imageUrl, brandSlug, brandName, addedAt }
  */
 export function addToCart(variantId, quantity, details = {}) {
   const qty = toCount(quantity);
@@ -67,15 +72,19 @@ export function addToCart(variantId, quantity, details = {}) {
 
   const cart = readCart();
   const existing = cart.find(item => item.variantId === variantId);
+  const addedAt  = details.addedAt || new Date().toISOString();
 
   if (existing) {
     existing.quantity += qty;
+    existing.addedAt   = addedAt;
     // Refresh cached details if newer info is passed in (e.g. price changed)
     if (details.price        !== undefined) existing.price        = Number(details.price) || 0;
     if (details.productName)               existing.productName  = details.productName;
     if (details.variantLabel)              existing.variantLabel = details.variantLabel;
     if (details.sku)                       existing.sku          = details.sku;
     if (details.imageUrl)                  existing.imageUrl     = details.imageUrl;
+    if (details.brandSlug)                 existing.brandSlug    = details.brandSlug;
+    if (details.brandName)                 existing.brandName    = details.brandName;
   } else {
     cart.push({
       variantId,
@@ -85,7 +94,9 @@ export function addToCart(variantId, quantity, details = {}) {
       sku:          details.sku          || '',
       price:        Number(details.price) || 0,
       imageUrl:     details.imageUrl     || '',
-      addedAt:      new Date().toISOString(),
+      brandSlug:    details.brandSlug    || '',
+      brandName:    details.brandName    || '',
+      addedAt,
     });
   }
 
@@ -136,6 +147,16 @@ export function updateQuantity(variantId, quantity) {
  */
 export function getCart() {
   return readCart();
+}
+
+/**
+ * The cart for showing to the shopper: most recently added line first.
+ * Reversing first means lines with the same (or a missing) time still come
+ * out newest-first, because later lines in storage were added later.
+ */
+export function getCartNewestFirst() {
+  const time = (item) => Date.parse(item.addedAt) || 0;
+  return readCart().reverse().sort((a, b) => time(b) - time(a));
 }
 
 /**
