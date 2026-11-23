@@ -19,6 +19,7 @@
 // =============================================================================
 
 import crypto from 'crypto';
+import { markOrderPaid } from './_lib/orders.js';
 
 // Tell Vercel NOT to auto-parse the body — we need the raw bytes to verify
 // the HMAC signature byte-for-byte against what PayMongo sent.
@@ -181,8 +182,7 @@ export default async function handler(req, res) {
   let order;
   try {
     const orders = await supabase(
-      `orders?paymongo_payment_id=eq.${encodeURIComponent(linkId)}` +
-      `&select=id,payment_status,fulfillment_status,internal_notes,order_items(variant_id,quantity)`
+      `orders?paymongo_payment_id=eq.${encodeURIComponent(linkId)}&select=id,payment_status`
     );
     order = orders?.[0];
   } catch (err) {
@@ -196,68 +196,21 @@ export default async function handler(req, res) {
     return res.status(200).json({ received: true, error: 'order not found' });
   }
 
-  // ── 5. Idempotency: skip if already processed ──
-  // PayMongo may resend webhooks. If the order is already paid, decrementing
-  // inventory again would double-count.
+  // ── 5. Idempotency: PayMongo may resend webhooks ──
   if (order.payment_status === 'paid') {
     return res.status(200).json({ received: true, already_processed: true });
   }
 
+  // ── 6. Mark paid + take stock + email the receipt ──
+  // markOrderPaid() (api/_lib/orders.js) does the same job for Maya and COD,
+  // so the rules live in one place: stock is taken once, in one database
+  // call, and a paid-after-cancel order is flagged instead of shipped.
   try {
-    // ── 6. Mark the order as paid ──
-    // If staff already cancelled this order, the customer paid anyway (e.g.
-    // the payment page was still open). Record the payment but leave stock
-    // alone, and flag it so staff refund the customer.
-    const paidAfterCancel = order.fulfillment_status === 'cancelled';
-    const paymentId = extractPaymentId(event);
-
-    await supabase(`orders?id=eq.${order.id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        payment_status: 'paid',
-        ...(paymentId ? { provider_payment_id: paymentId } : {}),
-        ...(paidAfterCancel ? {
-          internal_notes: [order.internal_notes, '⚠ PAID AFTER THIS ORDER WAS CANCELLED — refund the customer (Orders → Return / refund).']
-            .filter(Boolean).join('\n'),
-        } : {}),
-      }),
-    });
-
-    if (paidAfterCancel) {
-      return res.status(200).json({ received: true, processed: true, paid_after_cancel: true });
-    }
-
-    // ── 7. Decrement online inventory for each line item ──
-    // We do this AFTER marking paid so re-running this block (in case of a
-    // retry that lost connection mid-loop) is gated by the payment_status
-    // idempotency check above.
-    for (const oi of (order.order_items || [])) {
-      // Fetch current quantity, then subtract.
-      // PostgREST doesn't support atomic decrement via REST, so we read-then-write.
-      // Race condition window is tiny for typical store traffic; for higher
-      // scale, define a Postgres function and call it via .rpc instead.
-      const rows = await supabase(
-        `inventory?variant_id=eq.${oi.variant_id}&channel=eq.online&select=id,quantity`
-      );
-
-      if (!rows?.[0]) {
-        console.warn(`Webhook: no online inventory row for variant ${oi.variant_id}`);
-        continue;
-      }
-
-      const newQty = Math.max(0, rows[0].quantity - oi.quantity);
-      await supabase(`inventory?id=eq.${rows[0].id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ quantity: newQty }),
-      });
-    }
-
+    await markOrderPaid(order.id, { providerPaymentId: extractPaymentId(event) });
     return res.status(200).json({ received: true, processed: true });
-
   } catch (err) {
     console.error('Webhook: processing failed', err);
-    // Return 500 so PayMongo retries. The idempotency check protects against
-    // double-processing if the retry succeeds.
+    // Return 500 so PayMongo retries. markOrderPaid is safe to run again.
     return res.status(500).json({ error: 'processing failed' });
   }
 }

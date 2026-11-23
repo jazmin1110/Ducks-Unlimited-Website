@@ -49,12 +49,12 @@ export const SECTION_SCHEMAS = {
     description: 'A full-screen image with a headline and a call-to-action button. Leave the image empty to show a solid brand-color background.',
     settings: [
       { id: 'image_url', type: 'image',    label: 'Background image' },
-      { id: 'eyebrow',   type: 'text',     label: 'Eyebrow (small label above headline)', default: '' },
-      { id: 'headline',  type: 'richtext', label: 'Headline (HTML allowed — use <br> for a line break)', default: '' },
+      { id: 'eyebrow',   type: 'text',     label: 'Small label above the headline', default: '' },
+      { id: 'headline',  type: 'richtext', label: 'Headline (to start a new line, type <br>)', default: '' },
       { id: 'sub',       type: 'textarea', label: 'Sub-headline', default: '' },
       { id: 'cta_text',  type: 'text',     label: 'Button label', default: 'Shop the Collection' },
-      { id: 'cta_link',  type: 'url',      label: 'Button link',  default: '/shop.html' },
-      { id: 'overlay',   type: 'range',    label: 'Image darken (%)', default: 35,
+      { id: 'cta_link',  type: 'url',      label: 'Page the button opens',  default: '/shop.html' },
+      { id: 'overlay',   type: 'range',    label: 'Darken the photo so the words are easier to read (%)', default: 35,
         min: 0, max: 80, step: 5, unit: '%' }
     ]
   },
@@ -69,7 +69,7 @@ export const SECTION_SCHEMAS = {
     name: 'Category Tiles',
     description: 'Large image tiles linking to collection pages. Add up to 4 tiles.',
     settings: [
-      { id: 'eyebrow', type: 'text', label: 'Eyebrow',         default: 'The Collection' },
+      { id: 'eyebrow', type: 'text', label: 'Small label above the heading',         default: 'The Collection' },
       { id: 'heading', type: 'text', label: 'Section heading', default: 'Made for everyday elegance' }
     ],
     blocks: {
@@ -81,7 +81,7 @@ export const SECTION_SCHEMAS = {
         { id: 'label',     type: 'text',  label: 'Small label (e.g. "For Him")', default: '' },
         { id: 'name',      type: 'text',  label: 'Tile name',    default: 'Category' },
         { id: 'cta_text',  type: 'text',  label: 'Link text (e.g. "Shop Men")', default: 'Shop Now' },
-        { id: 'link',      type: 'url',   label: 'Link target',  default: '/shop.html' }
+        { id: 'link',      type: 'url',   label: 'Page the tile opens',  default: '/shop.html' }
       ],
       defaults: {
         image_url: '',
@@ -104,19 +104,19 @@ export const SECTION_SCHEMAS = {
     name: 'Product Grid',
     description: 'A grid of products pulled live from your catalog.',
     settings: [
-      { id: 'eyebrow',      type: 'text', label: 'Eyebrow', default: 'Just In' },
+      { id: 'eyebrow',      type: 'text', label: 'Small label above the heading', default: 'Just In' },
       { id: 'heading',      type: 'text', label: 'Heading', default: 'New Arrivals' },
       { id: 'collection',   type: 'select', label: 'Which products?', default: 'new',
         options: [
-          // Only "newest" exists today. Add "sale" / "featured" here once the
-          // products table has columns to support them.
-          { value: 'new', label: 'Newest products' }
+          { value: 'new',      label: 'Newest products' },
+          // "Featured" = products ticked "Feature on homepage" in Admin → Products
+          { value: 'featured', label: 'Featured (hand-picked in Products)' }
         ]
       },
-      { id: 'max_products', type: 'range', label: 'Max products', default: 8,
+      { id: 'max_products', type: 'range', label: 'How many products to show', default: 8,
         min: 2, max: 16, step: 1 },
       { id: 'cta_text',     type: 'text', label: 'Button label (optional)', default: 'Shop All New' },
-      { id: 'cta_link',     type: 'url',  label: 'Button link',  default: '/shop.html' }
+      { id: 'cta_link',     type: 'url',  label: 'Page the button opens',  default: '/shop.html' }
     ]
   },
 
@@ -131,11 +131,11 @@ export const SECTION_SCHEMAS = {
     settings: [
       { id: 'image_url', type: 'image',    label: 'Image' },
       { id: 'image_alt', type: 'text',     label: 'Image description (for screen readers)', default: '' },
-      { id: 'eyebrow',   type: 'text',     label: 'Eyebrow',  default: '' },
+      { id: 'eyebrow',   type: 'text',     label: 'Small label above the heading',  default: '' },
       { id: 'headline',  type: 'text',     label: 'Headline', default: '' },
-      { id: 'body',      type: 'richtext', label: 'Body (HTML allowed — wrap paragraphs in <p>…</p>)', default: '' },
+      { id: 'body',      type: 'richtext', label: 'Text (put each paragraph between <p> and </p>)', default: '' },
       { id: 'cta_text',  type: 'text',     label: 'Button label', default: '' },
-      { id: 'cta_link',  type: 'url',      label: 'Button link',  default: '' },
+      { id: 'cta_link',  type: 'url',      label: 'Page the button opens',  default: '' },
       { id: 'layout',    type: 'select',   label: 'Image side', default: 'image-left',
         options: [
           { value: 'image-left',  label: 'Image left, text right' },
@@ -155,7 +155,7 @@ export const SECTION_SCHEMAS = {
     description: 'A simple text block — heading + paragraph.',
     settings: [
       { id: 'heading', type: 'text',     label: 'Heading', default: '' },
-      { id: 'body',    type: 'richtext', label: 'Body (HTML allowed)', default: '' },
+      { id: 'body',    type: 'richtext', label: 'Text (put each paragraph between <p> and </p>)', default: '' },
       { id: 'align',   type: 'select',   label: 'Text alignment', default: 'center',
         options: [
           { value: 'left',   label: 'Left'   },

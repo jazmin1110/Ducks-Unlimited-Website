@@ -131,7 +131,7 @@
 
   <main class="admin-main">
     <h1 class="admin-h1">Lookbooks</h1>
-    <p class="admin-sub">Editorial collections shown on /lookbooks/. Add scenes + click-to-place hotspots.</p>
+    <p class="admin-sub">Photo stories shown on the Lookbook page. Add photos (scenes), then click on a photo to tag the products in it.</p>
 
     <!-- LIST + CREATE -->
     <section class="admin-panel" id="listPanel">
@@ -149,18 +149,18 @@
       <form id="newLookbookForm">
         <div class="form-row cols-2">
           <div class="field"><label class="field-label" for="title">Title *</label><input class="input" id="title" name="title" required></div>
-          <div class="field"><label class="field-label" for="slug">Slug *</label><input class="input" id="slug" name="slug" required placeholder="holiday-2026"></div>
+          <div class="field"><label class="field-label" for="slug">Web address name * <span style="text-transform:none;letter-spacing:0;font-weight:400;">(lowercase, dashes instead of spaces)</span></label><input class="input" id="slug" name="slug" required placeholder="holiday-2026"></div>
         </div>
         <div class="form-row">
           <div class="field"><label class="field-label" for="subtitle">Subtitle</label><input class="input" id="subtitle" name="subtitle"></div>
         </div>
         <div class="form-row">
-          <div class="field"><label class="field-label" for="hero_image">Hero Image URL *</label><input class="input" id="hero_image" name="hero_image" required></div>
+          <div class="field"><label class="field-label" for="hero_image">Cover photo (paste its web address) *</label><input class="input" id="hero_image" name="hero_image" required></div>
         </div>
         <div class="form-row">
           <div class="field"><label class="field-label" for="intro">Intro paragraph</label><textarea class="textarea" id="intro" name="intro" rows="3"></textarea></div>
         </div>
-        <p class="help-text">After creating, click "Edit" in the table above to add scenes + hotspots, then mark as published.</p>
+        <p class="help-text">After creating, click "Edit" in the list above to add photos and tag products, then set it to published.</p>
         <div class="actions-row">
           <button type="submit" class="btn btn-primary">Create Draft</button>
         </div>
@@ -175,13 +175,13 @@
         <input type="hidden" id="editorId">
         <div class="form-row cols-2">
           <div class="field"><label class="field-label" for="e_title">Title *</label><input class="input" id="e_title" required></div>
-          <div class="field"><label class="field-label" for="e_slug">Slug *</label><input class="input" id="e_slug" required></div>
+          <div class="field"><label class="field-label" for="e_slug">Web address name *</label><input class="input" id="e_slug" required></div>
         </div>
         <div class="form-row">
           <div class="field"><label class="field-label" for="e_subtitle">Subtitle</label><input class="input" id="e_subtitle"></div>
         </div>
         <div class="form-row">
-          <div class="field"><label class="field-label" for="e_hero">Hero Image URL *</label><input class="input" id="e_hero" required></div>
+          <div class="field"><label class="field-label" for="e_hero">Cover photo (paste its web address) *</label><input class="input" id="e_hero" required></div>
         </div>
         <div class="form-row">
           <div class="field"><label class="field-label" for="e_intro">Intro paragraph</label><textarea class="textarea" id="e_intro" rows="3"></textarea></div>
@@ -456,7 +456,7 @@
                     data-hotspot-delete="${escapeHtml(h.id)}">${i + 1}</span>
             `).join('')}
           </div>
-          <p class="help-text">Click anywhere on the image to add a hotspot. Click an existing dot to remove it.</p>
+          <p class="help-text">Click anywhere on the photo to tag a product there. Click a dot to remove it.</p>
         </div>
       `).join('');
 

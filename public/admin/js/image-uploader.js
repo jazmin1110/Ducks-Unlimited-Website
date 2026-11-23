@@ -385,3 +385,33 @@ function ensureStylesInjected() {
   `;
   document.head.appendChild(style);
 }
+
+
+// =============================================================================
+// shrinkImage(file) — resize a photo in the browser before uploading
+// =============================================================================
+// Phone photos are often 4000px and 5 MB. Customers never need more than
+// ~1600px, so we draw the image onto a canvas at that size and export WebP
+// (about 10× smaller). Returns a File; falls back to the original if the
+// browser can't do it (very old browsers) or the file is already small.
+export async function shrinkImage(file, { maxSize = 1600, quality = 0.86 } = {}) {
+  if (!file.type.startsWith('image/')) return file;
+  if (file.size < 300 * 1024 && file.type === 'image/webp') return file;
+
+  const bitmap = await createImageBitmap(file).catch(() => null);
+  if (!bitmap) return file;
+
+  const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
+  const w = Math.round(bitmap.width * scale);
+  const h = Math.round(bitmap.height * scale);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close?.();
+
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', quality));
+  if (!blob || blob.size >= file.size) return file;   // no gain → keep the original
+  return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' });
+}

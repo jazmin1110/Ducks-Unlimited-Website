@@ -60,7 +60,7 @@
     import { getCurrentUser, getAccessToken } from '/js/auth.js';
     import { removeFromCart } from '/js/cart.js';
     import {
-      escapeHtml, formatPrice, renderTimeline, renderOrderItems, wireCopyButtons,
+      escapeHtml, formatPrice, renderTimeline, renderOrderItems, renderTotals, wireCopyButtons,
     } from '/js/account.js';
 
     const orderNumber = new URLSearchParams(location.search).get('order') || '';
@@ -96,7 +96,9 @@
     // (Only lines from this order — anything added since stays put.)
     let bagCleared = false;
     function clearPaidItemsFromBag(o) {
-      if (bagCleared || o.paymentStatus !== 'paid') return;
+      // COD orders are confirmed the moment they're placed
+      const confirmed = o.paymentStatus === 'paid' || o.paymentMethod === 'cod';
+      if (bagCleared || !confirmed) return;
       if (lastOrder?.orderNumber !== orderNumber) return;
       (lastOrder.variantIds || []).forEach(id => removeFromCart(id));
       bagCleared = true;
@@ -104,7 +106,6 @@
 
     function render(o) {
       clearPaidItemsFromBag(o);
-      const subtotal = o.items.reduce((sum, it) => sum + it.price * it.quantity, 0);
 
       if (o.firstName) document.getElementById('heading').textContent = `Thank you, ${o.firstName}`;
 
@@ -129,16 +130,26 @@
         <div class="panel">
           <h2 class="panel__title" style="margin-bottom:0.5rem;">Order summary</h2>
           ${renderOrderItems(o.items)}
-          <div class="order-totals">
-            <div class="order-totals__row"><span>Subtotal</span><span>${formatPrice(subtotal)}</span></div>
-            <div class="order-totals__row"><span>Shipping</span><span>${formatPrice(Math.max(0, o.total - subtotal))}</span></div>
-            <div class="order-totals__row order-totals__row--total"><span>Total</span><span>${formatPrice(o.total)}</span></div>
-          </div>
+          ${renderTotals(o)}
         </div>
         <div class="panel">
-          <dl class="kv"><div><dt>Shipping to</dt><dd>${escapeHtml(o.shipTo)}</dd></div></dl>
+          <dl class="kv">
+            <div><dt>${o.shippingMethod === 'pickup' ? 'Pick up at' : 'Shipping to'}</dt><dd>${escapeHtml(o.pickupStore ? `${o.pickupStore.name}, ${o.pickupStore.address}, ${o.pickupStore.city}` : o.shipTo)}</dd></div>
+            ${o.paymentMethod === 'cod' ? `<div><dt>Payment</dt><dd>${formatPrice(o.total)} in cash ${o.shippingMethod === 'pickup' ? 'at the store' : 'to the courier'}</dd></div>` : ''}
+          </dl>
         </div>
+        ${o.paymentStatus === 'pending' && o.paymentMethod !== 'cod' ? `
+        <div class="panel" style="text-align:center;">
+          <p class="panel__text">Paid already but it still says awaiting payment? It can take a minute to come through.</p>
+          <button type="button" class="btn btn-outline-dark btn-sm" id="recheckBtn">Check again</button>
+        </div>` : ''}
       `;
+      document.getElementById('recheckBtn')?.addEventListener('click', async (e) => {
+        e.target.disabled = true; e.target.textContent = 'Checking…';
+        await verifyMaya();
+        const o2 = await fetchOrder();
+        if (o2) render(o2);
+      });
     }
 
     // Maya sends shoppers back with ?provider=maya. Maya has no instant
@@ -160,14 +171,15 @@
       if (order) render(order);
 
       // Payment confirmation can take a few seconds after the redirect.
-      // Re-check a few times so the page flips from "Awaiting payment" to "Paid".
-      let tries = 0;
-      while (order && order.paymentStatus === 'pending' && tries < 6) {
-        await new Promise(r => setTimeout(r, 3000));
+      // Re-check quickly at first, then slowly for a few minutes, so the page
+      // flips from "Awaiting payment" to "Paid" on its own.
+      const waits = [3000, 3000, 3000, 5000, 5000, 10000, 15000, 20000, 30000, 30000, 60000];
+      for (const ms of waits) {
+        if (!order || order.paymentStatus !== 'pending' || order.paymentMethod === 'cod') break;
+        await new Promise(r => setTimeout(r, ms));
         await verifyMaya();
         order = await fetchOrder();
         if (order) render(order);
-        tries++;
       }
     }
   </script>

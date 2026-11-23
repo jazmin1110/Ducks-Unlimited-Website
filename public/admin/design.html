@@ -121,13 +121,16 @@
       color: var(--color-text);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
+    /* The small line under each section name shows that section's own
+       headline, in normal lettering so it's easy to read. */
     .section-list__name small {
       display: block;
-      font-size: .7rem;
+      font-size: .75rem;
       color: var(--color-text-muted);
-      letter-spacing: .08em;
-      text-transform: uppercase;
       margin-top: .15rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .section-list__icon-btn {
       background: none;

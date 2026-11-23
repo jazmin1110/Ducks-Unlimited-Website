@@ -91,6 +91,15 @@
       border-color: #1B4D2E;
     }
 
+    .customer-note { background: #fff8e6; border-left: 3px solid #C9A84C; padding: 0.6rem 0.8rem; font-size: 0.9rem; white-space: pre-wrap; }
+    .list-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.75rem; }
+    .list-actions__count { font-size: 0.8rem; color: #777; margin-right: auto; }
+    @media (max-width: 640px) {
+      /* Phones: hide the Date and Items columns so the table fits */
+      .orders-list th:nth-child(2), .orders-list td:nth-child(2),
+      .orders-list th:nth-child(4), .orders-list td:nth-child(4) { display: none; }
+    }
+
     /* ── Orders table ── */
     .table-wrap {
       background: #fff;
@@ -780,6 +789,7 @@
       <button type="button" class="quick-tab is-active" data-show="">All orders</button>
       <button type="button" class="quick-tab" data-show="to-pack">To pack <span class="tab-count" data-count="to-pack"></span></button>
       <button type="button" class="quick-tab" data-show="to-ship">To ship <span class="tab-count" data-count="to-ship"></span></button>
+      <button type="button" class="quick-tab" data-show="cod">COD <span class="tab-count" data-count="cod"></span></button>
       <button type="button" class="quick-tab" data-show="unpaid">Not paid yet <span class="tab-count" data-count="unpaid"></span></button>
       <button type="button" class="quick-tab" data-show="done">Delivered</button>
     </div>
@@ -804,6 +814,7 @@
           <option value="pending">Pending</option>
           <option value="paid">Paid</option>
           <option value="failed">Failed</option>
+          <option value="expired">Expired (never paid)</option>
         </select>
       </div>
 
@@ -832,6 +843,13 @@
     </div>
 
     <p class="list-note" id="brandNote"></p>
+
+    <!-- ── Actions on the list you're looking at ── -->
+    <div class="list-actions">
+      <span class="list-actions__count" id="listCount"></span>
+      <button type="button" class="btn-print" id="printAllBtn" title="One packing slip per order in this list">🖨 Print packing slips for this list</button>
+      <button type="button" class="btn-print" id="exportCsvBtn" title="Download this list as a spreadsheet">⬇ Export CSV</button>
+    </div>
 
     <!-- ── Orders table ── -->
     <div class="table-wrap">
@@ -916,7 +934,16 @@
       pending: 'Pending',
       paid:    'Paid',
       failed:  'Failed',
+      expired: 'Expired',
     };
+    // What the Payment badge should say, given how they chose to pay
+    function paymentLabel(o) {
+      const status = o.payment_status ?? o.paymentStatus;
+      const method = o.payment_method ?? o.paymentMethod;
+      if (method === 'cod' && status === 'pending') return 'COD — unpaid';
+      if (method === 'cod' && status === 'paid')    return 'COD — paid';
+      return PAYMENT_LABELS[status] ?? status;
+    }
 
     const FULFILLMENT_LABELS = {
       pending:   'Pending',
@@ -944,10 +971,13 @@
     let quickTab = new URLSearchParams(window.location.search).get('show') ?? '';
 
     // What each quick tab means, as a yes/no test on one order
+    // COD orders are ready to pack as soon as they're placed (cash comes later)
+    const readyToWork = o => o.paymentStatus === 'paid' || (o.paymentMethod === 'cod' && o.paymentStatus === 'pending');
     const QUICK_TABS = {
-      'to-pack': o => o.paymentStatus === 'paid' && o.fulfillmentStatus === 'pending',
-      'to-ship': o => o.paymentStatus === 'paid' && o.fulfillmentStatus === 'packed',
-      'unpaid':  o => o.paymentStatus !== 'paid' && o.fulfillmentStatus !== 'cancelled',
+      'to-pack': o => readyToWork(o) && o.fulfillmentStatus === 'pending',
+      'to-ship': o => readyToWork(o) && o.fulfillmentStatus === 'packed',
+      'cod':     o => o.paymentMethod === 'cod' && o.paymentStatus !== 'paid' && o.fulfillmentStatus !== 'cancelled',
+      'unpaid':  o => o.paymentMethod !== 'cod' && o.paymentStatus === 'pending' && o.fulfillmentStatus !== 'cancelled',
       'done':    o => o.fulfillmentStatus === 'delivered',
     };
 
@@ -1011,9 +1041,9 @@
             .from('orders')
             .select(`
               id, order_number, customer_name, customer_email, customer_phone, total_amount,
-              payment_status, fulfillment_status, created_at, refunded_amount,
+              payment_status, payment_method, fulfillment_status, shipping_method, tracking_number, created_at, refunded_amount,
               brands!inner ( slug, name ),
-              order_items ( count )
+              order_items ( quantity, variants ( sku ) )
             `)
             .order('created_at', { ascending: false })
             .order('id');
@@ -1038,9 +1068,14 @@
         customerPhone:      o.customer_phone ?? '',
         totalAmount:        Number(o.total_amount),
         paymentStatus:      o.payment_status,
+        paymentMethod:      o.payment_method || 'maya',
         fulfillmentStatus:  o.fulfillment_status,
+        shippingMethod:     o.shipping_method || 'delivery',
+        trackingNumber:     o.tracking_number,
+        brandName:          o.brands?.name ?? '',
         createdAt:          o.created_at,
-        itemCount:          o.order_items?.[0]?.count ?? 0,
+        itemCount:          (o.order_items || []).reduce((n, it) => n + (it.quantity || 0), 0),
+        skus:               (o.order_items || []).map(it => it.variants?.sku).filter(Boolean).join(' '),
         refundedAmount:     Number(o.refunded_amount ?? 0),
       }));
 
@@ -1066,7 +1101,7 @@
 
         // Search matches order number, customer name, email or phone (case-insensitive)
         if (q) {
-          const haystack = [o.orderNumber, o.customerName, o.customerEmail, o.customerPhone]
+          const haystack = [o.orderNumber, o.customerName, o.customerEmail, o.customerPhone, o.skus, o.trackingNumber]
             .join(' ').toLowerCase();
           if (!haystack.includes(q)) return false;
         }
@@ -1083,6 +1118,7 @@
         return true;
       });
 
+      document.getElementById('listCount').textContent = `${filteredView.length} order${filteredView.length === 1 ? '' : 's'} in this list`;
       renderTable();
     }
 
@@ -1136,13 +1172,15 @@
             <div class="cell-date-main">${dt.main}</div>
             <div class="cell-date-sub">${dt.sub}</div>
           </td>
-          <td><span class="cell-customer">${escapeHtml(o.customerName)}</span></td>
-          <td><span class="cell-items">${o.itemCount} item${o.itemCount === 1 ? '' : 's'}</span></td>
+          <td><span class="cell-customer">${escapeHtml(o.customerName)}</span>${!adminBrandFilter() ? `<div class="cell-date-sub">${escapeHtml(o.brandName)}</div>` : ''}</td>
+          <td><span class="cell-items">${o.itemCount} item${o.itemCount === 1 ? '' : 's'}</span>${o.shippingMethod === 'pickup' ? '<div class="cell-date-sub">Pickup</div>' : ''}</td>
           <td class="col-total">${formatPrice(o.totalAmount)}</td>
           <td>
+            <!-- Each pill says what it is about. Before, an unpaid new order
+                 showed "PENDING / PENDING" with no way to tell which was which. -->
             <div class="badge-stack">
-              <span class="status-badge pay-${o.paymentStatus}">${PAYMENT_LABELS[o.paymentStatus] ?? escapeHtml(o.paymentStatus)}</span>
-              <span class="status-badge ful-${o.fulfillmentStatus}">${FULFILLMENT_LABELS[o.fulfillmentStatus] ?? escapeHtml(o.fulfillmentStatus)}</span>
+              <span class="status-badge pay-${o.paymentStatus}">Payment: ${escapeHtml(paymentLabel(o))}</span>
+              <span class="status-badge ful-${o.fulfillmentStatus}">Order: ${FULFILLMENT_LABELS[o.fulfillmentStatus] ?? escapeHtml(o.fulfillmentStatus)}</span>
               ${o.refundedAmount > 0 ? `<span class="status-badge refund-badge">Refunded ${formatPrice(o.refundedAmount)}</span>` : ''}
             </div>
           </td>
@@ -1213,9 +1251,12 @@
         .from('orders')
         .select(`
           id, order_number, customer_name, customer_email, customer_phone, shipping_address,
-          total_amount, payment_status, fulfillment_status, paymongo_payment_id, payment_provider, payment_reference,
-          tracking_number, internal_notes, created_at,
-          refunded_amount, cancelled_at, cancel_reason, paid_at,
+          total_amount, subtotal_amount, shipping_fee, discount_amount, discount_label,
+          payment_status, payment_method, fulfillment_status, shipping_method, stock_deducted,
+          paymongo_payment_id, payment_provider, payment_reference,
+          tracking_number, internal_notes, customer_notes, created_at,
+          refunded_amount, cancelled_at, cancel_reason, paid_at, cod_paid_at,
+          brands ( name ), stores ( name, address, city ),
           order_refunds ( kind, amount, method, reason, note, provider_refund_id, items, created_by_email, created_at ),
           order_items (
             id, variant_id, quantity, price_at_purchase,
@@ -1276,108 +1317,36 @@
       const shippingFee = Math.max(0, Number(order.total_amount) - itemsSubtotal);
 
       // ── Render the full panel body ──
+      // Order of sections = order of work: status first (that's 90% of what
+      // staff do here), then what to pack, who it's for, money, notes.
+      const isCod    = order.payment_method === 'cod';
+      const isPickup = order.shipping_method === 'pickup';
+      const discount = Number(order.discount_amount || 0);
+      const canWork  = order.payment_status === 'paid' || isCod;
+
       panelBody.innerHTML = `
-        <!-- Order summary block at the top -->
         <div class="order-summary">
           <div class="summary-row-top">
             <span class="order-number">${escapeHtml(order.order_number)}</span>
             <span class="order-date">${dateStr}</span>
           </div>
           <div class="summary-badges">
-            <span class="status-badge pay-${order.payment_status}">
-              Payment: ${PAYMENT_LABELS[order.payment_status]}
-            </span>
-            <span class="status-badge ful-${order.fulfillment_status}">
-              Fulfillment: ${FULFILLMENT_LABELS[order.fulfillment_status]}
-            </span>
+            <span class="status-badge pay-${order.payment_status}">${escapeHtml(paymentLabel(order))}</span>
+            <span class="status-badge ful-${order.fulfillment_status}">${FULFILLMENT_LABELS[order.fulfillment_status]}</span>
+            ${isPickup ? '<span class="status-badge">Pickup</span>' : ''}
+            ${order.brands?.name ? `<span class="status-badge">${escapeHtml(order.brands.name)}</span>` : ''}
           </div>
           <div class="summary-total">
-            <span class="summary-total-label">Order Total</span>
+            <span class="summary-total-label">Order Total${isCod ? ' (cash)' : ''}</span>
             <span class="summary-total-value">${formatPrice(order.total_amount)}</span>
           </div>
         </div>
 
-        <!-- Customer info -->
+        ${order.customer_notes ? `
         <section class="order-section">
-          <h3 class="section-heading">Customer</h3>
-          <div class="info-row">
-            <span class="info-label">Name</span>
-            <span class="info-value">${escapeHtml(order.customer_name)}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Email</span>
-            <span class="info-value">
-              <a href="mailto:${escapeHtml(order.customer_email)}">${escapeHtml(order.customer_email)}</a>
-            </span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Phone</span>
-            <span class="info-value">
-              ${order.customer_phone
-                ? `<a href="tel:${escapeHtml(order.customer_phone)}">${escapeHtml(order.customer_phone)}</a>`
-                : '<span style="color:#aaa;">—</span>'}
-            </span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Shipping</span>
-            <span class="info-value">${escapeHtml(order.shipping_address)}</span>
-          </div>
-        </section>
-
-        <!-- Line items -->
-        <section class="order-section">
-          <h3 class="section-heading">Items</h3>
-          <table class="items-table">
-            <tbody>${itemRows || '<tr><td colspan="3" style="color:#aaa;">No items.</td></tr>'}</tbody>
-          </table>
-          <!-- Items add up to the subtotal; the difference to the total is the
-               shipping fee charged at checkout. -->
-          <div class="items-subline">
-            <span>Subtotal</span>
-            <span>${formatPrice(itemsSubtotal)}</span>
-          </div>
-          <div class="items-subline">
-            <span>Shipping</span>
-            <span>${shippingFee > 0 ? formatPrice(shippingFee) : 'Free'}</span>
-          </div>
-          <div class="items-total">
-            <span>Total</span>
-            <span>${formatPrice(order.total_amount)}</span>
-          </div>
-          <button type="button" class="btn-print" id="printSlipBtn">🖨 Print packing slip</button>
-        </section>
-
-        <!-- Payment info (read-only — payment_status is set automatically once Maya confirms payment) -->
-        <section class="order-section">
-          <h3 class="section-heading">Payment</h3>
-          <div class="info-row">
-            <span class="info-label">Status</span>
-            <span class="info-value">
-              <span class="status-badge pay-${order.payment_status}">${PAYMENT_LABELS[order.payment_status]}</span>
-            </span>
-          </div>
-          <div class="info-row">
-            <!-- Shows which company took the payment and its reference id
-                 (older orders only have paymongo_payment_id) -->
-            <span class="info-label">${order.payment_provider === 'paymongo' || (!order.payment_provider && order.paymongo_payment_id) ? 'PayMongo' : 'Maya'}&nbsp;ID</span>
-            <span class="info-value">
-              ${(order.payment_reference || order.paymongo_payment_id)
-                ? `<span class="paymongo-id">${escapeHtml(order.payment_reference || order.paymongo_payment_id)}</span>`
-                : '<span class="paymongo-id paymongo-id-empty">— not yet recorded —</span>'}
-            </span>
-          </div>
-          ${isPayMongoOrder(order) ? '' : `
-          <div class="info-row">
-            <!-- Maya calls our order id the "Request Reference Number". Search
-                 for it in Maya Manager to find this payment. -->
-            <span class="info-label">Maya ref #</span>
-            <span class="info-value">
-              <span class="paymongo-id">${escapeHtml(order.id)}</span>
-              <button type="button" class="btn-print" style="margin:0 0 0 0.4rem;padding:0.15rem 0.5rem;font-size:0.75rem;"
-                      data-copy="${escapeHtml(order.id)}">Copy</button>
-            </span>
-          </div>`}
-        </section>
+          <h3 class="section-heading">Customer's note</h3>
+          <div class="customer-note">${escapeHtml(order.customer_notes)}</div>
+        </section>` : ''}
 
         <!-- Editable: fulfillment status + tracking number -->
         <section class="order-section">
@@ -1388,37 +1357,81 @@
               ${order.fulfillment_status === 'cancelled' ? '<option value="cancelled" selected>Cancelled</option>' : ''}
               <option value="pending"   ${order.fulfillment_status === 'pending'   ? 'selected' : ''}>Pending</option>
               <option value="packed"    ${order.fulfillment_status === 'packed'    ? 'selected' : ''}>Packed</option>
-              <option value="shipped"   ${order.fulfillment_status === 'shipped'   ? 'selected' : ''}>Shipped</option>
-              <option value="delivered" ${order.fulfillment_status === 'delivered' ? 'selected' : ''}>Delivered</option>
+              <option value="shipped"   ${order.fulfillment_status === 'shipped'   ? 'selected' : ''}>${isPickup ? 'Ready for pickup' : 'Shipped'}</option>
+              <option value="delivered" ${order.fulfillment_status === 'delivered' ? 'selected' : ''}>${isPickup ? 'Picked up' : 'Delivered'}</option>
             </select>
+            <div class="help" style="font-size:0.75rem;color:#999;margin-top:0.3rem;">Statuses only move forward. Marking it ${isPickup ? '"Ready for pickup"' : '"Shipped"'} emails the customer.</div>
           </div>
+          ${isPickup ? '' : `
           <div class="field">
             <label for="trackingInput">Tracking Number</label>
-            <input
-              type="text"
-              id="trackingInput"
-              placeholder="e.g. JNT1234567890"
-              value="${escapeHtml(order.tracking_number ?? '')}"
-            />
-            <div class="tracking-warning" id="trackingWarning">
-              Please enter a tracking number — this order is marked as shipped.
-            </div>
-            ${order.payment_status !== 'paid' ? `
-              <div class="unpaid-warning">
-                ⚠ This order is <strong>not paid</strong>. Do not pack or ship it until
-                the payment shows as Paid.
-              </div>` : ''}
+            <input type="text" id="trackingInput" placeholder="e.g. JNT1234567890" value="${escapeHtml(order.tracking_number ?? '')}" />
+            <div class="tracking-warning" id="trackingWarning">Please enter a tracking number — this order is marked as shipped.</div>
+          </div>`}
+          ${!canWork ? `
+            <div class="unpaid-warning">
+              ⚠ This order is <strong>not paid</strong>. Do not pack or ship it until the payment shows as Paid.
+            </div>` : ''}
+          ${isCod && order.payment_status !== 'paid' ? `
+            <div class="unpaid-warning" style="background:#fff8e6;border-left-color:#C9A84C;">
+              💵 <strong>Cash on ${isPickup ? 'pickup' : 'delivery'}</strong> — collect ${formatPrice(order.total_amount)}${isPickup ? ' at the store' : ' from the customer (or confirm with the courier)'}, then press
+              <button type="button" class="btn-print" id="codPaidBtn" style="margin:0 0 0 0.3rem;">Cash received</button>
+            </div>` : ''}
+        </section>
+
+        <!-- Line items -->
+        <section class="order-section">
+          <h3 class="section-heading">Items to ${isPickup ? 'prepare' : 'pack'}</h3>
+          <table class="items-table">
+            <tbody>${itemRows || '<tr><td colspan="3" style="color:#aaa;">No items.</td></tr>'}</tbody>
+          </table>
+          <div class="items-subline"><span>Subtotal</span><span>${formatPrice(order.subtotal_amount ?? itemsSubtotal)}</span></div>
+          ${discount > 0 ? `<div class="items-subline"><span>${escapeHtml(order.discount_label || 'Discount')}</span><span>− ${formatPrice(discount)}</span></div>` : ''}
+          <div class="items-subline"><span>${isPickup ? 'Pickup' : 'Shipping'}</span><span>${shippingFee > 0 ? formatPrice(shippingFee) : 'Free'}</span></div>
+          <div class="items-total"><span>Total</span><span>${formatPrice(order.total_amount)}</span></div>
+          <button type="button" class="btn-print" id="printSlipBtn">🖨 Print packing slip</button>
+        </section>
+
+        <!-- Customer info -->
+        <section class="order-section">
+          <h3 class="section-heading">Customer</h3>
+          <div class="info-row"><span class="info-label">Name</span><span class="info-value">${escapeHtml(order.customer_name)}</span></div>
+          <div class="info-row"><span class="info-label">Email</span><span class="info-value"><a href="mailto:${escapeHtml(order.customer_email)}">${escapeHtml(order.customer_email)}</a></span></div>
+          <div class="info-row"><span class="info-label">Phone</span><span class="info-value">${order.customer_phone ? `<a href="tel:${escapeHtml(order.customer_phone)}">${escapeHtml(order.customer_phone)}</a>` : '<span style="color:#aaa;">—</span>'}</span></div>
+          <div class="info-row"><span class="info-label">${isPickup ? 'Pick up at' : 'Shipping'}</span><span class="info-value">${escapeHtml(isPickup && order.stores ? `${order.stores.name} — ${order.stores.address}, ${order.stores.city}` : order.shipping_address)}</span></div>
+        </section>
+
+        <!-- Payment info (read-only — payment_status is set automatically once Maya confirms payment) -->
+        <section class="order-section">
+          <h3 class="section-heading">Payment</h3>
+          <div class="info-row">
+            <span class="info-label">Status</span>
+            <span class="info-value"><span class="status-badge pay-${order.payment_status}">${escapeHtml(paymentLabel(order))}</span>${order.cod_paid_at ? ` <span style="color:#999;font-size:0.8rem;">cash received ${escapeHtml(new Date(order.cod_paid_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }))}</span>` : ''}</span>
           </div>
+          ${isCod ? '' : `
+          <div class="info-row">
+            <span class="info-label">${isPayMongoOrder(order) ? 'PayMongo' : 'Maya'}&nbsp;ID</span>
+            <span class="info-value">
+              ${(order.payment_reference || order.paymongo_payment_id)
+                ? `<span class="paymongo-id">${escapeHtml(order.payment_reference || order.paymongo_payment_id)}</span>`
+                : '<span class="paymongo-id paymongo-id-empty">— not yet recorded —</span>'}
+            </span>
+          </div>
+          ${isPayMongoOrder(order) ? '' : `
+          <div class="info-row">
+            <span class="info-label">Maya ref #</span>
+            <span class="info-value">
+              <span class="paymongo-id">${escapeHtml(order.id)}</span>
+              <button type="button" class="btn-print" style="margin:0 0 0 0.4rem;padding:0.15rem 0.5rem;font-size:0.75rem;" data-copy="${escapeHtml(order.id)}">Copy</button>
+            </span>
+          </div>`}`}
         </section>
 
         <!-- Editable: internal staff notes -->
         <section class="order-section">
           <h3 class="section-heading">Internal Notes</h3>
           <div class="field">
-            <textarea
-              id="notesInput"
-              placeholder="Notes for staff only — e.g. 'called customer to confirm address'…"
-            >${escapeHtml(order.internal_notes ?? '')}</textarea>
+            <textarea id="notesInput" placeholder="Notes for staff only — e.g. 'called customer to confirm address'…">${escapeHtml(order.internal_notes ?? '')}</textarea>
           </div>
         </section>
 
@@ -1432,31 +1445,36 @@
       renderRefundSection(order);
 
       // ── Wire up dynamic behavior on the rendered form ──
-      const fulSelect   = document.getElementById('fulfillmentSelect');
-      const trackingIn  = document.getElementById('trackingInput');
+      const fulSelect    = document.getElementById('fulfillmentSelect');
+      const trackingIn   = document.getElementById('trackingInput');      // null for pickup orders
       const trackingWarn = document.getElementById('trackingWarning');
 
       // When fulfillment is set to "shipped" and tracking is empty, show
       // a warning + autofocus the tracking field (the "prompt").
       function updateTrackingWarning() {
-        const needsTracking = fulSelect.value === 'shipped' && !trackingIn.value.trim();
-        trackingWarn.classList.toggle('visible', needsTracking);
+        if (!trackingIn) return;
+        trackingWarn.classList.toggle('visible', fulSelect.value === 'shipped' && !trackingIn.value.trim());
       }
-
       fulSelect.addEventListener('change', () => {
-        // If they just switched to shipped without tracking, focus the field
-        if (fulSelect.value === 'shipped' && !trackingIn.value.trim()) {
-          trackingIn.focus();
-        }
+        if (trackingIn && fulSelect.value === 'shipped' && !trackingIn.value.trim()) trackingIn.focus();
         updateTrackingWarning();
       });
-
-      trackingIn.addEventListener('input', updateTrackingWarning);
-
-      // Initial check (in case the order is already shipped with no tracking yet)
+      trackingIn?.addEventListener('input', updateTrackingWarning);
       updateTrackingWarning();
 
       document.getElementById('printSlipBtn').addEventListener('click', () => printPackingSlip(order));
+
+      // COD: cash received → mark paid
+      document.getElementById('codPaidBtn')?.addEventListener('click', async (e) => {
+        if (!window.confirm(`Mark ${order.order_number} as paid in cash (${formatPrice(order.total_amount)})?`)) return;
+        e.target.disabled = true;
+        try {
+          await callAdminOrder({ orderId: order.id, action: 'cod_paid' });
+          showToast('Marked as paid.');
+          await openOrderPanel(order.id);
+          loadOrders();
+        } catch (err) { window.alert(err.message); e.target.disabled = false; }
+      });
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -1709,6 +1727,20 @@
       });
     }
 
+    // One call to /api/admin-order (status, cod_paid, cancel, refund)
+    async function callAdminOrder(payload) {
+      // Fresh token, in case the page has been open for a long time
+      const { data: { session: s } } = await supabase.auth.getSession();
+      const res = await fetch('/api/admin-order', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s?.access_token}` },
+        body:    JSON.stringify(payload),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || 'Something went wrong. Please try again.');
+      return body;
+    }
+
     // Send the cancel/refund to the server, then reload the order
     async function submitOrderAction(order, payload, confirmText) {
       const slot = document.getElementById('refundFormSlot');
@@ -1722,16 +1754,7 @@
       btn.textContent = 'Working…';
 
       try {
-        // Fresh token, in case the page has been open for a long time
-        const { data: { session: s } } = await supabase.auth.getSession();
-        const res = await fetch('/api/admin-order', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s?.access_token}` },
-          body:    JSON.stringify({ orderId: order.id, ...payload }),
-        });
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(body.error || 'Something went wrong. Please try again.');
-
+        await callAdminOrder({ orderId: order.id, ...payload });
         showToast(payload.action === 'cancel' ? 'Order cancelled.' : 'Return / refund saved.');
         await openOrderPanel(order.id);  // show the updated order
         loadOrders();                    // refresh the list in the background
@@ -1750,7 +1773,7 @@
     // printout inside the parcel or use it as a picking list.
     // ─────────────────────────────────────────────────────────────────────
 
-    function printPackingSlip(order) {
+    function packingSlipHtml(order) {
       const rows = (order.order_items || []).map(it => {
         const v = it.variants;
         return `<tr>
@@ -1762,18 +1785,39 @@
           <td style="text-align:center">☐</td>
         </tr>`;
       }).join('');
+      const date  = new Date(order.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' });
+      const brand = order.brands?.name || 'Ducks Unlimited';
+      const isPickup = order.shipping_method === 'pickup';
+      const isCod    = order.payment_method === 'cod';
+      return `
+        <section class="slip">
+          <h1>${escapeHtml(brand)} — Packing slip</h1>
+          <div class="muted">Order <strong>${escapeHtml(order.order_number)}</strong> · ${escapeHtml(date)}${isCod ? ` · <strong>COD — collect ₱${Number(order.total_amount).toFixed(2)}</strong>` : ''}</div>
+          <div class="box">
+            <h2>${isPickup ? 'Pick up at' : 'Ship to'}</h2>
+            <div><strong>${escapeHtml(order.customer_name)}</strong></div>
+            <div>${escapeHtml(isPickup && order.stores ? `${order.stores.name} — ${order.stores.address}, ${order.stores.city}` : order.shipping_address)}</div>
+            <div>${escapeHtml(order.customer_phone ?? '')}</div>
+          </div>
+          <table>
+            <thead><tr><th>Item</th><th>Color</th><th>Size</th><th>SKU</th><th style="text-align:center">Qty</th><th style="text-align:center">Packed</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          ${order.customer_notes ? `<div class="box"><h2>Customer's note</h2><div class="note">${escapeHtml(order.customer_notes)}</div></div>` : ''}
+          ${order.internal_notes ? `<div class="box"><h2>Staff notes</h2><div class="note">${escapeHtml(order.internal_notes)}</div></div>` : ''}
+          <p class="muted" style="margin-top:24px">Thank you for shopping with ${escapeHtml(brand)}!</p>
+        </section>`;
+    }
 
-      const date = new Date(order.created_at).toLocaleDateString('en-PH', {
-        year: 'numeric', month: 'long', day: 'numeric',
-      });
-
+    function printPackingSlips(orders) {
       const win = window.open('', '_blank');
       if (!win) { showToast('Allow pop-ups for this site to print packing slips.'); return; }
-
       win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
-        <title>Packing slip ${escapeHtml(order.order_number)}</title>
+        <title>Packing slips</title>
         <style>
           body { font-family: Arial, sans-serif; color: #111; padding: 24px; max-width: 760px; margin: 0 auto; }
+          .slip { page-break-after: always; }
+          .slip:last-child { page-break-after: auto; }
           h1 { font-size: 20px; margin: 0 0 4px; }
           .muted { color: #555; font-size: 13px; }
           .box { border: 1px solid #999; padding: 12px 14px; margin: 16px 0; }
@@ -1783,28 +1827,13 @@
           th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #555; }
           .note { white-space: pre-wrap; }
         </style></head><body>
-        <h1>Ducks Unlimited — Packing slip</h1>
-        <div class="muted">Order <strong>${escapeHtml(order.order_number)}</strong> · ${escapeHtml(date)}</div>
-
-        <div class="box">
-          <h2>Ship to</h2>
-          <div><strong>${escapeHtml(order.customer_name)}</strong></div>
-          <div>${escapeHtml(order.shipping_address)}</div>
-          <div>${escapeHtml(order.customer_phone ?? '')}</div>
-        </div>
-
-        <table>
-          <thead><tr><th>Item</th><th>Color</th><th>Size</th><th>SKU</th><th style="text-align:center">Qty</th><th style="text-align:center">Packed</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-
-        ${order.internal_notes ? `<div class="box"><h2>Staff notes</h2><div class="note">${escapeHtml(order.internal_notes)}</div></div>` : ''}
-
-        <p class="muted" style="margin-top:24px">Thank you for shopping with us!</p>
+        ${orders.map(packingSlipHtml).join('')}
         <script>window.onload = () => window.print();<\/script>
         </body></html>`);
       win.document.close();
     }
+
+    function printPackingSlip(order) { printPackingSlips([order]); }
 
     // ─────────────────────────────────────────────────────────────────────
     // SAVE
@@ -1821,67 +1850,80 @@
       const errorEl    = document.getElementById('panelError');
 
       const newFulfillment = fulSelect.value;
-      const newTracking    = trackingIn.value.trim();
+      const newTracking    = trackingIn ? trackingIn.value.trim() : '';
       const newNotes       = notesIn.value;
 
-      function showPanelError(msg) {
-        errorEl.textContent = msg;
-        errorEl.classList.add('visible');
-      }
+      const showPanelError = (msg) => { errorEl.textContent = msg; errorEl.classList.add('visible'); };
+      errorEl.textContent = ''; errorEl.classList.remove('visible');
 
-      function clearPanelError() {
-        errorEl.textContent = '';
-        errorEl.classList.remove('visible');
-      }
-
-      clearPanelError();
-
-      // Block save if marking as shipped without a tracking number — this is
-      // what the spec means by "prompt the manager to enter a tracking number".
-      if (newFulfillment === 'shipped' && !newTracking) {
+      if (newFulfillment === 'shipped' && trackingIn && !newTracking) {
         showPanelError('Please enter a tracking number before marking this order as shipped.');
         trackingIn.focus();
         return;
       }
 
-      // Packing / shipping an unpaid order is almost always a mistake — ask first.
-      if (currentOrder.payment_status !== 'paid'
-          && newFulfillment !== 'pending'
-          && newFulfillment !== currentOrder.fulfillment_status) {
-        const ok = window.confirm('This order is NOT PAID yet. Are you sure you want to mark it as '
-          + FULFILLMENT_LABELS[newFulfillment] + '?');
-        if (!ok) return;
-      }
-
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving…';
 
-      const { error } = await supabase
-        .from('orders')
-        .update({
-          // A cancelled order stays cancelled — only /api/admin-order changes that
-          ...(currentOrder.fulfillment_status === 'cancelled' ? {} : { fulfillment_status: newFulfillment }),
-          // Store empty tracking / notes as null rather than empty strings,
-          // so the DB clearly says "no value here yet"
-          tracking_number:    newTracking || null,
-          internal_notes:     newNotes.trim() || null,
-        })
-        .eq('id', currentOrder.id);
-
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'Save Changes';
-
-      if (error) {
-        console.error(error);
-        showPanelError('Could not save changes. Please try again.');
-        return;
+      // The server saves it (forward-only statuses, and it emails the
+      // customer when the order ships / is ready for pickup).
+      try {
+        const result = await callAdminOrder({
+          orderId: currentOrder.id,
+          action: 'status',
+          fulfillment: currentOrder.fulfillment_status === 'cancelled' ? undefined : newFulfillment,
+          trackingNumber: newTracking,
+          internalNotes: newNotes,
+        });
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Changes';
+        closePanel();
+        showToast(result.emailed ? 'Order updated — customer emailed.' : 'Order updated.');
+        await loadOrders();
+      } catch (err) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Changes';
+        showPanelError(err.message);
       }
-
-      closePanel();
-      showToast('Order updated.');
-      await loadOrders(); // refresh list so the new status is reflected
     }
 
+    // ─────────────────────────────────────────────────────────────────────
+    // LIST ACTIONS — print every slip in the current list / export CSV
+    // ─────────────────────────────────────────────────────────────────────
+
+    async function loadFullOrder(id) {
+      const { data } = await supabase.from('orders').select(`
+        id, order_number, customer_name, customer_phone, shipping_address, shipping_method, payment_method,
+        total_amount, internal_notes, customer_notes, created_at, brands ( name ), stores ( name, address, city ),
+        order_items ( quantity, variants ( color, size, sku, products ( name ) ) )`).eq('id', id).single();
+      return data;
+    }
+
+    document.getElementById('printAllBtn').addEventListener('click', async (e) => {
+      if (!filteredView.length) { showToast('Nothing in this list.'); return; }
+      if (filteredView.length > 60 && !window.confirm(`Print ${filteredView.length} packing slips?`)) return;
+      e.target.disabled = true; e.target.textContent = 'Preparing…';
+      const orders = [];
+      for (const o of filteredView) { const full = await loadFullOrder(o.id); if (full) orders.push(full); }
+      e.target.disabled = false; e.target.textContent = '🖨 Print packing slips for this list';
+      printPackingSlips(orders);
+    });
+
+    document.getElementById('exportCsvBtn').addEventListener('click', () => {
+      if (!filteredView.length) { showToast('Nothing in this list.'); return; }
+      const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      const head = ['Order #', 'Date', 'Customer', 'Email', 'Phone', 'Brand', 'Items', 'Total', 'Refunded', 'Payment', 'Payment method', 'Fulfillment', 'Delivery', 'Tracking'];
+      const rows = filteredView.map(o => [
+        o.orderNumber, new Date(o.createdAt).toLocaleString('en-PH'), o.customerName, o.customerEmail, o.customerPhone, o.brandName,
+        o.itemCount, o.totalAmount.toFixed(2), o.refundedAmount.toFixed(2), o.paymentStatus, o.paymentMethod, o.fulfillmentStatus, o.shippingMethod, o.trackingNumber ?? '',
+      ].map(esc).join(','));
+      const csv = [head.map(esc).join(','), ...rows].join('\n');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
+      a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
 
     // ── Initial load ──
     await loadOrders();

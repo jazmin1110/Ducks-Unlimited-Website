@@ -113,6 +113,11 @@
       gap: 1.25rem;
     }
 
+    .range-row { display: flex; align-items: center; gap: 0.6rem; margin: 1.5rem 0 0.75rem; font-size: 0.85rem; color: #777; flex-wrap: wrap; }
+    .range-row select { padding: 0.4rem 0.6rem; border: 1px solid #ddd; border-radius: 5px; font-family: inherit; font-size: 16px; background: #fff; }
+    .range-note { font-size: 0.78rem; }
+    #attentionCard { margin-bottom: 1.5rem; }
+    #attentionCard li { cursor: pointer; }
     @media (max-width: 880px) {
       .two-col { grid-template-columns: 1fr; }
     }
@@ -350,17 +355,30 @@
 
     </div>
 
-    <!-- ── Today's numbers ── -->
+    <!-- ── Sales numbers for a period ── -->
+    <div class="range-row">
+      <label for="rangeSelect">Show sales for</label>
+      <select id="rangeSelect">
+        <option value="today">Today</option>
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="month">This month</option>
+        <option value="90">Last 90 days</option>
+      </select>
+      <span class="range-note" id="rangeNote"></span>
+    </div>
     <div class="stats-grid">
 
       <div class="stat-card">
-        <div class="stat-label">Paid Orders Today</div>
+        <div class="stat-label">Paid orders</div>
         <div class="stat-value loading" id="statOrders">—</div>
+        <div class="stat-hint" id="statOrdersHint"></div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-label">Sales Today</div>
+        <div class="stat-label">Sales</div>
         <div class="stat-value currency loading" id="statRevenue">—</div>
+        <div class="stat-hint" id="statRevenueHint"></div>
       </div>
 
       <a class="stat-card" href="/admin/products.html">
@@ -369,6 +387,16 @@
       </a>
 
     </div>
+
+    <!-- ── Needs a look: things that are stuck ── -->
+    <section class="panel-card" id="attentionCard" hidden>
+      <header class="panel-header">
+        <span class="panel-title">Needs a look</span>
+      </header>
+      <div class="panel-body">
+        <ul class="lowstock-list" id="attentionList"></ul>
+      </div>
+    </section>
 
     <!-- ── Two-column area: recent orders + low stock alerts ── -->
     <div class="two-col">
@@ -394,6 +422,19 @@
               <tr><td colspan="4" class="empty-state">Loading…</td></tr>
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <!-- ── Best sellers in the period ── -->
+      <section class="panel-card">
+        <header class="panel-header">
+          <span class="panel-title">Top products</span>
+          <span class="view-all" id="topNote"></span>
+        </header>
+        <div class="panel-body">
+          <ul class="lowstock-list" id="topProductsList">
+            <li class="empty-state" style="cursor:default; display:block; text-align:center;">Loading…</li>
+          </ul>
         </div>
       </section>
 
@@ -469,7 +510,7 @@
     const SIZE_ORDER = { XS: 1, S: 2, M: 3, L: 4, XL: 5, XXL: 6, XXXL: 7 };
 
     const PAYMENT_LABELS = {
-      pending: 'Pending', paid: 'Paid', failed: 'Failed',
+      pending: 'Pending', paid: 'Paid', failed: 'Failed', expired: 'Expired',
     };
 
     const FULFILLMENT_LABELS = {
@@ -497,30 +538,79 @@
       return count ?? 0;
     }
 
-    // Count of a filtered set of orders, e.g. "paid but not packed yet"
-    async function countOrders(filters) {
+    // Count of orders ready to work on at a step: paid online orders, plus
+    // cash-on-delivery orders (those are packed before the cash comes in).
+    async function countOrders({ fulfillment_status }) {
       let q = supabase
         .from('orders')
-        .select('id, brands!inner(slug)', { count: 'exact', head: true });
-      for (const [col, val] of Object.entries(filters)) q = q.eq(col, val);
+        .select('id, brands!inner(slug)', { count: 'exact', head: true })
+        .eq('fulfillment_status', fulfillment_status)
+        .or('payment_status.eq.paid,payment_method.eq.cod');
       const { count } = await byBrand(q);
       return count ?? 0;
     }
 
-    // Paid orders placed today. Unpaid ones are left out — those are
-    // usually customers who opened the payment page and never finished.
-    async function fetchPaidOrdersToday() {
-      const { data, error } = await byBrand(supabase
+    // Start of the chosen period (today / 7 / 30 / 90 days / this month)
+    function rangeStart(range) {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      if (range === 'today') return d;
+      if (range === 'month') { d.setDate(1); return d; }
+      d.setDate(d.getDate() - (Number(range) - 1));
+      return d;
+    }
+    // Same length of time just before it, to show "vs previous"
+    function previousRange(range) {
+      const start = rangeStart(range);
+      const now = new Date();
+      const len = now - start;
+      return { start: new Date(start - len), end: start };
+    }
+
+    // Paid orders in a period (COD counts once the cash is in). Cancelled
+    // orders are left out; refunds are taken off the sales number.
+    async function fetchSales(start, end) {
+      let q = supabase
         .from('orders')
-        .select('total_amount, brands!inner(slug)')
+        .select('id, total_amount, refunded_amount, brands!inner(slug), order_items ( quantity, price_at_purchase, variants ( color, products ( name ) ) )')
         .eq('payment_status', 'paid')
         .neq('fulfillment_status', 'cancelled')
-        .gte('created_at', todayStartIso()));
-      if (error || !data) return { count: 0, revenue: 0 };
+        .gte('created_at', start.toISOString());
+      if (end) q = q.lt('created_at', end.toISOString());
+      const { data, error } = await byBrand(q);
+      if (error || !data) return { count: 0, revenue: 0, top: [] };
+
+      const byProduct = new Map();
+      for (const o of data) for (const it of o.order_items || []) {
+        const name = it.variants?.products?.name || 'Item';
+        const cur = byProduct.get(name) || { name, qty: 0, sales: 0 };
+        cur.qty += it.quantity; cur.sales += it.quantity * Number(it.price_at_purchase);
+        byProduct.set(name, cur);
+      }
       return {
         count:   data.length,
-        revenue: data.reduce((sum, o) => sum + Number(o.total_amount), 0),
+        revenue: data.reduce((sum, o) => sum + Number(o.total_amount) - Number(o.refunded_amount || 0), 0),
+        top:     [...byProduct.values()].sort((a, b) => b.qty - a.qty).slice(0, 8),
       };
+    }
+
+    // Things that are stuck and need a human: unpaid online orders older than
+    // a day, shipped orders with no tracking, and orders flagged ⚠ in notes.
+    async function fetchAttention() {
+      const dayAgo = new Date(Date.now() - 24 * 3600_000).toISOString();
+      const [unpaid, noTracking, flagged] = await Promise.all([
+        byBrand(supabase.from('orders').select('id, order_number, customer_name, brands!inner(slug)')
+          .eq('payment_status', 'pending').neq('payment_method', 'cod').neq('fulfillment_status', 'cancelled').lt('created_at', dayAgo).limit(10)),
+        byBrand(supabase.from('orders').select('id, order_number, customer_name, brands!inner(slug)')
+          .eq('fulfillment_status', 'shipped').eq('shipping_method', 'delivery').is('tracking_number', null).limit(10)),
+        byBrand(supabase.from('orders').select('id, order_number, customer_name, brands!inner(slug)')
+          .ilike('internal_notes', '%⚠%').neq('fulfillment_status', 'delivered').limit(10)),
+      ]);
+      const items = [];
+      for (const o of unpaid.data || [])     items.push({ id: o.id, text: `${o.order_number} — unpaid for over a day (${o.customer_name})`, hint: 'Will expire on its own; contact the customer if it was real.' });
+      for (const o of noTracking.data || []) items.push({ id: o.id, text: `${o.order_number} — shipped without a tracking number`, hint: 'Add the tracking number so the customer gets it.' });
+      for (const o of flagged.data || [])    items.push({ id: o.id, text: `${o.order_number} — flagged ⚠ in staff notes`, hint: 'Open the order and read the note.' });
+      return items;
     }
 
     // Most recent 10 orders
@@ -529,7 +619,7 @@
         .from('orders')
         .select(`
           id, order_number, customer_name, total_amount,
-          payment_status, fulfillment_status, created_at,
+          payment_status, payment_method, fulfillment_status, created_at,
           brands!inner ( slug )
         `)
         .order('created_at', { ascending: false })
@@ -588,7 +678,7 @@
           <td class="col-total">${formatPrice(o.total_amount)}</td>
           <td>
             <div class="badge-stack">
-              <span class="status-badge pay-${o.payment_status}">${PAYMENT_LABELS[o.payment_status] ?? escapeHtml(o.payment_status)}</span>
+              <span class="status-badge pay-${o.payment_status}">${o.payment_method === 'cod' ? (o.payment_status === 'paid' ? 'COD — paid' : 'COD') : (PAYMENT_LABELS[o.payment_status] ?? escapeHtml(o.payment_status))}</span>
               <span class="status-badge ful-${o.fulfillment_status}">${FULFILLMENT_LABELS[o.fulfillment_status] ?? escapeHtml(o.fulfillment_status)}</span>
             </div>
           </td>
@@ -689,28 +779,65 @@
     // instead of waterfalling one request after another.
     // ─────────────────────────────────────────────────────────────────────
 
+    const rangeSelect = document.getElementById('rangeSelect');
+    try { rangeSelect.value = localStorage.getItem('admin:dashRange') || '30'; } catch {}
+
+    // ── Sales for the chosen period (re-runs when the dropdown changes) ──
+    async function loadSales() {
+      const range = rangeSelect.value;
+      try { localStorage.setItem('admin:dashRange', range); } catch {}
+      const prev = previousRange(range);
+      const [now, before] = await Promise.all([fetchSales(rangeStart(range), null), fetchSales(prev.start, prev.end)]);
+
+      setStatValue(document.getElementById('statOrders'),  now.count);
+      setStatValue(document.getElementById('statRevenue'), formatPrice(now.revenue), { currency: true });
+      const delta = (a, b) => b === 0 ? (a > 0 ? 'new' : '—') : `${a >= b ? '▲' : '▼'} ${Math.abs(Math.round((a - b) / b * 100))}% vs before`;
+      document.getElementById('statOrdersHint').textContent  = delta(now.count, before.count);
+      document.getElementById('statRevenueHint').textContent = delta(now.revenue, before.revenue);
+      document.getElementById('rangeNote').textContent = `Paid orders only, refunds taken off. Since ${rangeStart(range).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}.`;
+
+      const list = document.getElementById('topProductsList');
+      document.getElementById('topNote').textContent = 'by pieces sold';
+      list.innerHTML = now.top.length
+        ? now.top.map(t => `<li style="cursor:default;"><div><div class="ls-product">${escapeHtml(t.name)}</div></div>
+            <div class="ls-stock"><span class="ls-stock-num">${t.qty}</span><div class="ls-threshold">${formatPrice(t.sales)}</div></div></li>`).join('')
+        : '<li class="empty-state" style="cursor:default; display:block; text-align:center;">No paid orders in this period.</li>';
+    }
+    rangeSelect.addEventListener('change', loadSales);
+
     const [
       productCount,
-      todayStats,
       toPackCount,
       toShipCount,
       recentOrders,
       variantsWithStock,
+      attention,
     ] = await Promise.all([
       fetchActiveProductCount(),
-      fetchPaidOrdersToday(),
       countOrders({ payment_status: 'paid', fulfillment_status: 'pending' }),
       countOrders({ payment_status: 'paid', fulfillment_status: 'packed' }),
       fetchRecentOrders(),
       fetchVariantsWithStock(),
+      fetchAttention(),
+      loadSales(),
     ]);
 
     // ── Fill stat cards ──
     setStatValue(document.getElementById('statProducts'), productCount);
-    setStatValue(document.getElementById('statOrders'),   todayStats.count);
-    setStatValue(document.getElementById('statRevenue'),  formatPrice(todayStats.revenue), { currency: true });
     setStatValue(document.getElementById('statToPack'),   toPackCount);
     setStatValue(document.getElementById('statToShip'),   toShipCount);
+
+    // ── Needs a look ──
+    if (attention.length) {
+      const card = document.getElementById('attentionCard');
+      card.hidden = false;
+      document.getElementById('attentionList').innerHTML = attention.map(a => `
+        <li data-order="${a.id}"><div><div class="ls-product">${escapeHtml(a.text)}</div><div class="ls-variant">${escapeHtml(a.hint)}</div></div><div class="ls-stock">→</div></li>`).join('');
+      document.getElementById('attentionList').addEventListener('click', (e) => {
+        const li = e.target.closest('li[data-order]');
+        if (li) window.location.href = `/admin/orders.html?order=${li.dataset.order}`;
+      });
+    }
 
     // Highlight the to-do cards when there's work waiting
     document.getElementById('cardToPack').classList.toggle('has-work', toPackCount > 0);

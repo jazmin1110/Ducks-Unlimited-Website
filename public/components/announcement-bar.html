@@ -50,6 +50,12 @@
   .announcement-bar__msg {
     color: #fff;
     text-decoration: none;
+    /* One line only — long messages are cut with … instead of wrapping
+       and pushing the page down on phones */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   .announcement-bar__msg strong {
@@ -92,6 +98,8 @@
       padding-right: 2.25rem; /* leave room for the × */
       text-align: center;
     }
+    /* Phones show only the first part of a "one · two" message (see JS below) */
+    .announcement-bar__extra { display: none; }
   }
 </style>
 
@@ -145,7 +153,15 @@
           if (msg) {
             // innerHTML OK: content originates from an authenticated admin
             // via the homepage CMS, not from untrusted visitor input.
-            msgSlot.innerHTML = msg;
+            //
+            // If the message has parts joined with " · " (for example
+            // "Free shipping over ₱3,000 · Shipped from the Philippines"),
+            // only the first part shows on phones, so the line is never cut
+            // off with "…". Wider screens show the whole message.
+            const parts = msg.split(' · ');
+            msgSlot.innerHTML = parts.length > 1
+              ? `${parts[0]}<span class="announcement-bar__extra"> · ${parts.slice(1).join(' · ')}</span>`
+              : msg;
 
             if (link) {
               linkEl.setAttribute('href', link);

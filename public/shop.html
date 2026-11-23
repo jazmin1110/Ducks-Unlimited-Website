@@ -53,6 +53,14 @@
       line-height: 1.6;
     }
 
+    /* Phones: a shorter title block, so the first row of products shows
+       higher up on the first screen instead of halfway down. */
+    @media (max-width: 767px) {
+      .shop-header { padding: var(--space-lg) 0 var(--space-md); }
+      .shop-header__eyebrow { margin-bottom: 0.4rem; }
+      .shop-header h1 { margin-bottom: 0.4rem; }
+    }
+
     /* ── Two-column layout (sidebar + grid) ─────────────────────── */
 
     .shop {
@@ -266,6 +274,7 @@
     }
 
     /* Small swatch dot rendered next to a color option */
+    .filter-check--none { opacity: 0.45; }
     .filter-check__swatch {
       flex-shrink: 0;
       width: 14px;
@@ -1174,6 +1183,7 @@
     import { productPhotos } from '/js/stock-photos.js';
     import { toggleWishlist, isInWishlist } from '/js/wishlist.js';
     import { applySiteContent } from '/js/site-content.js';
+    import { colorToHex as baseColorToHex, swatchStyle as baseSwatchStyle, sizeRank } from '/js/colors.js';
 
     // Pull per-brand page copy (title + subtitle) from site_content.shop.intro.
     // applySiteContent is async — the page paints the HTML fallback first and
@@ -1191,39 +1201,9 @@
     // ─────────────────────────────────────────────────────────────────
 
     const FIXED_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
-    const SIZE_ORDER  = { XS: 1, S: 2, M: 3, L: 4, XL: 5, XXL: 6, XXXL: 7 };
 
     const PRICE_MIN = 0;
     const PRICE_MAX = 5000;
-
-    // Map common color names → hex values for the color dots. Lowercase keys.
-    // Unknown colors fall back to a neutral gray (see colorToHex below).
-    const COLOR_MAP = {
-      'white':         '#ffffff',
-      'cream':         '#f5e9d4',
-      'beige':         '#e8dcc4',
-      'tan':           '#d2b48c',
-      'khaki':         '#c4a575',
-      'gold':          '#C9A84C',
-      'yellow':        '#e8c34a',
-      'orange':        '#cc7a3b',
-      'red':           '#b33a3a',
-      'maroon':        '#6e2929',
-      'pink':          '#d4a8b8',
-      'purple':        '#6a4378',
-      'blue':          '#4a6fa5',
-      'light blue':    '#a8c5db',
-      'navy':          '#1e2a44',
-      'teal':          '#2d7a7e',
-      'green':         '#2d6b3f',
-      'forest green':  '#1B4D2E',
-      'olive':         '#6b7f3a',
-      'brown':         '#5a3e2b',
-      'gray':          '#888888',
-      'grey':          '#888888',
-      'charcoal':      '#36454f',
-      'black':         '#1a1a1a',
-    };
 
     const CATEGORY_LABELS = {
       polo:       'Polo Shirts',
@@ -1306,9 +1286,10 @@
       });
     }
 
-    function colorToHex(name) {
-      return COLOR_MAP[String(name).trim().toLowerCase()] || '#999999';
-    }
+    // Swatch colour: hex saved on a variant wins, then the shared name list
+    const colorHexes = {};
+    function colorToHex(name)  { return baseColorToHex(name, colorHexes[name]); }
+    function swatchStyle(name) { return baseSwatchStyle(name, colorHexes[name]); }
 
     function pickPrimaryImage(images) {
       if (!images || images.length === 0) return null;
@@ -1347,7 +1328,7 @@
           ${withAudience ? 'audience,' : ''}
           brands!inner ( slug ),
           variants (
-            id, color, size, price_override,
+            id, color, size, price_override, ${withAudience ? 'color_hex,' : ''}
             inventory ( channel, quantity )
           ),
           product_images ( image_url, is_primary, display_order )
@@ -1357,9 +1338,9 @@
 
       let { data, error } = await query(true);
 
-      // 42703 = "column does not exist": the audience migration
-      // (database/migrations/024_product_audience.sql) hasn't been run yet.
-      // Load without it so the shop still works, just unfiltered.
+      // 42703 = "column does not exist": a newer migration (024 audience or
+      // 033 color_hex) hasn't been run yet. Load without those columns so the
+      // shop still works.
       if (error?.code === '42703') {
         ({ data, error } = await query(false));
       }
@@ -1384,6 +1365,7 @@
       // Distinct colors & sizes across variants
       const colors = [...new Set(variants.map(v => v.color))];
       const sizes  = [...new Set(variants.map(v => v.size))];
+      for (const v of variants) if (v.color_hex && !colorHexes[v.color]) colorHexes[v.color] = v.color_hex;
 
       // Total online inventory across all variants. If 0 → "Out of Stock".
       const onlineStock = variants.reduce((total, v) => {
@@ -1422,7 +1404,7 @@
         label.className = 'filter-check';
 
         const swatch = type === 'color'
-          ? `<span class="filter-check__swatch" style="background:${colorToHex(opt.value)}"></span>`
+          ? `<span class="filter-check__swatch" style="${swatchStyle(opt.value)}"></span>`
           : '';
 
         label.innerHTML = `
@@ -1430,7 +1412,7 @@
           <span class="filter-check__box" aria-hidden="true"></span>
           ${swatch}
           <span>${escapeHtml(opt.label)}</span>
-          <span class="filter-check__count">${opt.count}</span>
+          <span class="filter-check__count" data-count-for="${type}:${escapeHtml(opt.value)}">${opt.count}</span>
         `;
         container.appendChild(label);
       }
@@ -1452,13 +1434,14 @@
 
       renderFilterOptions(categoryOptionsEl, categories, 'category');
 
-      // Sizes — fixed list, with counts for context
+      // Sizes — every size any product carries, in apparel order
+      // (XS…XXXL, then kids 2–14, then waist 28–40)
       const sizeCounts = new Map();
       for (const p of state.products) {
         for (const s of p.sizes) sizeCounts.set(s, (sizeCounts.get(s) ?? 0) + 1);
       }
-      const sizes = FIXED_SIZES
-        .filter(s => sizeCounts.has(s)) // hide sizes no product carries
+      const sizes = [...sizeCounts.keys()]
+        .sort((a, b) => sizeRank(a) - sizeRank(b))
         .map(s => ({ value: s, label: s, count: sizeCounts.get(s) }));
 
       // Fall back to the full list if no sizes are tracked yet
@@ -1545,7 +1528,16 @@
 
     function getFilteredAndSorted() {
       const sorter = SORTERS[state.sort] || SORTERS.newest;
-      return getFiltered().sort(sorter);
+      const list = getFiltered().sort(sorter);
+      // With a search query, products whose NAME matches come before ones that
+      // only match in the description ("polo" → polos first, then chinos that
+      // mention a polo).
+      const q = state.filters.query.toLowerCase();
+      if (q && state.sort === 'newest') {
+        const inName = p => (p.name ?? '').toLowerCase().includes(q) ? 0 : 1;
+        list.sort((a, b) => inName(a) - inName(b));
+      }
+      return list;
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -1629,7 +1621,7 @@
           ? `
             <div class="product-card__colors">
               ${colorsToShow.map(c => `
-                <span class="color-dot" style="background:${colorToHex(c)}" title="${escapeHtml(c)}"></span>
+                <span class="color-dot" style="${swatchStyle(c)}" title="${escapeHtml(c)}"></span>
               `).join('')}
               ${remainingColors > 0 ? `<span class="color-dot color-dot--more">+${remainingColors}</span>` : ''}
             </div>
@@ -1817,10 +1809,28 @@
     // MAIN UPDATE — call this after any filter/sort change
     // ─────────────────────────────────────────────────────────────────
 
+    // Each count shows how many products you'd see if you ticked that option
+    // on top of the filters already active (ignoring its own group, so the
+    // numbers inside a group don't collapse to zero once one is ticked).
+    function updateFilterCounts() {
+      const f = state.filters;
+      const groups = { category: 'categories', size: 'sizes', color: 'colors' };
+      document.querySelectorAll('[data-count-for]').forEach(el => {
+        const [type, value] = el.dataset.countFor.split(/:(.+)/);
+        const key = groups[type];
+        if (!key) return;
+        const trial = { ...f, [key]: new Set([value]) };
+        const n = state.products.filter(p => productMatchesFilters(p, trial)).length;
+        el.textContent = n;
+        el.closest('.filter-check')?.classList.toggle('filter-check--none', n === 0);
+      });
+    }
+
     function update() {
       const visible = getFilteredAndSorted();
       renderGrid(visible);
       renderCount(visible.length, state.products.length);
+      updateFilterCounts();
       updateClearButton();
       updateMobileFilterBadge();
       renderActiveChips();
@@ -2025,7 +2035,7 @@
              <span class="qv-block__label">Colors · ${p.colors.length}</span>
              <div class="qv-swatches">
                ${p.colors.map(c => `<span class="qv-swatch"
-                 style="background:${colorToHex(c)}"
+                 style="${swatchStyle(c)}"
                  title="${escapeHtml(c)}"></span>`).join('')}
              </div>
            </div>`
@@ -2036,7 +2046,7 @@
              <span class="qv-block__label">Sizes</span>
              <div class="qv-sizes">
                ${p.sizes
-                 .sort((a, b) => (SIZE_ORDER[a] ?? 99) - (SIZE_ORDER[b] ?? 99))
+                 .sort((a, b) => sizeRank(a) - sizeRank(b))
                  .map(s => `<span class="qv-size">${escapeHtml(s)}</span>`).join('')}
              </div>
            </div>`
@@ -2146,7 +2156,7 @@
       await swrCache({
         // Bump the version suffix when the product fetch shape changes
         // (e.g. you add a new column) so old caches get invalidated.
-        key: 'shop:products:v2',
+        key: 'shop:products:v3',
         maxAgeMs: 5 * 60 * 1000, // 5 minutes
         fetcher: loadProducts,
         onData: (raw, _source) => {

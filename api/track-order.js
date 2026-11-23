@@ -20,6 +20,7 @@
 // =============================================================================
 
 import { supabaseAdmin, getUserFromRequest } from './_lib/supabase-admin.js';
+import { allowRequest } from './_lib/ratelimit.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -44,6 +45,8 @@ export default async function handler(req, res) {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
+  // 20 lookups a minute per IP — stops someone guessing order numbers
+  if (!allowRequest(req, res, { limit: 20, windowMs: 60_000, key: 'track' })) return;
 
   const orderNumber = normalizeOrderNumber(req.body?.orderNumber);
   const email       = String(req.body?.email || '').trim().toLowerCase();
@@ -61,8 +64,9 @@ export default async function handler(req, res) {
       `orders?order_number=eq.${encodeURIComponent(orderNumber)}` +
       `&customer_email=eq.${encodeURIComponent(email)}` +
       `&select=id,order_number,user_id,customer_name,shipping_address,total_amount,` +
-      `payment_status,fulfillment_status,tracking_number,created_at,` +
+      `payment_status,payment_method,fulfillment_status,shipping_method,tracking_number,created_at,` +
       `paid_at,packed_at,shipped_at,delivered_at,refunded_amount,` +
+      `subtotal_amount,shipping_fee,discount_amount,discount_label,customer_notes,stores(name,address,city),` +
       `order_items(quantity,price_at_purchase,variants(color,size,products(id,name,product_images(image_url,is_primary,display_order))))` +
       `&limit=1`
     );
@@ -97,8 +101,17 @@ export default async function handler(req, res) {
         firstName:         String(order.customer_name || '').split(' ')[0],
         shipTo:            maskAddress(order.shipping_address),
         total:             Number(order.total_amount),
+        subtotal:          order.subtotal_amount != null ? Number(order.subtotal_amount) : null,
+        shippingFee:       Number(order.shipping_fee ?? 0),
+        discountAmount:    Number(order.discount_amount ?? 0),
+        discountLabel:     order.discount_label || null,
         paymentStatus:     order.payment_status,
+        paymentMethod:     order.payment_method || 'maya',
         fulfillmentStatus: order.fulfillment_status,
+        shippingMethod:    order.shipping_method || 'delivery',
+        pickupStore:       order.stores ? { name: order.stores.name, address: order.stores.address, city: order.stores.city } : null,
+        customerNotes:     order.customer_notes || null,
+        canCancel:         order.fulfillment_status === 'pending' && !['expired', 'failed'].includes(order.payment_status),
         trackingNumber:    order.tracking_number,
         createdAt:         order.created_at,
         paidAt:            order.paid_at,

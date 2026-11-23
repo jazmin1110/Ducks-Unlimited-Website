@@ -58,6 +58,26 @@
       cursor: zoom-in;
     }
 
+    .gallery__main { cursor: zoom-in; }
+    .gallery__zoom {
+      position: absolute; right: 0.75rem; bottom: 0.75rem; width: 36px; height: 36px;
+      border-radius: 50%; border: 1px solid var(--color-border-light); background: rgba(255,255,255,0.9);
+      color: var(--color-text); display: flex; align-items: center; justify-content: center; cursor: zoom-in;
+    }
+    .lightbox {
+      position: fixed; inset: 0; z-index: 1200; background: rgba(20, 20, 20, 0.92);
+      display: flex; align-items: center; justify-content: center; padding: 3rem 1rem;
+    }
+    .lightbox[hidden] { display: none; }
+    .lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .lightbox button {
+      position: absolute; background: none; border: none; color: #fff; cursor: pointer;
+      font-size: 2.2rem; line-height: 1; padding: 0.5rem 0.9rem; min-width: 44px; min-height: 44px;
+    }
+    .lightbox__close { top: 0.5rem; right: 0.75rem; }
+    .lightbox__prev  { left: 0.25rem; top: 50%; transform: translateY(-50%); }
+    .lightbox__next  { right: 0.25rem; top: 50%; transform: translateY(-50%); }
+
     .gallery__main img {
       width: 100%;
       height: 100%;
@@ -291,7 +311,10 @@
       transition: all 0.15s;
     }
 
-    .size-btn:hover:not(:disabled) {
+    /* Hover highlight. We skip the selected button on purpose: on phones the
+       "hover" state sticks after a tap, and green text on the green selected
+       button made the size letter disappear. */
+    .size-btn:hover:not(:disabled):not(.is-selected) {
       border-color: var(--color-primary);
       color: var(--color-primary);
     }
@@ -311,7 +334,17 @@
       position: relative;
     }
 
-    /* Diagonal strike-through line on disabled size buttons */
+    /* Sold out in the selected color: greyed and struck through, but still
+       tappable so the shopper gets the "Out of Stock" message. */
+    .size-btn.is-soldout:not(.is-selected) {
+      color: var(--color-text-light);
+      background: var(--color-bg-warm);
+      border-color: var(--color-border-light);
+      position: relative;
+    }
+
+    /* Diagonal strike-through line on disabled and sold-out size buttons */
+    .size-btn.is-soldout:not(.is-selected)::after,
     .size-btn:disabled::after {
       content: '';
       position: absolute;
@@ -947,39 +980,33 @@
     import { toggleWishlist, isInWishlist } from '/js/wishlist.js';
     import { getCurrentBrand, adoptBrand } from '/js/brand.js';
     import { productPhotos } from '/js/stock-photos.js';
+    import { colorToHex as baseColorToHex, swatchStyle as baseSwatchStyle, sizeRank } from '/js/colors.js';
 
     // ─────────────────────────────────────────────────────────────────
     // CONSTANTS + helpers
     // ─────────────────────────────────────────────────────────────────
 
-    const SIZE_ORDER = { XS: 1, S: 2, M: 3, L: 4, XL: 5, XXL: 6, XXXL: 7 };
+    // Shipping facts shown on the page. The real fees live in
+    // api/_lib/pricing.js — keep these in step when you change them there.
+    const SHIP = { free: 3000, metro: 100, luzon: 150, vismin: 200 };
 
-    // Hex codes for known color names (lowercased). Matches the shop page.
-    const COLOR_MAP = {
-      'white':         '#ffffff',
-      'cream':         '#f5e9d4',
-      'beige':         '#e8dcc4',
-      'tan':           '#d2b48c',
-      'khaki':         '#c4a575',
-      'gold':          '#C9A84C',
-      'yellow':        '#e8c34a',
-      'orange':        '#cc7a3b',
-      'red':           '#b33a3a',
-      'maroon':        '#6e2929',
-      'pink':          '#d4a8b8',
-      'purple':        '#6a4378',
-      'blue':          '#4a6fa5',
-      'light blue':    '#a8c5db',
-      'navy':          '#1e2a44',
-      'teal':          '#2d7a7e',
-      'green':         '#2d6b3f',
-      'forest green':  '#1B4D2E',
-      'olive':         '#6b7f3a',
-      'brown':         '#5a3e2b',
-      'gray':          '#888888',
-      'grey':          '#888888',
-      'charcoal':      '#36454f',
-      'black':         '#1a1a1a',
+    // "Fit & Sizing" / "Care" text when the product has none of its own
+    // (edit per product in Admin → Products → Fit notes / Care notes).
+    const FIT_DEFAULTS = {
+      polo:        'Classic regular fit, true to size. Between sizes? Size up for a relaxed fit.',
+      't-shirt':   'Regular fit, true to size. Knitted cotton has a little give.',
+      shorts:      'Sits at the natural waist. Sizes are waist measurements in inches.',
+      pants:       'Sits at the natural waist. Sizes are waist measurements in inches.',
+      accessories: 'One size unless stated. Check the size guide for underwear and socks.',
+      others:      'Regular fit, true to size.',
+    };
+    const CARE_DEFAULTS = {
+      polo:        'Machine wash cold, inside out, with similar colours. Hang dry. Warm iron if needed. Do not bleach.',
+      't-shirt':   'Machine wash cold with similar colours. Tumble dry low or hang dry. Do not bleach.',
+      shorts:      'Machine wash cold. Hang dry. Warm iron.',
+      pants:       'Machine wash cold. Hang dry. Warm iron.',
+      accessories: 'Machine wash cold in a laundry bag. Hang dry.',
+      others:      'Machine wash cold with similar colours. Hang dry.',
     };
 
     const CATEGORY_LABELS = {
@@ -1002,9 +1029,10 @@
       });
     }
 
-    function colorToHex(name) {
-      return COLOR_MAP[String(name).trim().toLowerCase()] || '#999999';
-    }
+    // Swatch colour: the hex saved on the variant wins, then the shared list
+    const colorHexes = {};   // colour name → hex from variants.color_hex
+    function colorToHex(name) { return baseColorToHex(name, colorHexes[name]); }
+    function swatchStyle(name) { return baseSwatchStyle(name, colorHexes[name]); }
 
     function pickPrimaryImage(images) {
       if (!images || images.length === 0) return null;
@@ -1056,19 +1084,24 @@
     // ─────────────────────────────────────────────────────────────────
 
     async function loadProduct(productId) {
-      const { data, error } = await supabase
+      const query = (withNew) => supabase
         .from('products')
         .select(`
           id, name, description, category, base_price, is_active, brand_id,
+          ${withNew ? 'fit_notes, care_notes,' : ''}
           brands ( slug, name ),
           variants (
-            id, color, size, sku, price_override,
+            id, color, size, sku, price_override, ${withNew ? 'color_hex,' : ''}
             inventory ( channel, quantity, low_stock_threshold )
           ),
           product_images ( image_url, is_primary, display_order, color )
         `)
         .eq('id', productId)
         .single();
+
+      let { data, error } = await query(true);
+      // 42703 = column missing: migration 033 not run yet → load without them
+      if (error?.code === '42703') ({ data, error } = await query(false));
 
       if (error) {
         console.error('Failed to load product:', error);
@@ -1129,6 +1162,7 @@
 
         colorSet.add(v.color);
         sizeSet.add(v.size);
+        if (v.color_hex && !colorHexes[v.color]) colorHexes[v.color] = v.color_hex;
 
         if (!sizesByColor[v.color]) sizesByColor[v.color] = new Set();
         sizesByColor[v.color].add(v.size);
@@ -1136,9 +1170,7 @@
 
       // Sort colors alphabetically, sizes in apparel order
       const allColors = [...colorSet].sort((a, b) => a.localeCompare(b));
-      const allSizes  = [...sizeSet].sort(
-        (a, b) => (SIZE_ORDER[a] ?? 99) - (SIZE_ORDER[b] ?? 99)
-      );
+      const allSizes  = [...sizeSet].sort((a, b) => sizeRank(a) - sizeRank(b));
 
       return { variantMap, allColors, allSizes, sizesByColor };
     }
@@ -1162,7 +1194,7 @@
       `;
 
       // Document title
-      document.title = `${p.name} — Ducks Unlimited`;
+      document.title = `${p.name} — ${p.brands?.name || 'Ducks Unlimited'}`;
 
       // ── Main product layout ──
       root.innerHTML = `
@@ -1249,7 +1281,7 @@
             <ul class="pdp-trust">
               <li>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h13l3 4v6h-2"></path><circle cx="7" cy="18" r="2"></circle><circle cx="17" cy="18" r="2"></circle></svg>
-                Free shipping over <strong>₱3,000</strong>
+                Free shipping over <strong>₱${SHIP.free.toLocaleString('en-PH')}</strong> · or pick up in store
               </li>
               <li>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg>
@@ -1278,7 +1310,7 @@
                   <span>Fit &amp; Sizing</span><span class="accordion__icon" aria-hidden="true"></span>
                 </button>
                 <div class="accordion__body">
-                  Classic regular fit. Model is 5'11" / 180cm and wears a size M.
+                  ${escapeHtml(p.fit_notes || FIT_DEFAULTS[p.category] || FIT_DEFAULTS.others)}
                   See our <a href="/size-guide.html">Size Guide</a> for measurements.
                 </div>
               </div>
@@ -1287,8 +1319,7 @@
                   <span>Care</span><span class="accordion__icon" aria-hidden="true"></span>
                 </button>
                 <div class="accordion__body">
-                  Machine wash cold with similar colors. Tumble dry low or hang dry.
-                  Warm iron if needed. Do not bleach.
+                  ${escapeHtml(p.care_notes || CARE_DEFAULTS[p.category] || CARE_DEFAULTS.others)}
                 </div>
               </div>
               <div class="accordion__item">
@@ -1296,10 +1327,13 @@
                   <span>Shipping &amp; Returns</span><span class="accordion__icon" aria-hidden="true"></span>
                 </button>
                 <div class="accordion__body">
-                  Free shipping on orders over ₱2,500 within Metro Manila.
-                  30-day returns on unworn items with tags. Bought online? You can
-                  also exchange in any of our stores. Visit our
-                  <a href="/customer-service/returns.html">Returns page</a> for details.
+                  Free shipping on orders of ₱${SHIP.free.toLocaleString('en-PH')} and up. Below that:
+                  Metro Manila ₱${SHIP.metro}, Luzon ₱${SHIP.luzon}, Visayas &amp; Mindanao ₱${SHIP.vismin} —
+                  or pick up free in any of <a href="/stores.html">our stores</a>.
+                  Pay by card, Maya, GCash / QR Ph, or cash on delivery.
+                  30-day returns on unworn items with tags; you can also exchange in store.
+                  See <a href="/customer-service/shipping.html">Shipping</a> and
+                  <a href="/customer-service/returns.html">Returns</a> for details.
                 </div>
               </div>
             </div>
@@ -1344,7 +1378,31 @@
         `;
       }
       const img = state.images[state.currentImage];
-      return `<img src="${escapeHtml(img.image_url)}" alt="${escapeHtml(state.product.name)}" />`;
+      return `<img src="${escapeHtml(img.image_url)}" alt="${escapeHtml(state.product.name)}" />
+        <button type="button" class="gallery__zoom" id="galleryZoomBtn" aria-label="Zoom image">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M11 8v6M8 11h6"/></svg>
+        </button>`;
+    }
+
+    // ── Lightbox: tap the big photo (or the zoom icon) to see it full size ──
+    function openLightbox() {
+      if (!state.images.length) return;
+      const box = document.getElementById('lightbox');
+      const img = box.querySelector('img');
+      img.src = state.images[state.currentImage].image_url;
+      img.alt = state.product.name;
+      box.hidden = false;
+      document.body.style.overflow = 'hidden';
+      box.querySelector('.lightbox__close').focus();
+    }
+    function closeLightbox() {
+      document.getElementById('lightbox').hidden = true;
+      document.body.style.overflow = '';
+    }
+    function stepLightbox(dir) {
+      if (state.images.length < 2) return;
+      setMainImage((state.currentImage + dir + state.images.length) % state.images.length);
+      document.querySelector('#lightbox img').src = state.images[state.currentImage].image_url;
     }
 
     function renderThumbs() {
@@ -1412,7 +1470,7 @@
         btn.dataset.color = color;
         btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
         btn.innerHTML = `
-          <span class="swatch__dot" style="background:${colorToHex(color)}"></span>
+          <span class="swatch__dot" style="${swatchStyle(color)}"></span>
           <span class="swatch__name">${escapeHtml(color)}</span>
         `;
         container.appendChild(btn);
@@ -1438,12 +1496,21 @@
         const isSelected  = state.selectedSize === size;
         const isAvailable = availableSizes.has(size);
 
+        // Sold out = we make this size in the chosen color, but have none left.
+        // Shown crossed out straight away, so shoppers don't have to tap each
+        // size to find out.
+        const variant   = state.selectedColor
+          ? state.variantMap[`${state.selectedColor}|${size}`]
+          : null;
+        const isSoldOut = isAvailable && !!variant && variant.stock <= 0;
+
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = `size-btn${isSelected ? ' is-selected' : ''}`;
+        btn.className = `size-btn${isSelected ? ' is-selected' : ''}${isSoldOut ? ' is-soldout' : ''}`;
         btn.dataset.size = size;
         btn.disabled = !isAvailable;
         btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+        if (isSoldOut) btn.setAttribute('aria-label', `${size} (sold out)`);
         btn.textContent = size;
         container.appendChild(btn);
       }
@@ -1459,6 +1526,15 @@
       return state.variantMap[`${state.selectedColor}|${state.selectedSize}`] ?? null;
     }
 
+    // Picks the right wording for what the shopper still has to choose.
+    // If the color is already chosen (or the product only has one), we only
+    // ask for the size, instead of always saying "color and size".
+    function missingChoiceText(both, sizeOnly, colorOnly) {
+      if (state.selectedColor && !state.selectedSize) return sizeOnly;
+      if (!state.selectedColor && state.selectedSize) return colorOnly;
+      return both;
+    }
+
     function renderStockStatus() {
       const container = document.getElementById('stockStatus');
       const v = getSelectedVariant();
@@ -1472,7 +1548,7 @@
       if (!v) {
         container.innerHTML = `
           <div class="stock-status stock-status--hint">
-            Select a color and size to see availability.
+            ${escapeHtml(missingChoiceText('Select a color and size', 'Select a size', 'Select a color'))} to see availability.
           </div>
         `;
         return;
@@ -1526,8 +1602,8 @@
       // Add-to-cart button enabled only when there's something to add
       cta.disabled = disabled;
       cta.textContent = (!v)
-        ? 'Select Color & Size'
-        : (v.stock <= 0 ? 'Out of Stock' : 'Add to Cart');
+        ? missingChoiceText('Select Color & Size', 'Select a Size', 'Select a Color')
+        : (v.stock <= 0 ? 'Out of Stock' : 'Add to Bag');
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -1535,6 +1611,22 @@
     // ─────────────────────────────────────────────────────────────────
 
     function wireEvents() {
+
+      // Big photo → lightbox (zoom)
+      document.getElementById('galleryMain').addEventListener('click', (e) => {
+        if (e.target.closest('img, .gallery__zoom')) openLightbox();
+      });
+      const lb = document.getElementById('lightbox');
+      lb.querySelector('.lightbox__close').addEventListener('click', closeLightbox);
+      lb.querySelector('.lightbox__prev').addEventListener('click', () => stepLightbox(-1));
+      lb.querySelector('.lightbox__next').addEventListener('click', () => stepLightbox(1));
+      lb.addEventListener('click', (e) => { if (e.target === lb) closeLightbox(); });
+      document.addEventListener('keydown', (e) => {
+        if (lb.hidden) return;
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowLeft') stepLightbox(-1);
+        if (e.key === 'ArrowRight') stepLightbox(1);
+      });
 
       // Thumb clicks
       document.getElementById('galleryThumbs').addEventListener('click', (e) => {
@@ -1678,7 +1770,7 @@
             ${img
               ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(p.name)}" loading="lazy" />`
               : `<div class="gallery__placeholder">
-                   <span class="gallery__placeholder-mark">Ducks Unlimited</span>
+                   <span class="gallery__placeholder-mark">${escapeHtml(state.product.brands?.name || 'Ducks Unlimited')}</span>
                  </div>`}
           </div>
           <div class="related-card__body">
@@ -1773,6 +1865,14 @@
        Slides up from the bottom once the main Add-to-Bag button has scrolled
        out of view on mobile. Mirrors the main CTA's enabled/disabled state
        and forwards clicks to it so there's one source of truth for cart adds. -->
+  <!-- Full-size photo viewer (opened by tapping the main photo) -->
+  <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Product photo">
+    <button type="button" class="lightbox__close" aria-label="Close">×</button>
+    <button type="button" class="lightbox__prev" aria-label="Previous photo">‹</button>
+    <img src="" alt="" />
+    <button type="button" class="lightbox__next" aria-label="Next photo">›</button>
+  </div>
+
   <div class="pdp-sticky-cta" id="pdpStickyCta" hidden>
     <div class="pdp-sticky-cta__thumb" id="pdpStickyThumb"></div>
     <div class="pdp-sticky-cta__info">
@@ -1808,16 +1908,22 @@
 
       // Keep the thumb + name + price in sync with the product page.
       function paintStickyMeta() {
-        const name  = document.querySelector('.product-title')?.textContent?.trim() || '';
-        const price = document.querySelector('.product-price')?.textContent?.trim() || '';
-        const img   = document.querySelector('.gallery__main img, .product-image img')?.getAttribute('src') || '';
+        const name  = document.querySelector('.info__name')?.textContent?.trim() || '';
+        const price = document.querySelector('#priceDisplay')?.textContent?.trim() || '';
+        const img   = document.querySelector('.gallery__main img')?.getAttribute('src') || '';
         stickyName.textContent  = name;
         stickyPrice.textContent = price;
-        stickyThumb.innerHTML   = img ? `<img src="${img}" alt="" />` : '';
+        if (stickyThumb.dataset.src !== img) {
+          stickyThumb.dataset.src = img;
+          stickyThumb.innerHTML   = img ? `<img src="${img}" alt="" />` : '';
+        }
       }
       paintStickyMeta();
-      // Rerun whenever the gallery or price updates
-      new MutationObserver(paintStickyMeta).observe(document.body, { childList: true, subtree: true, characterData: true });
+      // Rerun when the product area changes (colour swap, price update) —
+      // batched to one paint per frame so it stays cheap.
+      let raf = 0;
+      new MutationObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(paintStickyMeta); })
+        .observe(document.getElementById('productRoot'), { childList: true, subtree: true, characterData: true });
 
       // Delegate click to the main button so cart logic stays in one place.
       stickyBtn.addEventListener('click', () => main.click());

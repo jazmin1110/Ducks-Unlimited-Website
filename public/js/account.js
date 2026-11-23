@@ -163,11 +163,24 @@ export function orderFromRow(o) {
     shippedAt:         o.shipped_at,
     deliveredAt:       o.delivered_at,
     refundedAmount:    Number(o.refunded_amount ?? 0),
+    subtotal:          o.subtotal_amount != null ? Number(o.subtotal_amount) : null,
+    shippingFee:       Number(o.shipping_fee ?? 0),
+    discountAmount:    Number(o.discount_amount ?? 0),
+    discountLabel:     o.discount_label || null,
+    paymentMethod:     o.payment_method || 'maya',
+    shippingMethod:    o.shipping_method || 'delivery',
+    pickupStore:       o.stores ? { name: o.stores.name, address: o.stores.address, city: o.stores.city } : null,
+    customerNotes:     o.customer_notes || null,
+    customerEmail:     o.customer_email || null,
+    canCancel:         o.fulfillment_status === 'pending' && !['expired', 'failed'].includes(o.payment_status),
     items: (o.order_items || []).map(it => {
       const v = it.variants || {};
       const p = v.products || {};
+      // Prefer the photo tagged with this variant's colour, then the primary one
       const imgs = [...(p.product_images || [])]
         .sort((a, b) => (b.is_primary - a.is_primary) || (a.display_order - b.display_order));
+      const want = String(v.color || '').trim().toLowerCase();
+      const colorImg = want ? imgs.find(i => i.color && i.color.trim().toLowerCase() === want) : null;
       return {
         name:      p.name || 'Item',
         productId: p.id || null,
@@ -175,7 +188,7 @@ export function orderFromRow(o) {
         size:      v.size || null,
         quantity:  it.quantity,
         price:     Number(it.price_at_purchase),
-        image:     imgs[0]?.image_url || null,
+        image:     colorImg?.image_url || imgs[0]?.image_url || null,
       };
     }),
   };
@@ -183,12 +196,14 @@ export function orderFromRow(o) {
 
 // The `select` string account pages use to load orders with everything above.
 export const ORDER_SELECT = `
-  id, order_number, payment_status, fulfillment_status, tracking_number,
-  shipping_address, total_amount, created_at,
+  id, order_number, payment_status, payment_method, fulfillment_status, shipping_method, tracking_number,
+  shipping_address, total_amount, subtotal_amount, shipping_fee, discount_amount, discount_label,
+  customer_notes, customer_email, created_at,
   paid_at, packed_at, shipped_at, delivered_at, refunded_amount,
+  stores ( name, address, city ),
   order_items (
     quantity, price_at_purchase,
-    variants ( color, size, products ( id, name, product_images ( image_url, is_primary, display_order ) ) )
+    variants ( color, size, products ( id, name, product_images ( image_url, is_primary, display_order, color ) ) )
   )
 `;
 
@@ -197,10 +212,13 @@ export function orderStatus(o) {
   // Cancelled wins over everything else (uses the red "failed" pill style)
   if (o.fulfillmentStatus === 'cancelled') return { key: 'failed', label: o.refundedAmount > 0 ? 'Cancelled · Refunded' : 'Cancelled' };
   if (o.paymentStatus === 'failed')  return { key: 'failed',  label: 'Payment not completed' };
-  if (o.paymentStatus === 'pending') return { key: 'pending', label: 'Awaiting payment' };
+  if (o.paymentStatus === 'expired') return { key: 'failed',  label: 'Expired — not paid' };
+  // COD orders are "being prepared" even though the cash hasn't come in yet
+  if (o.paymentStatus === 'pending' && o.paymentMethod !== 'cod') return { key: 'pending', label: 'Awaiting payment' };
+  const pickup = o.shippingMethod === 'pickup';
   switch (o.fulfillmentStatus) {
     case 'packed':    return { key: 'packed',    label: 'Packed' };
-    case 'shipped':   return { key: 'shipped',   label: 'On the way' };
+    case 'shipped':   return { key: 'shipped',   label: pickup ? 'Ready for pickup' : 'On the way' };
     case 'delivered': return { key: 'delivered', label: 'Delivered' };
     default:          return { key: 'paid',      label: 'Preparing your order' };
   }
@@ -217,38 +235,53 @@ function nextStepText(o) {
     return `We refunded ${formatPrice(o.refundedAmount)} on this order. It can take a few days to show, depending on your bank or e-wallet.`;
   }
   if (o.paymentStatus === 'failed')
-    return "Your payment didn't go through, so this order won't be shipped. You can place it again from your cart.";
-  if (o.paymentStatus === 'pending')
+    return "Your payment didn't go through, so this order won't be shipped. You can place it again from your bag.";
+  if (o.paymentStatus === 'expired')
+    return 'This order was not paid within a few hours, so it expired. You can place it again from your bag.';
+  const cod    = o.paymentMethod === 'cod';
+  const pickup = o.shippingMethod === 'pickup';
+  if (o.paymentStatus === 'pending' && !cod)
     return "We haven't received your payment yet. If you already paid, it can take a few minutes to show here.";
   switch (o.fulfillmentStatus) {
-    case 'pending':   return "Payment received. We're getting your pieces ready — we'll update this page when it ships.";
-    case 'packed':    return 'Your order is packed and waiting for the courier.';
-    case 'shipped':   return o.trackingNumber
-                        ? 'Your order is with the courier. Use the tracking number below on the courier\'s website.'
-                        : 'Your order is with the courier. A tracking number will appear here soon.';
-    case 'delivered': return 'Delivered. We hope you love it! Something not right? See our returns policy.';
+    case 'pending':   return cod
+                        ? `Order received. We're getting your pieces ready — have ${formatPrice(o.total)} in cash ready ${pickup ? 'when you pick up' : 'for the courier'}.`
+                        : "Payment received. We're getting your pieces ready — we'll update this page when it ships.";
+    case 'packed':    return pickup ? 'Your order is packed. We\'ll let you know when it\'s ready to collect.' : 'Your order is packed and waiting for the courier.';
+    case 'shipped':   return pickup
+                        ? `Ready for pickup${o.pickupStore ? ' at ' + o.pickupStore.name : ''}. Bring a valid ID and your order number.`
+                        : (o.trackingNumber
+                          ? 'Your order is with the courier. Use the tracking number below on the courier\'s website.'
+                          : 'Your order is with the courier. A tracking number will appear here soon.');
+    case 'delivered': return pickup ? 'Picked up. We hope you love it!' : 'Delivered. We hope you love it! Something not right? See our returns policy.';
     default:          return '';
   }
 }
 
 export function renderTimeline(o) {
-  const failed = o.paymentStatus === 'failed';
+  const failed = o.paymentStatus === 'failed' || o.paymentStatus === 'expired';
+  const cod    = o.paymentMethod === 'cod';
+  const pickup = o.shippingMethod === 'pickup';
+  // COD orders move along without a payment; the cash step comes last.
+  const okToMove = o.paymentStatus === 'paid' || cod;
   const steps = [
     { label: 'Order placed', at: o.createdAt,   done: true },
-    { label: 'Paid',         at: o.paidAt,      done: o.paymentStatus === 'paid' },
-    { label: 'Packed',       at: o.packedAt,    done: ['packed', 'shipped', 'delivered'].includes(o.fulfillmentStatus) && o.paymentStatus === 'paid' },
-    { label: 'Shipped',      at: o.shippedAt,   done: ['shipped', 'delivered'].includes(o.fulfillmentStatus) && o.paymentStatus === 'paid' },
-    { label: 'Delivered',    at: o.deliveredAt, done: o.fulfillmentStatus === 'delivered' && o.paymentStatus === 'paid' },
+    ...(cod ? [] : [{ label: 'Paid', at: o.paidAt, done: o.paymentStatus === 'paid' }]),
+    { label: 'Packed',       at: o.packedAt,    done: ['packed', 'shipped', 'delivered'].includes(o.fulfillmentStatus) && okToMove },
+    { label: pickup ? 'Ready for pickup' : 'Shipped', at: o.shippedAt, done: ['shipped', 'delivered'].includes(o.fulfillmentStatus) && okToMove },
+    { label: pickup ? 'Picked up' : 'Delivered', at: o.deliveredAt, done: o.fulfillmentStatus === 'delivered' && okToMove },
+    ...(cod ? [{ label: 'Paid in cash', at: o.paidAt, done: o.paymentStatus === 'paid' }] : []),
   ];
   // The first step that isn't done yet is the "current" one
   const currentIdx = steps.findIndex(s => !s.done);
 
+  const courier = courierLink(o.trackingNumber);
   const tracking = o.trackingNumber ? `
     <div class="order-tracking">
       <span class="order-tracking__label">Tracking number</span>
       <span class="order-tracking__value">
         <code>${escapeHtml(o.trackingNumber)}</code>
         <button type="button" class="order-tracking__copy" data-copy="${escapeHtml(o.trackingNumber)}">Copy</button>
+        ${courier ? `<a class="order-tracking__link" href="${courier.url}" target="_blank" rel="noopener">Track on ${courier.name} →</a>` : ''}
       </span>
     </div>` : '';
 
@@ -265,6 +298,71 @@ export function renderTimeline(o) {
     <p class="timeline__next">${escapeHtml(nextStepText(o))}</p>
     ${tracking}
   `;
+}
+
+// Guess the courier from the tracking number so the customer gets a link.
+// Add couriers here as you start using them.
+export function courierLink(num) {
+  const n = String(num || '').trim().toUpperCase();
+  if (!n) return null;
+  if (/^(JNT|JT)|^\d{12}$/.test(n))  return { name: 'J&T Express', url: `https://www.jtexpress.ph/trajectoryQuery?waybillNo=${encodeURIComponent(n)}` };
+  if (/^LBC|^\d{13,14}$/.test(n))     return { name: 'LBC',         url: `https://www.lbcexpress.com/track/?tracking_no=${encodeURIComponent(n)}` };
+  if (/^SPX|^PH\d/.test(n))           return { name: 'SPX',         url: `https://spx.ph/track?${encodeURIComponent(n)}` };
+  return null;
+}
+
+// Subtotal / discount / shipping / total block used on every order page.
+export function renderTotals(o) {
+  const subtotal = o.subtotal ?? o.items.reduce((sum, it) => sum + it.price * it.quantity, 0);
+  const discount = o.discountAmount || 0;
+  const shipping = o.subtotal != null ? (o.shippingFee || 0) : Math.max(0, o.total - subtotal);
+  const shipLabel = o.shippingMethod === 'pickup' ? 'Pick up in store' : 'Shipping';
+  return `
+    <div class="order-totals">
+      <div class="order-totals__row"><span>Subtotal</span><span>${formatPrice(subtotal)}</span></div>
+      ${discount > 0 ? `<div class="order-totals__row"><span>${escapeHtml(o.discountLabel || 'Discount')}</span><span>− ${formatPrice(discount)}</span></div>` : ''}
+      <div class="order-totals__row"><span>${shipLabel}</span><span>${shipping > 0 ? formatPrice(shipping) : 'Free'}</span></div>
+      <div class="order-totals__row order-totals__row--total"><span>Total${o.paymentMethod === 'cod' ? ' (cash)' : ''}</span><span>${formatPrice(o.total)}</span></div>
+    </div>`;
+}
+
+// "Cancel this order" button + confirm, for orders that haven't been packed.
+// `email` is the email on the order (guests prove ownership with it).
+export function renderCancelBox(o) {
+  if (!o.canCancel) return '';
+  return `
+    <div class="panel" id="cancelBox">
+      <h2 class="panel__title" style="margin-bottom:0.4rem;">Changed your mind?</h2>
+      <p class="panel__text">You can cancel while we haven't packed it yet.${o.paymentStatus === 'paid' ? ' Since it\'s paid, we\'ll refund you within a few business days.' : ''}</p>
+      <div class="form-actions" style="margin-top:0;">
+        <button type="button" class="btn btn-outline-dark btn-sm" id="cancelOrderBtn">Cancel this order</button>
+      </div>
+      <p class="panel__text" id="cancelMsg" style="margin-top:0.5rem;"></p>
+    </div>`;
+}
+
+export function wireCancelButton(o, email, { getToken, onDone } = {}) {
+  const btn = document.getElementById('cancelOrderBtn');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    const reason = window.prompt(`Cancel order #${o.orderNumber}? Tell us why (optional):`);
+    if (reason === null) return;
+    btn.disabled = true; btn.textContent = 'Cancelling…';
+    const msg = document.getElementById('cancelMsg');
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      const token = getToken ? await getToken() : null;
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res  = await fetch('/api/cancel-order', { method: 'POST', headers, body: JSON.stringify({ orderNumber: o.orderNumber, email, reason }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not cancel. Please contact us.');
+      msg.textContent = data.needsRefund ? 'Cancelled. Your refund is being arranged.' : 'Cancelled.';
+      if (onDone) onDone();
+    } catch (err) {
+      msg.textContent = err.message;
+      btn.disabled = false; btn.textContent = 'Cancel this order';
+    }
+  });
 }
 
 // Wire up any "Copy" buttons for tracking numbers inside `root`.

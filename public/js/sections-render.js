@@ -140,6 +140,14 @@ async function loadProductsForRails(sections, brandId) {
   return out;
 }
 
+async function loadProductCollectionNewest(brandId, limit) {
+  let q = supabase.from('products')
+    .select('id, name, base_price, category, created_at, product_images ( image_url, is_primary, display_order )')
+    .eq('is_active', true).order('created_at', { ascending: false }).limit(limit);
+  if (brandId) q = q.eq('brand_id', brandId);
+  return q;
+}
+
 // Matches the real schema used by /shop.html: products + joined
 // product_images (we pick the primary one in JS). No `is_on_sale` /
 // `compare_at_price` columns exist today — "sale" and "featured" fall back
@@ -155,10 +163,15 @@ async function loadProductCollection(collection, brandId, limit) {
     .order('created_at', { ascending: false })
     .limit(limit);
   if (brandId) q = q.eq('brand_id', brandId);
-  // Future hook: when products get an `is_featured` or `is_on_sale` column,
-  // branch on `collection` here. For now every collection = newest-first.
+  // "featured" = products ticked "Feature on homepage" in Admin → Products
+  // (products.is_featured, migration 033). Anything else = newest first.
+  if (collection === 'featured') q = q.eq('is_featured', true);
 
-  const { data, error } = await q;
+  let { data, error } = await q;
+  // Column missing (migration 033 not run yet) → fall back to newest
+  if (error?.code === '42703' && collection === 'featured') {
+    ({ data, error } = await loadProductCollectionNewest(brandId, limit));
+  }
   if (error) {
     // Fail soft so the rest of the page still renders on a fresh DB.
     console.warn('[sections-render] product load failed for', collection, error.message);

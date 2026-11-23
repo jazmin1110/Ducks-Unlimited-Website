@@ -168,11 +168,20 @@ function renderList() {
     li.setAttribute('draggable', 'true');
     li.dataset.sectionId = s.id;
 
+    // Under each section's name we show its own headline (for example
+    // "New Arrivals"), so two sections of the same kind are easy to tell
+    // apart. It used to show a code like "PRODUCT-RAIL".
+    const sectionHint = (sec) => {
+      const text = sec._settings?.heading || sec._settings?.headline || '';
+      const plain = String(text).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      return plain.length > 34 ? plain.slice(0, 33) + '…' : plain;
+    };
+
     li.innerHTML = `
       <span class="section-list__drag" aria-hidden="true" title="Drag to reorder">⋮⋮</span>
       <span class="section-list__name">
         ${escapeHtml(schema?.name || s.section_type)}
-        <small>${s.brand_id ? '' : 'global · '}${escapeHtml(s.section_type)}</small>
+        <small>${s.brand_id ? '' : 'Both brands · '}${escapeHtml(sectionHint(s))}</small>
       </span>
       <button class="section-list__icon-btn" title="Move up"   data-move="up">↑</button>
       <button class="section-list__icon-btn" title="Move down" data-move="down">↓</button>
@@ -420,11 +429,11 @@ function fieldHtml(f, value, idPrefix = '', labelKey = null) {
       input = `<textarea ${common}>${escapeHtml(v)}</textarea>`;
       break;
     case 'richtext':
-      input = `<textarea ${common} placeholder="HTML allowed (e.g. <br>, <em>)">${escapeHtml(v)}</textarea>`;
+      input = `<textarea ${common} placeholder="Type your text here">${escapeHtml(v)}</textarea>`;
       break;
     case 'image':
       input = `
-        <input type="url" value="${escapeAttr(v)}" placeholder="https://..." ${common}>
+        <input type="url" value="${escapeAttr(v)}" placeholder="Paste the photo's web address (https://…)" ${common}>
         <img data-image-preview-for="${labelKey ? labelKey + ':' + f.id : f.id}" src="${escapeAttr(v)}" class="field__image-preview" alt=""
              onerror="this.style.display='none'" onload="this.style.display='block'">
       `;

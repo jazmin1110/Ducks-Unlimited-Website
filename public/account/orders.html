@@ -97,10 +97,16 @@
         return;
       }
 
-      const orders = data.map(orderFromRow);
+      // Expired (never paid) checkouts aren't really orders — keep them out of the way
+      const orders = data.map(orderFromRow).filter(o => o.paymentStatus !== 'expired');
+      if (!orders.length) {
+        sub.textContent = '';
+        list.innerHTML = `<div class="panel empty-state"><h2>No orders yet</h2><p>When you place an order, you'll see it here with live tracking.</p><a href="/shop.html" class="btn btn-primary">Start Shopping</a></div>`;
+        return;
+      }
 
       // Orders still on the way go first so they're easy to find
-      const active = orders.filter(o => o.paymentStatus === 'paid' && !['delivered', 'cancelled'].includes(o.fulfillmentStatus));
+      const active = orders.filter(o => (o.paymentStatus === 'paid' || o.paymentMethod === 'cod') && !['delivered', 'cancelled'].includes(o.fulfillmentStatus));
       sub.textContent = `${orders.length} ${orders.length === 1 ? 'order' : 'orders'}` +
         (active.length ? ` · ${active.length} on the way` : '');
 

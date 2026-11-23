@@ -187,6 +187,15 @@
     }
 
     /* ── Products table ── */
+    .pill { display: inline-block; font-size: 0.65rem; padding: 0.1rem 0.4rem; border-radius: 999px; vertical-align: middle; margin-left: 0.3rem; }
+    .pill--gold { background: #fff3cc; color: #7a5a00; }
+    .pill--warn { background: #fde8e8; color: #b33a3a; }
+    .stock-zero { color: #b33a3a; font-weight: 600; }
+    .field-opt { font-weight: 400; color: #999; font-size: 0.8rem; }
+    .qa-swatch { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: #555; }
+    .qa-swatch input[type="color"] { width: 32px; height: 32px; border: 1px solid #ddd; border-radius: 50%; padding: 0; background: none; cursor: pointer; }
+    .qa-stock { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: #555; flex: 1 1 200px; }
+    .qa-stock input { width: 80px; padding: 0.4rem; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
     .table-wrap {
       background: #fff;
       border-radius: 8px;
@@ -315,7 +324,10 @@
       height: 100vh;
       height: 100dvh; /* visible screen height on phones (excludes browser toolbars) */
       width: 100%;
-      max-width: 440px;
+      /* Wide enough for the photos and the colors-and-sizes table to breathe.
+         (It used to be 440px, which squeezed SKU codes onto four lines.)
+         On phones the editor still fills the whole screen. */
+      max-width: 780px;
       background: #fff;
       z-index: 201;
       display: flex;
@@ -380,6 +392,33 @@
     /* ── Form styles inside the panel ── */
     .field {
       margin-bottom: 1.25rem;
+    }
+
+    /* On a laptop the editor is wide, so short fields sit side by side
+       (Category next to Audience, Fit next to Care). Fields marked
+       "field--wide" in the HTML take the full width. Phones stay one column. */
+    @media (min-width: 900px) {
+      #productForm {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        column-gap: 1.25rem;
+        align-items: start;
+      }
+      #productForm .field--wide { grid-column: 1 / -1; }
+      #productForm .field--wide .price-wrap { max-width: 260px; }
+      .panel-body   { padding: 1.5rem 1.75rem; }
+      .panel-footer { padding: 1rem 1.75rem; }
+    }
+
+    /* Section titles inside the editor: 1 Details, 2 Photos, 3 Colors & sizes */
+    .editor-step {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1B4D2E;
+      margin: 0 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #eee;
     }
 
     .field label {
@@ -938,6 +977,7 @@
       font-family: 'SF Mono', Monaco, Menlo, monospace;
       font-size: 0.8rem;
       color: #444;
+      white-space: nowrap;   /* keep each code on one line */
     }
 
     /* ── Toast notification (bottom-right) ── */
@@ -1028,13 +1068,14 @@
             <th>Category</th>
             <th class="col-price">Base Price</th>
             <th class="col-variants">Variants</th>
+            <th class="col-stock" title="Online / store stock across all sizes">Stock</th>
             <th class="col-status">Visibility</th>
             <th class="col-actions">Edit</th>
           </tr>
         </thead>
         <tbody id="productsTableBody">
           <tr>
-            <td colspan="7" class="table-state">Loading products…</td>
+            <td colspan="8" class="table-state">Loading products…</td>
           </tr>
         </tbody>
       </table>
@@ -1063,7 +1104,9 @@
         <!-- Hidden field: product ID (only set when editing an existing product) -->
         <input type="hidden" id="productId" />
 
-        <div class="field">
+        <h3 class="editor-step field--wide">Details</h3>
+
+        <div class="field field--wide">
           <label for="productName">Product Name <span style="color:#c00">*</span></label>
           <input type="text" id="productName" placeholder="e.g. Classic Polo Shirt" required />
         </div>
@@ -1095,12 +1138,23 @@
           </select>
         </div>
 
-        <div class="field">
+        <div class="field field--wide">
           <label for="productDescription">Description</label>
-          <textarea id="productDescription" placeholder="Describe the product — fabric, fit, care instructions…"></textarea>
+          <textarea id="productDescription" placeholder="Describe the product — fabric, feel, what makes it special…"></textarea>
         </div>
 
+        <!-- Shown under "Fit & Sizing" / "Care" on the product page. Leave
+             blank to use a sensible default for the category. -->
         <div class="field">
+          <label for="productFit">Fit &amp; sizing notes <span class="field-opt">(optional)</span></label>
+          <textarea id="productFit" rows="2" placeholder="e.g. Slim fit — size up if you're between sizes. Model is 5'9&quot; and wears M."></textarea>
+        </div>
+        <div class="field">
+          <label for="productCare">Care instructions <span class="field-opt">(optional)</span></label>
+          <textarea id="productCare" rows="2" placeholder="e.g. Machine wash cold, inside out. Hang dry. Do not bleach."></textarea>
+        </div>
+
+        <div class="field field--wide">
           <label for="productPrice">Base Price (PHP) <span style="color:#c00">*</span></label>
           <div class="price-wrap">
             <span class="currency">₱</span>
@@ -1122,12 +1176,27 @@
           </label>
         </div>
 
+        <div class="field">
+          <!-- A small title so this switch lines up with "Visibility" beside it -->
+          <label>Homepage</label>
+          <label class="toggle-row" for="productFeatured">
+            <div>
+              <div class="toggle-label">Feature on homepage</div>
+              <div class="toggle-sublabel">Shows in the homepage Product Grid when it's set to "Featured" (Homepage builder)</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="productFeatured" />
+              <span class="switch-track"></span>
+            </label>
+          </label>
+        </div>
+
       </form>
 
       <!-- ── Product images section (only visible when editing an existing product) ── -->
       <section class="images-section" id="imagesSection" style="display: none;">
 
-        <h3 class="images-heading">Product Images</h3>
+        <h3 class="images-heading">Photos</h3>
         <p class="images-subheading">
           Up to 12 photos. JPG, PNG, or WEBP — max 5 MB each. You can pick several at once.
           The first photo is the main one customers see — tap <strong>Make main</strong>
@@ -1155,11 +1224,11 @@
       <!-- ── Variants section (only visible when editing an existing product) ── -->
       <section class="variants-section" id="variantsSection" style="display: none;">
 
-        <h3 class="variants-heading">Variants</h3>
+        <h3 class="variants-heading">Colors &amp; Sizes</h3>
         <p class="variants-subheading">
-          A variant is one color + size, e.g. "Navy, M". Each one gets its own stock
-          count (online and Greenhills store), starting at 0 — set the stock on the
-          <a href="/admin/inventory.html">Inventory</a> page.
+          Each color + size you sell (e.g. "Navy, M") is called a variant. Each one gets its own stock
+          count (online and Greenhills store). Type the starting stock below, or
+          change it later on the <a href="/admin/inventory.html">Inventory</a> page.
         </p>
 
         <!-- Fastest way: one color + tick all its sizes -->
@@ -1168,11 +1237,20 @@
           <p class="qa-help">Type the color, tap the sizes you have, then press Add. SKU codes are made for you.</p>
           <div class="qa-row">
             <input type="text" class="variant-input" id="qaColor" placeholder="Color, e.g. Navy" />
+            <label class="qa-swatch" title="The little colour circle shoppers see. Pick the closest match.">
+              <input type="color" id="qaHex" value="#1B4D2E" />
+              <span>Swatch</span>
+              <input type="checkbox" id="qaHexUse" /> <span>use</span>
+            </label>
             <div class="variant-price-wrap" style="flex:1 1 140px;">
               <span class="currency">₱</span>
               <input type="number" class="variant-input" id="qaPrice" min="0" step="0.01"
                      placeholder="Special price (optional)" />
             </div>
+          </div>
+          <div class="qa-row">
+            <label class="qa-stock">Starting stock — online <input type="number" id="qaOnline" min="0" step="1" value="0" inputmode="numeric" /></label>
+            <label class="qa-stock">Greenhills store <input type="number" id="qaStore" min="0" step="1" value="0" inputmode="numeric" /></label>
           </div>
           <div id="qaSizes"></div>
           <button type="button" class="variant-action-btn primary" id="qaAddBtn">Add selected sizes</button>
@@ -1217,6 +1295,7 @@
     import { requireAdmin } from '/admin/js/admin-guard.js';
     import { adminBrandFilter, getAdminBrandSlug, ADMIN_ALL } from '/js/brand.js';
     import { openImportModal } from '/admin/js/import-modal.js';
+    import { shrinkImage } from '/admin/js/image-uploader.js';
     import { downloadCsv, todayStamp } from '/admin/js/csv.js';
     import {
       buildProductExport, blankProductTemplate, analyzeProductFile, applyProductPlan,
@@ -1241,6 +1320,9 @@
     const descInput      = document.getElementById('productDescription');
     const priceInput     = document.getElementById('productPrice');
     const activeInput    = document.getElementById('productActive');
+    const fitInput       = document.getElementById('productFit');
+    const careInput      = document.getElementById('productCare');
+    const featuredInput  = document.getElementById('productFeatured');
     const saveBtn        = document.getElementById('saveBtn');
     const toast          = document.getElementById('toast');
     const searchInput    = document.getElementById('productSearch');
@@ -1276,7 +1358,7 @@
 
     // ── Load and render products table ──
     async function loadProducts() {
-      tableBody.innerHTML = '<tr><td colspan="7" class="table-state">Loading…</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="8" class="table-state">Loading…</td></tr>';
       clearSelection();
 
       // Scope to the admin's chosen brand. `null` = "All brands" (no filter).
@@ -1285,7 +1367,7 @@
 
       let query = supabase
         .from('products')
-        .select('*, brands!inner ( slug, name ), variants ( sku ), product_images ( image_url, display_order )')
+        .select('*, brands!inner ( slug, name ), variants ( sku, inventory ( channel, quantity ) ), product_images ( image_url, display_order )')
         .order('created_at', { ascending: false });
 
       if (brandFilter) query = query.eq('brands.slug', brandFilter);
@@ -1293,7 +1375,7 @@
       const { data: products, error } = await query;
 
       if (error) {
-        tableBody.innerHTML = `<tr><td colspan="7" class="table-state">Failed to load products. Please refresh.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="8" class="table-state">Failed to load products. Please refresh.</td></tr>`;
         return;
       }
 
@@ -1308,7 +1390,7 @@
 
       if (allProducts.length === 0) {
         listCount.textContent = '';
-        tableBody.innerHTML = `<tr><td colspan="7" class="table-state">No products yet. Click "Add Product" to create your first one, or "Import CSV" to upload many at once.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="8" class="table-state">No products yet. Click "Add Product" to create your first one, or "Import CSV" to upload many at once.</td></tr>`;
         return;
       }
 
@@ -1331,7 +1413,7 @@
       listCount.textContent = `${shown.length} of ${allProducts.length} products`;
 
       if (shown.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="7" class="table-state">No products match your search.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="8" class="table-state">No products match your search.</td></tr>`;
         return;
       }
 
@@ -1344,9 +1426,18 @@
         // Main photo = the image with the lowest display_order
         const mainImage = (p.product_images || [])
           .slice().sort((a, b) => a.display_order - b.display_order)[0];
+        const photoCount = (p.product_images || []).length;
         const thumb = mainImage
           ? `<img class="product-thumb" src="${escapeHtml(mainImage.image_url)}" alt="" loading="lazy" />`
           : `<div class="product-thumb empty">No photo</div>`;
+
+        // Stock across every size: online / store
+        let online = 0, store = 0;
+        for (const v of p.variants || []) for (const i of v.inventory || []) {
+          if (i.channel === 'online') online += i.quantity || 0; else store += i.quantity || 0;
+        }
+        const stockHtml = variantCount === 0 ? '<span style="color:#aaa">—</span>'
+          : `<span class="${online === 0 ? 'stock-zero' : ''}" title="Online">${online}</span> <span style="color:#aaa">/</span> <span title="Greenhills store">${store}</span>`;
 
         const row = document.createElement('tr');
         row.dataset.id = p.id; // store product ID on the row for click handler
@@ -1360,7 +1451,7 @@
             <div class="product-cell">
               ${thumb}
               <div>
-                <div class="product-name">${escapeHtml(p.name)}</div>
+                <div class="product-name">${escapeHtml(p.name)}${p.is_featured ? ' <span class="pill pill--gold" title="Featured on the homepage">★</span>' : ''}${photoCount === 0 && p.is_active ? ' <span class="pill pill--warn" title="Customers see a stock photo or a blank tile">No photo</span>' : ''}</div>
                 ${p.description
                   ? `<div class="product-desc">${escapeHtml(p.description)}</div>`
                   : ''}
@@ -1372,6 +1463,7 @@
           <td>${variantCount === 0
                 ? '<span style="color:#b33a3a" title="Customers cannot buy a product with no variants">0 — add some</span>'
                 : variantCount}</td>
+          <td class="col-stock">${stockHtml}</td>
           <td>
             <!-- One click flips it. See toggleVisibility() below. -->
             ${visibilityButtonHtml(p.id, p.is_active)}
@@ -1595,6 +1687,9 @@
       descInput.value = '';
       priceInput.value = '';
       activeInput.checked = true;
+      fitInput.value = '';
+      careInput.value = '';
+      featuredInput.checked = false;
       panelTitle.textContent = 'Add Product';
       saveBtn.textContent = 'Save Product';
       clearPanelError();
@@ -1637,6 +1732,9 @@
       descInput.value      = p.description ?? '';
       priceInput.value     = p.base_price;
       activeInput.checked  = p.is_active;
+      fitInput.value       = p.fit_notes ?? '';
+      careInput.value      = p.care_notes ?? '';
+      featuredInput.checked = !!p.is_featured;
       productBrandSlug     = p.brands?.slug ?? null;
       formDirty            = false;
 
@@ -1691,6 +1789,9 @@
         description: desc || null,
         base_price: price,
         is_active: isActive,
+        fit_notes:   fitInput.value.trim() || null,
+        care_notes:  careInput.value.trim() || null,
+        is_featured: featuredInput.checked,
       };
 
       // ── UPDATE existing product ──
@@ -1702,7 +1803,7 @@
         saveBtn.textContent = 'Save Changes';
 
         if (error) {
-          showPanelError('Something went wrong. Please try again.');
+          showPanelError(friendlyDbError(error));
           console.error(error);
           return;
         }
@@ -1751,7 +1852,7 @@
       if (insertErr) {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Save Product';
-        showPanelError('Something went wrong. Please try again.');
+        showPanelError(friendlyDbError(insertErr));
         console.error(insertErr);
         return;
       }
@@ -1778,6 +1879,14 @@
       // Refresh the table in the background so the new product appears.
       // Not awaited — the user can keep working in the panel.
       loadProducts();
+    }
+
+    // A missing column means a migration hasn't been run yet — say so plainly
+    function friendlyDbError(error) {
+      if (error?.code === '42703' || error?.code === 'PGRST204' || /column .* does not exist|schema cache/i.test(error?.message || '')) {
+        return 'The database is missing a newer column. Run database/migrations/033_checkout_options_emails_and_audit.sql in Supabase, then try again.';
+      }
+      return 'Something went wrong. Please try again.';
     }
 
     // ── Utility: escape HTML to prevent XSS when inserting strings into innerHTML ──
@@ -1967,16 +2076,20 @@
 
     // Upload one file and link it to the product. Returns true on success.
     async function uploadOneImage(productId, file, displayOrder) {
+      // Shrink big phone photos first (max 1600px, WebP) so pages load fast.
+      // If the browser can't do it, the original is uploaded as-is.
+      const prepared = await shrinkImage(file).catch(() => file);
+
       // Build storage path: <productId>/<random>.<ext> — keeps each product's
       // images in its own folder so they're easy to find / clean up.
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const ext = prepared !== file ? 'webp' : (file.name.split('.').pop() || 'jpg').toLowerCase();
       const filename = `${crypto.randomUUID()}.${ext}`;
       const storagePath = `${productId}/${filename}`;
 
       // Step 1 — upload the binary file to Supabase Storage
       const { error: uploadErr } = await supabase.storage
         .from('product-images')
-        .upload(storagePath, file);
+        .upload(storagePath, prepared, { contentType: prepared.type || file.type, cacheControl: '31536000' });
 
       if (uploadErr) {
         console.error(uploadErr);
@@ -2370,6 +2483,10 @@
       const color    = document.getElementById('qaColor').value.trim();
       const priceStr = document.getElementById('qaPrice').value;
       const priceOverride = priceStr === '' ? null : parseFloat(priceStr);
+      const useHex   = document.getElementById('qaHexUse').checked;
+      const colorHex = useHex ? document.getElementById('qaHex').value : null;
+      const startOnline = Math.max(0, parseInt(document.getElementById('qaOnline').value, 10) || 0);
+      const startStore  = Math.max(0, parseInt(document.getElementById('qaStore').value, 10)  || 0);
       const sizes = [...document.querySelectorAll('#qaSizes input:checked')].map(cb => cb.value);
 
       if (!color) { showToast('Type the color first.'); document.getElementById('qaColor').focus(); return; }
@@ -2396,7 +2513,7 @@
         const sku = suggestSku(categoryInput.value, color, size);
         const { data: v, error } = await supabase
           .from('variants')
-          .insert({ product_id: productIdInput.value, color, size, sku, price_override: priceOverride })
+          .insert({ product_id: productIdInput.value, color, size, sku, price_override: priceOverride, ...(colorHex ? { color_hex: colorHex } : {}) })
           .select()
           .single();
         if (error) {
@@ -2410,11 +2527,16 @@
       if (added.length > 0) {
         const { error: invErr } = await supabase.from('inventory').insert(
           added.flatMap(id => [
-            { variant_id: id, channel: 'online',           quantity: 0 },
-            { variant_id: id, channel: 'greenhills_store', quantity: 0 },
+            { variant_id: id, channel: 'online',           quantity: startOnline },
+            { variant_id: id, channel: 'greenhills_store', quantity: startStore },
           ])
         );
         if (invErr) console.error(invErr);
+        // Same colour, same swatch: update any older variants of this colour too
+        if (colorHex) {
+          await supabase.from('variants').update({ color_hex: colorHex })
+            .eq('product_id', productIdInput.value).ilike('color', color);
+        }
       }
 
       btn.disabled = false;

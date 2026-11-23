@@ -35,7 +35,7 @@ const HOME = {
     men:      '/images/brand/du-store-new-arrivals.jpg',  // navy polo on the new-arrivals rail
     women:    '/images/products/du/ladies-yneck-pink.jpg', // ladies' Y-neck shirt, pale pink
     kids:     '/images/products/du/kids-tee-natural.jpg',  // kids' round-neck tee
-    material: '/images/brand/du-flatlay-green-polo.jpg',  // folded green polo, paint splash
+    material: '/images/brand/du-store-red-polos.jpg',     // red polos on the rail, in-store
     workshop: '/images/brand/du-flatlay-tipped-polos.jpg', // two tipped-collar polos, flat-lay
   },
   rw: {

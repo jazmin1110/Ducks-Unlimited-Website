@@ -205,6 +205,14 @@
         <li class="site-nav__item site-nav__item--mobile-only">
           <a href="/account/wishlist.html">Wishlist</a>
         </li>
+        <!-- Help links: on phones these used to be only in the footer, a long
+             scroll away. Shoppers look for them in the menu. -->
+        <li class="site-nav__item site-nav__item--mobile-only">
+          <a href="/track-order.html">Track an Order</a>
+        </li>
+        <li class="site-nav__item site-nav__item--mobile-only">
+          <a href="/customer-service/help.html">Help &amp; FAQ</a>
+        </li>
       </ul>
     </nav>
 
@@ -338,6 +346,21 @@
     });
   })();
 
+
+  // ── Compact header on scroll ────────────────────────────────────────────
+  (function () {
+    var nav = document.querySelector('[data-site-nav]');
+    if (!nav) return;
+    var ticking = false;
+    function update() {
+      nav.classList.toggle('site-nav--compact', window.scrollY > 80);
+      ticking = false;
+    }
+    window.addEventListener('scroll', function () {
+      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    }, { passive: true });
+    update();
+  })();
 
   // ── Search panel toggle ─────────────────────────────────────────────────
   (function () {
@@ -481,7 +504,13 @@
     background: var(--color-bg-warm);
     border-bottom: 1px solid var(--color-border-light);
     font-family: var(--font-body);
+    max-height: 48px;
+    overflow: hidden;
+    transition: max-height 0.2s ease, opacity 0.2s ease;
   }
+  /* Once the shopper scrolls, the brand strip folds away so the sticky
+     header takes less of the screen (the main row stays). */
+  .site-nav--compact .site-nav__brandbar { max-height: 0; opacity: 0; border-bottom-width: 0; }
 
   .site-nav__brandbar-inner {
     display: flex;

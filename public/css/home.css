@@ -414,3 +414,34 @@
   .product-card__name  { font-size: 1.1rem; }
 
 }
+
+
+/* ── PHONES: less scrolling before the products ──────────────
+   On a phone the homepage used to be about nine screens tall, and shoppers
+   had to scroll past two tall story blocks to reach New Arrivals. These rules
+   only apply to small screens and only tighten heights and spacing. Nothing
+   is removed. */
+@media (max-width: 767px) {
+
+  /* Hero: about two thirds of the screen, so the next section peeks in and
+     shows there is more below. */
+  .hero--photo { min-height: 68svh; }
+
+  /* Less empty space above and below the Collection and New Arrivals blocks */
+  .collections.section-xl,
+  .new-arrivals.section-xl { padding-block: var(--space-xl); }
+
+  /* Story photos: wide instead of tall */
+  .editorial__media { aspect-ratio: 4 / 3; }
+  .editorial__copy  { padding: var(--space-xl) var(--space-md); }
+}
+
+
+/* ── HERO TEXT OVER A PHOTO ──────────────────────────────────
+   A soft shadow keeps the white words readable when the photo behind them is
+   bright or busy (for example a rack of colourful polos). */
+.hero--photo .hero__eyebrow,
+.hero--photo .hero__headline,
+.hero--photo .hero__sub {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55), 0 2px 18px rgba(0, 0, 0, 0.45);
+}

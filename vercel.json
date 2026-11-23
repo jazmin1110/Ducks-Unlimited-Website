@@ -10,8 +10,17 @@
     "api/*.js": {
       "memory": 1024,
       "maxDuration": 10
+    },
+    "api/product-page.js": {
+      "memory": 1024,
+      "maxDuration": 10,
+      "includeFiles": "public/product.html"
     }
   },
+
+  "crons": [
+    { "path": "/api/expire-orders", "schedule": "*/30 * * * *" }
+  ],
 
   "redirects": [
     { "source": "/gift-cards.html", "destination": "/shop.html", "permanent": false },
@@ -19,11 +28,41 @@
   ],
 
   "rewrites": [
+    { "source": "/product.html", "has": [{ "type": "query", "key": "id" }], "destination": "/api/product-page" },
     { "source": "/du", "destination": "/home.html" },
     { "source": "/du/", "destination": "/home.html" },
     { "source": "/du/:path*", "destination": "/:path*" },
     { "source": "/rw", "destination": "/home.html" },
     { "source": "/rw/", "destination": "/home.html" },
     { "source": "/rw/:path*", "destination": "/:path*" }
+  ],
+
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src https://pg-sandbox.paymaya.com https://pg.maya.ph; frame-ancestors 'self'; base-uri 'self'; form-action 'self' https://pg-sandbox.paymaya.com https://pg.maya.ph"
+        }
+      ]
+    },
+    {
+      "source": "/(images|css|js|lib|admin/js)/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    }
   ]
 }

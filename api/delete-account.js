@@ -12,7 +12,8 @@
 //   customer_profiles, customer_addresses, wishlists
 // What is KEPT:
 //   orders — they're business/tax records. Their user_id is set to null
-//   (ON DELETE SET NULL), so they're no longer tied to a login.
+//   (ON DELETE SET NULL), and the name, email, phone and address on them are
+//   replaced with placeholders, so the person can't be identified from them.
 //
 // Admin accounts can't be deleted here, so nobody locks the shop out by accident.
 // =============================================================================
@@ -37,6 +38,19 @@ export default async function handler(req, res) {
     if (admins?.length) {
       return res.status(403).json({ error: 'Admin accounts must be removed from the Supabase dashboard.' });
     }
+
+    // Data Privacy Act: the orders stay (they're tax records) but the person
+    // is no longer identifiable from them. Order numbers and amounts remain.
+    await supabaseAdmin(`orders?user_id=eq.${user.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        customer_name:    'Deleted customer',
+        customer_email:   `deleted+${user.id.slice(0, 8)}@removed.invalid`,
+        customer_phone:   null,
+        shipping_address: '[address removed at the customer\'s request]',
+        customer_notes:   null,
+      }),
+    }).catch(err => console.warn('delete-account: could not pseudonymise orders', err));
 
     // Supabase Auth admin API — removes the login itself.
     const del = await fetch(`${process.env.SUPABASE_URL}/auth/v1/admin/users/${user.id}`, {

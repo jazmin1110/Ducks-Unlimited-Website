@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
+  <title>Activity — Admin · Ducks Unlimited</title>
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    body { background: var(--color-bg-warm); }
+    main.admin-main { padding: var(--space-md); max-width: 1100px; margin: 0 auto; }
+    .admin-h1 { font-family: var(--font-heading); color: var(--color-primary); font-size: 2rem; margin-bottom: 0.5rem; }
+    .admin-sub { color: var(--color-text-muted); margin-bottom: var(--space-md); max-width: 60ch; }
+    .admin-panel { background: var(--color-white); padding: var(--space-md); border: 1px solid var(--color-border-light); }
+    .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: var(--space-sm); }
+    .filters select, .filters input { padding: 0.5rem 0.7rem; border: 1px solid var(--color-border); border-radius: 4px; font-size: 16px; font-family: inherit; background: #fff; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th { text-align: left; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted); padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--color-border-light); }
+    td { padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--color-border-light); vertical-align: top; }
+    .muted { color: var(--color-text-muted); font-size: 0.8rem; }
+    .table-wrap { overflow-x: auto; }
+    .tag { display: inline-block; font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.15rem 0.45rem; border-radius: 999px; background: var(--color-bg); color: var(--color-text-muted); }
+    .more { margin-top: var(--space-sm); }
+    .btn-action { border: 1px solid var(--color-primary); background: #fff; color: var(--color-primary); padding: 0.5rem 1rem; cursor: pointer; border-radius: 4px; font-family: inherit; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <div data-component="admin-nav"></div>
+
+  <main class="admin-main">
+    <h1 class="admin-h1">Activity</h1>
+    <p class="admin-sub">Who changed what: prices, visibility, stock counts, and order statuses. Written by the database itself, so it can't be edited here.</p>
+
+    <section class="admin-panel">
+      <div class="filters">
+        <select id="fAction">
+          <option value="">All changes</option>
+          <option value="price">Price changes</option>
+          <option value="visibility">Show / hide product</option>
+          <option value="stock">Stock changes</option>
+          <option value="fulfillment">Order status</option>
+          <option value="payment">Payment status</option>
+          <option value="insert">New products</option>
+          <option value="delete">Deleted products</option>
+        </select>
+        <input id="fWho" type="search" placeholder="Filter by staff email…" />
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>When</th><th>Who</th><th>What</th><th>Details</th></tr></thead>
+          <tbody id="rows"><tr><td colspan="4" class="muted">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="more"><button type="button" class="btn-action" id="moreBtn" hidden>Load older</button></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+    import { requireAdmin } from '/admin/js/admin-guard.js';
+    await requireAdmin();
+
+    const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const PAGE = 100;
+    let offset = 0;
+
+    // Turn the stored before/after into a sentence
+    function details(r) {
+      const d = r.summary || {};
+      const peso = (n) => '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+      switch (r.action) {
+        case 'price':       return `${esc(d.name)}: ${peso(d.from)} → ${peso(d.to)}`;
+        case 'visibility':  return `${esc(d.name)}: now ${d.visible ? 'visible' : 'hidden'}`;
+        case 'stock':       return `${esc(d.channel === 'online' ? 'Online' : 'Store')} stock ${d.from} → ${d.to} <a class="muted" href="/admin/inventory.html?variant=${r.row_id}">open</a>`;
+        case 'fulfillment': return `<a href="/admin/orders.html?order=${r.row_id}">${esc(d.order)}</a>: ${esc(d.from)} → ${esc(d.to)}`;
+        case 'payment':     return `<a href="/admin/orders.html?order=${r.row_id}">${esc(d.order)}</a>: payment ${esc(d.from)} → ${esc(d.to)}`;
+        case 'insert':      return `Added ${esc(d.name)} at ${peso(d.price)}`;
+        case 'delete':      return `Deleted ${esc(d.name)}`;
+        default:            return esc(JSON.stringify(d));
+      }
+    }
+
+    async function load(append = false) {
+      let q = supabase.from('admin_log').select('*').order('created_at', { ascending: false }).range(offset, offset + PAGE - 1);
+      const action = document.getElementById('fAction').value;
+      const who = document.getElementById('fWho').value.trim();
+      if (action) q = q.eq('action', action);
+      if (who) q = q.ilike('actor_email', `%${who}%`);
+      const { data, error } = await q;
+      const tbody = document.getElementById('rows');
+      if (error) {
+        tbody.innerHTML = `<tr><td colspan="4" class="muted">${/relation|does not exist/i.test(error.message) ? 'Run database/migrations/033_checkout_options_emails_and_audit.sql in Supabase first.' : 'Could not load.'}</td></tr>`;
+        return;
+      }
+      const html = (data || []).map(r => `<tr>
+        <td class="muted" style="white-space:nowrap;">${esc(new Date(r.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</td>
+        <td>${esc(r.actor_email || 'server')}</td>
+        <td><span class="tag">${esc(r.action)}</span></td>
+        <td>${details(r)}</td>
+      </tr>`).join('');
+      if (append) tbody.insertAdjacentHTML('beforeend', html);
+      else tbody.innerHTML = html || '<tr><td colspan="4" class="muted">Nothing logged yet.</td></tr>';
+      document.getElementById('moreBtn').hidden = (data || []).length < PAGE;
+    }
+
+    document.getElementById('fAction').addEventListener('change', () => { offset = 0; load(); });
+    document.getElementById('fWho').addEventListener('input', () => { offset = 0; load(); });
+    document.getElementById('moreBtn').addEventListener('click', () => { offset += PAGE; load(true); });
+    await load();
+  </script>
+  <script type="module" src="/js/components.js"></script>
+</body>
+</html>

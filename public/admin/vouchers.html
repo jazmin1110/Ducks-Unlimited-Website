@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
+  <title>Vouchers — Admin · Ducks Unlimited</title>
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <style>
+    body { background: var(--color-bg-warm); }
+
+    /* Nav styles live in /components/admin-nav.html (shared across admin) */
+
+    main.admin-main { padding: var(--space-md); max-width: 1100px; margin: 0 auto; }
+    .admin-h1 { font-family: var(--font-heading); color: var(--color-primary); font-size: 2rem; margin-bottom: 0.5rem; }
+    .admin-sub { color: var(--color-text-muted); margin-bottom: var(--space-md); max-width: 60ch; }
+
+    .admin-panel { background: var(--color-white); padding: var(--space-md); margin-bottom: var(--space-md); border: 1px solid var(--color-border-light); }
+    .admin-panel h2 { font-family: var(--font-heading); font-size: 1.3rem; color: var(--color-primary); margin-bottom: var(--space-sm); }
+
+    .form-grid { display: grid; grid-template-columns: 1fr; gap: 0.85rem; }
+    @media (min-width: 720px) { .form-grid { grid-template-columns: 1fr 1fr; } .form-grid .span-2 { grid-column: span 2; } }
+    .f label { display: block; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 0.3rem; }
+    .f input, .f select { width: 100%; padding: 0.55rem 0.7rem; border: 1px solid var(--color-border); border-radius: 4px; font-size: 16px; font-family: inherit; background: #fff; }
+    .f .hint { font-size: 0.78rem; color: var(--color-text-muted); margin-top: 0.25rem; }
+    .form-actions { display: flex; gap: 0.5rem; margin-top: var(--space-sm); flex-wrap: wrap; }
+    .btn-action { border: 1px solid var(--color-primary); background: var(--color-white); color: var(--color-primary); padding: 0.55rem 1rem; font-size: 0.85rem; cursor: pointer; border-radius: 4px; font-family: inherit; }
+    .btn-action--primary { background: var(--color-primary); color: #fff; }
+    .btn-action:disabled { opacity: 0.6; cursor: default; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { text-align: left; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted); padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--color-border-light); }
+    td { padding: 0.65rem 0.6rem; border-bottom: 1px solid var(--color-border-light); vertical-align: top; }
+    tr.is-off td { opacity: 0.55; }
+    code { font-family: ui-monospace, Menlo, monospace; font-weight: 600; letter-spacing: 0.04em; }
+    .muted { color: var(--color-text-muted); font-size: 0.8rem; }
+    .btn-link { background: none; border: none; color: var(--color-primary); text-decoration: underline; cursor: pointer; font-size: 0.8rem; font-family: inherit; padding: 0; margin-right: 0.6rem; }
+    .btn-link--danger { color: var(--color-error); }
+    .table-wrap { overflow-x: auto; }
+    .msg { font-size: 0.85rem; margin-top: 0.5rem; }
+    .msg--err { color: var(--color-error); }
+    .msg--ok { color: var(--color-primary); }
+    .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1A1A1A; color: #fff; padding: 0.7rem 1.1rem; border-radius: 6px; font-size: 0.85rem; opacity: 0; transition: opacity .2s; pointer-events: none; }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div data-component="admin-nav"></div>
+
+  <main class="admin-main">
+    <h1 class="admin-h1">Vouchers</h1>
+    <p class="admin-sub">
+      Codes customers type at checkout. A voucher and the store-member discount never stack —
+      the shopper gets whichever is bigger. Free-shipping codes can combine with the member discount.
+    </p>
+
+    <section class="admin-panel">
+      <h2 id="formTitle">New voucher</h2>
+      <form id="voucherForm" novalidate>
+        <input type="hidden" id="vId" />
+        <div class="form-grid">
+          <div class="f">
+            <label for="vCode">Code</label>
+            <input id="vCode" type="text" placeholder="e.g. WELCOME10" autocapitalize="characters" required />
+            <div class="hint">Letters and numbers only. Saved in capitals.</div>
+          </div>
+          <div class="f">
+            <label for="vKind">Type</label>
+            <select id="vKind">
+              <option value="percent">Percent off the subtotal</option>
+              <option value="fixed">Fixed pesos off</option>
+              <option value="free_shipping">Free shipping</option>
+            </select>
+          </div>
+          <div class="f">
+            <label for="vValue">Value</label>
+            <input id="vValue" type="number" min="0" step="0.01" placeholder="10 = 10% or ₱10" />
+            <div class="hint">Not used for free-shipping codes.</div>
+          </div>
+          <div class="f">
+            <label for="vMin">Minimum subtotal (₱)</label>
+            <input id="vMin" type="number" min="0" step="1" value="0" />
+          </div>
+          <div class="f">
+            <label for="vStart">Starts</label>
+            <input id="vStart" type="date" />
+            <div class="hint">Leave blank = starts now.</div>
+          </div>
+          <div class="f">
+            <label for="vEnd">Ends</label>
+            <input id="vEnd" type="date" />
+            <div class="hint">Leave blank = never ends. Ends at midnight on that date.</div>
+          </div>
+          <div class="f">
+            <label for="vMax">Max uses</label>
+            <input id="vMax" type="number" min="1" step="1" placeholder="Unlimited" />
+          </div>
+          <div class="f">
+            <label for="vBrand">Brand</label>
+            <select id="vBrand"><option value="">Both brands</option></select>
+          </div>
+          <div class="f span-2">
+            <label for="vNote">Note for staff (optional)</label>
+            <input id="vNote" type="text" placeholder="e.g. Instagram giveaway, March" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-action btn-action--primary" id="saveBtn">Save voucher</button>
+          <button type="button" class="btn-action" id="resetBtn">Clear</button>
+        </div>
+        <p class="msg" id="formMsg"></p>
+      </form>
+    </section>
+
+    <section class="admin-panel">
+      <h2>All vouchers</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Code</th><th>Gives</th><th>Rules</th><th>Used</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody id="rows"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+    import { requireAdmin } from '/admin/js/admin-guard.js';
+
+    await requireAdmin();
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const peso = (n) => '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    let toastTimer;
+    function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2500); }
+
+    let brands = [];
+    let rows = [];
+
+    async function loadBrands() {
+      const { data } = await supabase.from('brands').select('id, name, slug').order('display_order');
+      brands = data || [];
+      $('vBrand').innerHTML = '<option value="">Both brands</option>' + brands.map(b => `<option value="${b.id}">${esc(b.name)} only</option>`).join('');
+    }
+
+    function describe(r) {
+      if (r.kind === 'percent')       return `${Number(r.value)}% off`;
+      if (r.kind === 'fixed')         return `${peso(r.value)} off`;
+      if (r.kind === 'free_shipping') return 'Free shipping';
+      return r.kind;
+    }
+    function status(r) {
+      const now = Date.now();
+      if (!r.is_active) return 'Off';
+      if (r.starts_at && Date.parse(r.starts_at) > now) return 'Scheduled';
+      if (r.ends_at && Date.parse(r.ends_at) < now) return 'Expired';
+      if (r.max_uses != null && r.uses >= r.max_uses) return 'Used up';
+      return 'Live';
+    }
+    const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+
+    async function load() {
+      const { data, error } = await supabase.from('discount_codes').select('*, brands ( name )').order('created_at', { ascending: false });
+      if (error) {
+        $('rows').innerHTML = `<td colspan="6" class="muted">${/relation|does not exist/i.test(error.message) ? 'Run database/migrations/033_checkout_options_emails_and_audit.sql in Supabase first.' : 'Could not load vouchers.'}</td>`;
+        return;
+      }
+      rows = data || [];
+      if (!rows.length) { $('rows').innerHTML = '<tr><td colspan="6" class="muted">No vouchers yet.</td></tr>'; return; }
+      $('rows').innerHTML = rows.map(r => {
+        const rules = [
+          r.min_subtotal > 0 ? `min ${peso(r.min_subtotal)}` : null,
+          r.starts_at ? `from ${fmtDate(r.starts_at)}` : null,
+          r.ends_at ? `until ${fmtDate(r.ends_at)}` : null,
+          r.brands?.name ? `${r.brands.name} only` : null,
+        ].filter(Boolean).join(' · ');
+        const st = status(r);
+        return `<tr class="${st === 'Live' ? '' : 'is-off'}">
+          <td><code>${esc(r.code)}</code>${r.note ? `<div class="muted">${esc(r.note)}</div>` : ''}</td>
+          <td>${describe(r)}</td>
+          <td class="muted">${rules || '—'}</td>
+          <td>${r.uses}${r.max_uses != null ? ` / ${r.max_uses}` : ''}</td>
+          <td>${st}</td>
+          <td style="white-space:nowrap;">
+            <button type="button" class="btn-link" data-edit="${r.id}">Edit</button>
+            <button type="button" class="btn-link" data-toggle="${r.id}">${r.is_active ? 'Turn off' : 'Turn on'}</button>
+            <button type="button" class="btn-link btn-link--danger" data-del="${r.id}">Delete</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function fillForm(r) {
+      $('vId').value = r?.id || '';
+      $('vCode').value = r?.code || '';
+      $('vKind').value = r?.kind || 'percent';
+      $('vValue').value = r?.value ?? '';
+      $('vMin').value = r?.min_subtotal ?? 0;
+      $('vStart').value = r?.starts_at ? r.starts_at.slice(0, 10) : '';
+      $('vEnd').value = r?.ends_at ? r.ends_at.slice(0, 10) : '';
+      $('vMax').value = r?.max_uses ?? '';
+      $('vBrand').value = r?.brand_id || '';
+      $('vNote').value = r?.note || '';
+      $('formTitle').textContent = r ? `Edit ${r.code}` : 'New voucher';
+      $('formMsg').textContent = '';
+      if (r) window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    $('rows').addEventListener('click', async (e) => {
+      const edit = e.target.closest('[data-edit]'), tog = e.target.closest('[data-toggle]'), del = e.target.closest('[data-del]');
+      if (edit) { fillForm(rows.find(r => r.id === edit.dataset.edit)); return; }
+      if (tog) {
+        const r = rows.find(x => x.id === tog.dataset.toggle);
+        const { error } = await supabase.from('discount_codes').update({ is_active: !r.is_active }).eq('id', r.id);
+        if (error) toast('Could not update.'); else { toast(r.is_active ? 'Turned off.' : 'Turned on.'); load(); }
+      }
+      if (del) {
+        const r = rows.find(x => x.id === del.dataset.del);
+        if (!window.confirm(`Delete ${r.code}? Orders that already used it keep their discount.`)) return;
+        const { error } = await supabase.from('discount_codes').delete().eq('id', r.id);
+        if (error) toast('Could not delete.'); else { toast('Deleted.'); load(); }
+      }
+    });
+
+    $('resetBtn').addEventListener('click', () => fillForm(null));
+
+    $('voucherForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = $('formMsg'); msg.className = 'msg';
+      const code = $('vCode').value.trim().toUpperCase().replace(/\s+/g, '');
+      const kind = $('vKind').value;
+      const value = kind === 'free_shipping' ? 0 : Number($('vValue').value);
+      if (!/^[A-Z0-9_-]{2,30}$/.test(code)) { msg.textContent = 'Code must be 2–30 letters or numbers.'; msg.className = 'msg msg--err'; return; }
+      if (kind !== 'free_shipping' && (!Number.isFinite(value) || value <= 0)) { msg.textContent = 'Enter a value above 0.'; msg.className = 'msg msg--err'; return; }
+      if (kind === 'percent' && value > 100) { msg.textContent = 'Percent can\'t be more than 100.'; msg.className = 'msg msg--err'; return; }
+
+      const row = {
+        code, kind, value,
+        min_subtotal: Number($('vMin').value) || 0,
+        starts_at: $('vStart').value ? new Date($('vStart').value + 'T00:00:00').toISOString() : null,
+        ends_at:   $('vEnd').value   ? new Date($('vEnd').value + 'T23:59:59').toISOString()   : null,
+        max_uses:  $('vMax').value ? Number($('vMax').value) : null,
+        brand_id:  $('vBrand').value || null,
+        note:      $('vNote').value.trim() || null,
+      };
+      $('saveBtn').disabled = true;
+      const id = $('vId').value;
+      const { error } = id
+        ? await supabase.from('discount_codes').update(row).eq('id', id)
+        : await supabase.from('discount_codes').insert({ ...row, is_active: true });
+      $('saveBtn').disabled = false;
+      if (error) {
+        msg.textContent = error.code === '23505' ? 'That code already exists.' : 'Could not save. ' + error.message;
+        msg.className = 'msg msg--err';
+        return;
+      }
+      toast('Saved.');
+      fillForm(null);
+      load();
+    });
+
+    await loadBrands();
+    await load();
+  </script>
+  <script type="module" src="/js/components.js"></script>
+</body>
+</html>

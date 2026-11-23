@@ -317,6 +317,64 @@
     .check-row { display: flex; gap: 0.6rem; align-items: flex-start; font-size: 0.9rem; cursor: pointer; }
     .check-row input { width: 18px; height: 18px; margin-top: 0.15rem; accent-color: var(--color-primary); }
     .check-row[hidden] { display: none; }
+
+    /* ── Option cards (delivery / pickup, pay now / COD, store list) ── */
+    .option-list { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1rem; }
+    .option-card {
+      display: flex; gap: 0.75rem; align-items: flex-start; cursor: pointer;
+      border: 1px solid var(--color-border-light); border-radius: var(--radius);
+      padding: 0.8rem 0.9rem; background: #fff; transition: border-color .15s, box-shadow .15s;
+    }
+    .option-card:has(input:checked) { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgba(27,77,46,.12); }
+    .option-card input { width: 18px; height: 18px; margin-top: 0.15rem; accent-color: var(--color-primary); flex-shrink: 0; }
+    .option-card__body { display: flex; flex-direction: column; gap: 0.15rem; }
+    .option-card__title { font-weight: 500; font-size: 0.95rem; }
+    .option-card__sub { font-size: 0.8rem; color: var(--color-text-muted); line-height: 1.4; }
+    .h2-note { font-weight: 400; font-size: 0.85rem; color: var(--color-text-light); }
+
+    /* Voucher input + Apply button side by side */
+    .voucher-row { display: flex; gap: 0.5rem; }
+    .voucher-row .input { flex: 1; text-transform: uppercase; }
+    .field-hint--ok  { color: var(--color-success, #2d6b3f); }
+    .field-hint--err { color: var(--color-error); }
+    #storeError { display: none; }
+
+    /* ── Order peek (phones only) ──
+       On a phone the full summary sits at the very bottom of a long form, so
+       this small strip at the top shows the item count and the total straight
+       away. Tapping it jumps down to the full summary. Hidden on desktop,
+       where the summary is already beside the form. */
+    .order-peek {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      background: var(--color-primary);
+      color: var(--color-white);
+      border-radius: var(--radius-lg);
+      padding: 0.85rem 1.1rem;
+      margin-bottom: 1.25rem;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .order-peek:hover { color: var(--color-white); }
+    .order-peek__count { opacity: 0.85; }
+    .order-peek__count u { text-underline-offset: 3px; }
+    .order-peek__total { font-weight: 600; white-space: nowrap; }
+    .order-peek__total small { font-weight: 400; opacity: 0.85; }
+    @media (min-width: 900px) { .order-peek { display: none; } }
+    /* Leave room for the sticky header when the strip jumps to the summary */
+    #orderSummary { scroll-margin-top: 90px; }
+
+    /* Summary header with "Edit bag" link */
+    .summary-head { display: flex; justify-content: space-between; align-items: baseline; }
+    .summary-head h2 { flex: 1; }
+    .summary-edit { font-size: 0.8rem; color: var(--sum-muted); text-decoration: underline; text-underline-offset: 3px; margin-left: 1rem; }
+    .summary-edit:hover { color: var(--sum-text); }
+    .summary-row--discount .summary-row__value { color: var(--color-accent); }
+    .summary-row small { font-size: 0.75rem; color: var(--sum-muted); }
+    .summary-member { font-size: 0.78rem; color: var(--color-accent); padding: 0.2rem 0 0.4rem; }
+    .payment-help a { color: var(--sum-text); text-decoration: underline; text-underline-offset: 2px; }
   </style>
   <!-- Browser-tab icon: the Ducks Unlimited duck badge -->
   <link rel="icon" type="image/png" href="/images/brand/du-favicon.png" />
@@ -362,78 +420,75 @@
     // ─────────────────────────────────────────────────────────────────
     // CONSTANTS
     // ─────────────────────────────────────────────────────────────────
-
-    // Flat shipping fee, waived at or above the free-shipping threshold.
-    // Keep these the same as api/create-payment.js (the server decides the
-    // real amount; these are only for showing it here).
-    const SHIPPING_FEE = 150;
+    // The server (/api/quote and /api/create-payment) decides every peso:
+    // shipping zone fees, member discounts and voucher codes live in
+    // api/_lib/pricing.js. These two numbers are only a fallback so the page
+    // can still show *something* if the quote request fails.
+    const FALLBACK_SHIPPING_FEE = 150;
     const FREE_SHIPPING_THRESHOLD = 3000;
 
-    function shippingFor(subtotal) {
-      return subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
-    }
-
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // PH phone: 11 digits starting with 09, or +63 followed by 10 digits
-    const PHONE_RE = /^(?:\+?63|0)9\d{9}$/;
+    const PHONE_RE = /^(?:\+?63|0)9\d{9}$/;   // 09XXXXXXXXX or +639XXXXXXXXX
     const ZIP_RE   = /^\d{4}$/;
 
     // ─────────────────────────────────────────────────────────────────
     // STATE
     // ─────────────────────────────────────────────────────────────────
-
     const state = {
-      cart: [],        // localStorage cart items
-      stockMap: {},    // variantId → fresh data { stock, name, price, image, etc }
+      cart: [],          // localStorage cart items
+      stockMap: {},      // variantId → fresh { stock, name, price, image, … }
+      stores: [],        // branches that accept pickup
       submitting: false,
-      user: null,      // signed-in customer, or null for guest checkout
-      addresses: [],   // their saved addresses (default first)
+      user: null,        // signed-in customer, or null for guest checkout
+      addresses: [],     // their saved addresses (default first)
+      quote: null,       // last answer from /api/quote
+      quoteTimer: null,
     };
 
     // ─────────────────────────────────────────────────────────────────
     // HELPERS
     // ─────────────────────────────────────────────────────────────────
-
     function escapeHtml(str) {
-      return String(str ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+      return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
-
     function formatPrice(amount) {
-      return '₱' + Number(amount).toLocaleString('en-PH', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
+      return '₱' + Number(amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
-
     function pickPrimaryImage(images) {
       if (!images || images.length === 0) return null;
       const primary = images.find(i => i.is_primary);
       if (primary) return primary.image_url;
-      const sorted = [...images].sort((a, b) => a.display_order - b.display_order);
-      return sorted[0].image_url;
+      return [...images].sort((a, b) => a.display_order - b.display_order)[0].image_url;
+    }
+    // The photo that matches the variant's colour (so a green polo shows green,
+    // not the product's white primary photo). Falls back to the primary photo.
+    function imageForColor(images, color) {
+      if (!images?.length) return null;
+      const want = String(color || '').trim().toLowerCase();
+      const match = want && [...images]
+        .filter(i => i.color && i.color.trim().toLowerCase() === want)
+        .sort((a, b) => (b.is_primary - a.is_primary) || (a.display_order - b.display_order))[0];
+      return match?.image_url || pickPrimaryImage(images);
     }
 
-    // Compute current subtotal using fresh prices + capped quantities
+    // The items that will actually be ordered: in stock, still for sale,
+    // quantity capped to what's left.
+    function orderableItems() {
+      return state.cart.map(i => {
+        const info = state.stockMap[i.variantId];
+        if (!info || !info.productActive) return null;
+        const qty = Math.min(i.quantity, info.stock);
+        return qty > 0 ? { variantId: i.variantId, quantity: qty, info } : null;
+      }).filter(Boolean);
+    }
+
     function computeSubtotal() {
-      let total = 0;
-      for (const item of state.cart) {
-        const info = state.stockMap[item.variantId];
-        if (!info) continue; // can't checkout a missing variant
-        const qty = Math.min(item.quantity, info.stock); // cap to fresh stock
-        if (qty <= 0) continue;
-        total += Number(info.price) * qty;
-      }
-      return total;
+      return orderableItems().reduce((t, it) => t + Number(it.info.price) * it.quantity, 0);
     }
 
     // ─────────────────────────────────────────────────────────────────
-    // FETCH FRESH STOCK + PRICING
+    // FETCH FRESH STOCK + PRICING + STORES
     // ─────────────────────────────────────────────────────────────────
-
     async function fetchStockMap(variantIds) {
       if (variantIds.length === 0) return {};
       const { data, error } = await supabase
@@ -442,16 +497,12 @@
           id, color, size, sku, price_override,
           products ( id, name, base_price, is_active,
             brands ( slug, name ),
-            product_images ( image_url, is_primary, display_order )
+            product_images ( image_url, is_primary, display_order, color )
           ),
           inventory ( channel, quantity )
         `)
         .in('id', variantIds);
-
-      if (error) {
-        console.error('Checkout: fetch failed', error);
-        return {};
-      }
+      if (error) { console.error('Checkout: fetch failed', error); return {}; }
 
       const map = {};
       for (const v of (data || [])) {
@@ -463,9 +514,8 @@
           productActive: product?.is_active ?? false,
           color:         v.color,
           size:          v.size,
-          sku:           v.sku,
           price:         Number(v.price_override ?? product?.base_price ?? 0),
-          imageUrl:      pickPrimaryImage(product?.product_images),
+          imageUrl:      imageForColor(product?.product_images, v.color),
           brandSlug:     product?.brands?.slug ?? '',
           brandName:     product?.brands?.name ?? '',
         };
@@ -473,241 +523,354 @@
       return map;
     }
 
+    async function fetchPickupStores() {
+      const { data } = await supabase.from('stores').select('*').eq('is_active', true).order('display_order');
+      // allows_pickup arrives once migration 033 has run; until then every store counts
+      return (data || []).filter(s => s.allows_pickup ?? true);
+    }
+
     // ─────────────────────────────────────────────────────────────────
     // RENDERING
     // ─────────────────────────────────────────────────────────────────
-
     const root = document.getElementById('checkoutRoot');
 
     function renderEmpty(reason = 'empty') {
       const messages = {
-        empty: {
-          h: 'Your cart is empty',
-          p: 'Add some pieces to your cart before checking out.',
-        },
-        invalid: {
-          h: 'Cart contains unavailable items',
-          p: 'Please head back to your cart and remove items that are no longer available.',
-        },
+        empty:   { h: 'Your bag is empty', p: 'Add some pieces to your bag before checking out.' },
+        invalid: { h: 'Bag contains unavailable items', p: 'Please head back to your bag and remove items that are no longer available.' },
       };
       const msg = messages[reason] ?? messages.empty;
-
       root.innerHTML = `
         <div class="checkout-empty">
           <h2>${escapeHtml(msg.h)}</h2>
           <p>${escapeHtml(msg.p)}</p>
           ${reason === 'empty'
-            ? `<a href="/" class="btn btn-primary btn-lg">Continue Shopping</a>`
-            : `<a href="/cart.html" class="btn btn-primary btn-lg">Back to Cart</a>`}
-        </div>
-      `;
+            ? `<a href="/shop.html" class="btn btn-primary btn-lg">Continue Shopping</a>`
+            : `<a href="/cart.html" class="btn btn-primary btn-lg">Back to Bag</a>`}
+        </div>`;
+    }
+
+    function renderSummaryItem(it) {
+      const { info, quantity } = it;
+      const imgUrl = info.imageUrl;
+      return `
+        <div class="summary-item">
+          <div class="summary-item__image">
+            ${imgUrl ? `<img src="${escapeHtml(imgUrl)}" alt="" loading="lazy" />`
+                     : `<div class="summary-item__placeholder">${escapeHtml(info.brandName || 'No photo')}</div>`}
+          </div>
+          <div class="summary-item__body">
+            <div class="summary-item__name">${escapeHtml(info.productName)}</div>
+            <div class="summary-item__variant">${escapeHtml(info.color)} · ${escapeHtml(info.size)}</div>
+            <div class="summary-item__qty">Qty: ${quantity}</div>
+          </div>
+          <span class="summary-item__price">${formatPrice(Number(info.price) * quantity)}</span>
+        </div>`;
     }
 
     function renderCheckout() {
-      // One summary for the whole bag. If it has both brands, Ducks Unlimited
-      // pieces come first and Rocwood pieces sit under a small "Rocwood" label —
-      // it's all one order and one payment.
-      const isMixed = new Set(state.cart
-        .map(i => state.stockMap[i.variantId]?.brandSlug)
-        .filter(Boolean)).size > 1;
-      const isRw = item => state.stockMap[item.variantId]?.brandSlug === 'rw';
-      const duItems = state.cart.filter(i => !isRw(i));
-      const rwItems = state.cart.filter(isRw);
-
-      const renderSummaryItem = item => {
-        const info = state.stockMap[item.variantId];
-        if (!info) return '';
-        const qty = Math.min(item.quantity, info.stock);
-        if (qty <= 0) return '';
-
-        const lineTotal = Number(info.price) * qty;
-        const imgUrl = info.imageUrl || item.imageUrl;
-
-        return `
-          <div class="summary-item">
-            <div class="summary-item__image">
-              ${imgUrl
-                ? `<img src="${escapeHtml(imgUrl)}" alt="" loading="lazy" />`
-                : `<div class="summary-item__placeholder">DU</div>`}
-            </div>
-            <div class="summary-item__body">
-              <div class="summary-item__name">${escapeHtml(info.productName)}</div>
-              <div class="summary-item__variant">${escapeHtml(info.color)} · ${escapeHtml(info.size)}</div>
-              <div class="summary-item__qty">Qty: ${qty}</div>
-            </div>
-            <span class="summary-item__price">${formatPrice(lineTotal)}</span>
-          </div>
-        `;
-      };
+      const items   = orderableItems();
+      const isMixed = new Set(items.map(i => i.info.brandSlug).filter(Boolean)).size > 1;
+      const duItems = items.filter(i => i.info.brandSlug !== 'rw');
+      const rwItems = items.filter(i => i.info.brandSlug === 'rw');
 
       const summaryItemsHtml = isMixed
-        ? duItems.map(renderSummaryItem).join('')
-          + `<div class="summary-brand">Rocwood</div>`
-          + rwItems.map(renderSummaryItem).join('')
-        : state.cart.map(renderSummaryItem).join('');
+        ? duItems.map(renderSummaryItem).join('') + `<div class="summary-brand">Rocwood</div>` + rwItems.map(renderSummaryItem).join('')
+        : items.map(renderSummaryItem).join('');
 
-      const subtotal = computeSubtotal();
-      const shipping = shippingFor(subtotal);
-      const total = subtotal + shipping;
+      const storeOptions = state.stores.map(s => `
+        <label class="option-card">
+          <input type="radio" name="pickupStoreId" value="${escapeHtml(s.id)}" />
+          <span class="option-card__body">
+            <span class="option-card__title">${escapeHtml(s.name)}</span>
+            <span class="option-card__sub">${escapeHtml([s.address, s.city].filter(Boolean).join(', '))}</span>
+          </span>
+        </label>`).join('');
 
       root.innerHTML = `
         <form id="checkoutForm" novalidate>
           <div class="checkout-layout">
 
-            <!-- ── LEFT: customer details form ── -->
+            <!-- ── LEFT: details ── -->
             <div>
-
-              <!-- Banner shown if the API call fails -->
               <div class="form-banner" id="formBanner" role="alert"></div>
-
-              <!-- Guest: "Have an account? Sign in" · Signed in: "Checking out as …"
-                   Guest checkout always works — an account is never required. -->
+              <!-- Phones only: item count + total up front (see .order-peek) -->
+              <a class="order-peek" id="orderPeek" href="#orderSummary">${renderPeek()}</a>
               <div class="checkout-account" id="checkoutAccount"></div>
 
               <section class="form-section">
                 <h2>Contact</h2>
-
                 <div class="field">
                   <label class="field-label field-required" for="name">Full Name</label>
-                  <input class="input" type="text" id="name" name="name"
-                         autocomplete="name" required />
+                  <input class="input" type="text" id="name" name="name" autocomplete="name" required />
                   <span class="field-error">Please enter your full name.</span>
                 </div>
-
                 <div class="field">
                   <label class="field-label field-required" for="email">Email</label>
-                  <input class="input" type="email" id="email" name="email"
-                         autocomplete="email" required />
+                  <input class="input" type="email" id="email" name="email" autocomplete="email" required />
+                  <span class="field-hint">Your receipt and tracking updates go here.</span>
                   <span class="field-error">Please enter a valid email address.</span>
                 </div>
-
                 <div class="field">
-                  <label class="field-label field-required" for="phone">Phone</label>
-                  <input class="input" type="tel" id="phone" name="phone"
-                         autocomplete="tel" placeholder="09XX XXX XXXX" required />
-                  <span class="field-hint">Philippine mobile number, e.g. 09171234567 or +639171234567.</span>
+                  <label class="field-label field-required" for="phone">Mobile</label>
+                  <input class="input" type="tel" id="phone" name="phone" autocomplete="tel" placeholder="09XX XXX XXXX" required />
+                  <span class="field-hint">The courier will text this number. Store members: use the number on your card to get your discount.</span>
                   <span class="field-error">Please enter a valid Philippine mobile number.</span>
                 </div>
               </section>
 
               <section class="form-section">
-                <h2>Shipping Address</h2>
-
-                <!-- Saved-address picker — only shown to signed-in customers
-                     who have addresses (filled in by prefillFromAccount()) -->
-                <div class="field" id="savedAddrWrap" hidden>
-                  <label class="field-label" for="savedAddr">Ship to a saved address</label>
-                  <select class="select" id="savedAddr"></select>
+                <h2>Delivery</h2>
+                <div class="option-list" id="shipOptions">
+                  <label class="option-card">
+                    <input type="radio" name="shippingMethod" value="delivery" checked />
+                    <span class="option-card__body">
+                      <span class="option-card__title">Deliver to my address</span>
+                      <span class="option-card__sub" id="deliveryHint">Metro Manila from ₱100 · free on orders ₱${FREE_SHIPPING_THRESHOLD.toLocaleString('en-PH')} and up</span>
+                    </span>
+                  </label>
+                  ${state.stores.length ? `
+                  <label class="option-card">
+                    <input type="radio" name="shippingMethod" value="pickup" />
+                    <span class="option-card__body">
+                      <span class="option-card__title">Pick up in store — free</span>
+                      <span class="option-card__sub">Usually ready in 1–2 days. We'll email you.</span>
+                    </span>
+                  </label>` : ''}
                 </div>
 
-                <div class="field">
-                  <label class="field-label field-required" for="address">Street Address</label>
-                  <input class="input" type="text" id="address" name="address"
-                         autocomplete="street-address"
-                         placeholder="House/unit no., building, street"
-                         required />
-                  <span class="field-error">Please enter your street address.</span>
-                </div>
-
-                <div class="field">
-                  <label class="field-label" for="barangay">Barangay</label>
-                  <input class="input" type="text" id="barangay" name="barangay"
-                         autocomplete="address-level3" />
-                </div>
-
-                <div class="form-row two-col">
-                  <div class="field">
-                    <label class="field-label field-required" for="city">City</label>
-                    <input class="input" type="text" id="city" name="city"
-                           autocomplete="address-level2" required />
-                    <span class="field-error">Required.</span>
+                <div id="addressFields">
+                  <div class="field" id="savedAddrWrap" hidden>
+                    <label class="field-label" for="savedAddr">Ship to a saved address</label>
+                    <select class="select" id="savedAddr"></select>
                   </div>
                   <div class="field">
-                    <label class="field-label field-required" for="province">Province</label>
-                    <select class="select" id="province" name="province"
-                            autocomplete="address-level1" required></select>
-                    <span class="field-error">Required.</span>
+                    <label class="field-label field-required" for="address">Street Address</label>
+                    <input class="input" type="text" id="address" name="address" autocomplete="street-address" placeholder="House/unit no., building, street" required />
+                    <span class="field-error">Please enter your street address.</span>
                   </div>
-                </div>
-
-                <div class="form-row zip-row">
-                  <div></div>
                   <div class="field">
-                    <label class="field-label field-required" for="zip">ZIP Code</label>
-                    <input class="input" type="text" id="zip" name="zip"
-                           inputmode="numeric" maxlength="4"
-                           autocomplete="postal-code" required />
-                    <span class="field-error">4-digit ZIP.</span>
+                    <label class="field-label" for="barangay">Barangay</label>
+                    <input class="input" type="text" id="barangay" name="barangay" autocomplete="address-level3" />
                   </div>
+                  <div class="form-row two-col">
+                    <div class="field">
+                      <label class="field-label field-required" for="city">City / Municipality</label>
+                      <input class="input" type="text" id="city" name="city" autocomplete="address-level2" required />
+                      <span class="field-error">Required.</span>
+                    </div>
+                    <div class="field">
+                      <label class="field-label field-required" for="province">Province</label>
+                      <select class="select" id="province" name="province" autocomplete="address-level1" required></select>
+                      <span class="field-error">Required.</span>
+                    </div>
+                  </div>
+                  <div class="form-row zip-row">
+                    <div></div>
+                    <div class="field">
+                      <label class="field-label field-required" for="zip">ZIP Code</label>
+                      <input class="input" type="text" id="zip" name="zip" inputmode="numeric" maxlength="4" autocomplete="postal-code" required />
+                      <span class="field-error">4-digit ZIP.</span>
+                    </div>
+                  </div>
+                  <label class="check-row" id="saveAddrRow" hidden style="margin-top:var(--space);">
+                    <input type="checkbox" id="saveAddr" name="saveAddr" checked />
+                    <span>Save this address to my account</span>
+                  </label>
                 </div>
 
-                <!-- Signed-in only: save this address to their account -->
-                <label class="check-row" id="saveAddrRow" hidden style="margin-top:var(--space);">
-                  <input type="checkbox" id="saveAddr" name="saveAddr" checked />
-                  <span>Save this address to my account</span>
-                </label>
+                <div id="pickupFields" hidden>
+                  <p class="field-hint" style="margin-bottom:0.6rem;">Which store?</p>
+                  <div class="option-list field" id="storeOptions">${storeOptions}</div>
+                  <span class="field-error" id="storeError">Please choose a store.</span>
+                </div>
               </section>
 
               <section class="form-section">
-                <h2>Order Notes <span style="font-weight:400; font-size:0.85rem; color:var(--color-text-light);">(Optional)</span></h2>
-
-                <div class="field">
-                  <label class="field-label" for="notes">Anything we should know?</label>
-                  <textarea class="textarea" id="notes" name="notes"
-                            placeholder="Special instructions, gift wrapping, preferred delivery time…"></textarea>
+                <h2>Payment</h2>
+                <div class="option-list">
+                  <label class="option-card">
+                    <input type="radio" name="paymentMethod" value="maya" checked />
+                    <span class="option-card__body">
+                      <span class="option-card__title">Pay now — card, Maya, GCash, QR Ph</span>
+                      <span class="option-card__sub">Secure payment page by Maya. Your order ships once it's confirmed.</span>
+                    </span>
+                  </label>
+                  <label class="option-card">
+                    <input type="radio" name="paymentMethod" value="cod" />
+                    <span class="option-card__body">
+                      <span class="option-card__title" id="codTitle">Cash on delivery</span>
+                      <span class="option-card__sub" id="codSub">Pay the courier in cash when it arrives. Please prepare the exact amount.</span>
+                    </span>
+                  </label>
                 </div>
               </section>
 
+              <section class="form-section">
+                <h2>Voucher <span class="h2-note">(Optional)</span></h2>
+                <div class="voucher-row">
+                  <input class="input" type="text" id="discountCode" name="discountCode" placeholder="Enter code" autocomplete="off" autocapitalize="characters" />
+                  <button type="button" class="btn btn-outline-dark" id="applyCodeBtn">Apply</button>
+                </div>
+                <p class="field-hint" id="codeMsg"></p>
+              </section>
+
+              <section class="form-section">
+                <h2>Order Notes <span class="h2-note">(Optional)</span></h2>
+                <div class="field">
+                  <label class="field-label" for="notes">Anything we should know?</label>
+                  <textarea class="textarea" id="notes" name="notes" maxlength="1000"
+                            placeholder="Special instructions, gift wrapping, preferred delivery time…"></textarea>
+                </div>
+              </section>
             </div>
 
             <!-- ── RIGHT: order summary ── -->
-            <aside class="summary-card">
-
-              <h2>Order Summary</h2>
-
+            <aside class="summary-card" id="orderSummary">
+              <div class="summary-head">
+                <h2>Order Summary</h2>
+                <a href="/cart.html" class="summary-edit">Edit bag</a>
+              </div>
               <div class="summary-items">${summaryItemsHtml}</div>
+              <div id="totalsBox">${renderTotals()}</div>
 
-              <div class="summary-row">
-                <span class="summary-row__label">Subtotal</span>
-                <span class="summary-row__value">${formatPrice(subtotal)}</span>
-              </div>
+              <button type="submit" class="btn btn-primary btn-lg btn-block place-order-btn" id="placeOrderBtn">Place Order</button>
 
-              <div class="summary-row">
-                <span class="summary-row__label">Shipping</span>
-                <span class="summary-row__value">${shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
-              </div>
-
-              <div class="summary-row summary-row--total">
-                <span class="summary-row__label">Total</span>
-                <span class="summary-row__value">${formatPrice(total)}</span>
-              </div>
-
-              <button type="submit"
-                      class="btn btn-primary btn-lg btn-block place-order-btn"
-                      id="placeOrderBtn">
-                Place Order
-              </button>
-
-              <p class="payment-help">
-                <strong>Secure checkout</strong> — you'll be redirected to Maya
-                to pay by credit/debit card, Maya, or QR Ph (GCash and other banks).
-              </p>
-
+              <p class="payment-help" id="paymentHelp"></p>
+              <p class="payment-help">By placing this order you agree to our
+                <a href="/customer-service/terms.html" target="_blank">Terms</a>,
+                <a href="/customer-service/shipping.html" target="_blank">Shipping</a> and
+                <a href="/customer-service/returns.html" target="_blank">Returns</a> policies.</p>
             </aside>
-
           </div>
-        </form>
-      `;
+        </form>`;
 
       fillProvinceSelect(document.getElementById('province'));
       wireFormEvents();
-      prefillFromAccount();
+      prefillFromAccount().then(requestQuote);
+      updatePaymentHelp();
+    }
+
+    // Works out the numbers shown in the summary and in the phone strip.
+    // "shippingPending" is true while we can't know the delivery fee yet
+    // (delivery chosen, but no province picked). In that case we don't show a
+    // guessed fee or a guessed total. We show the total before shipping.
+    function totalsNumbers() {
+      const subtotal = computeSubtotal();
+      const q = state.quote;
+
+      // Fallback while the quote is loading / unavailable
+      const discount = q?.discountAmount ?? 0;
+      const shipping = q ? q.shippingFee : (subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FALLBACK_SHIPPING_FEE);
+      const total    = q ? q.total : subtotal + shipping;
+
+      const form     = document.getElementById('checkoutForm');
+      const isPickup = (q?.shippingMethod ?? form?.shippingMethod?.value) === 'pickup';
+      const provinceChosen  = !!document.getElementById('province')?.value;
+      const shippingPending = !isPickup && !provinceChosen && shipping > 0;
+
+      return { subtotal, discount, shipping, total, isPickup, provinceChosen, shippingPending, q };
+    }
+
+    // The totals block — redrawn whenever a quote arrives
+    function renderTotals() {
+      const { subtotal, discount, shipping, total, isPickup, provinceChosen, shippingPending, q } = totalsNumbers();
+
+      const shipLabel = isPickup ? 'Pick up in store'
+                      : !provinceChosen ? 'Shipping'
+                      : `Shipping${q?.shippingZoneLabel ? ` · ${q.shippingZoneLabel}` : ''}`;
+      const shipValue = shippingPending ? 'Choose your province'
+                      : shipping === 0 ? 'Free'
+                      : formatPrice(shipping);
+
+      return `
+        <div class="summary-row"><span class="summary-row__label">Subtotal</span><span class="summary-row__value">${formatPrice(subtotal)}</span></div>
+        ${discount > 0 ? `<div class="summary-row summary-row--discount"><span class="summary-row__label">${escapeHtml(q.discountLabel || 'Discount')}</span><span class="summary-row__value">− ${formatPrice(discount)}</span></div>` : ''}
+        <div class="summary-row"><span class="summary-row__label">${shipLabel}${q?.shippingDays && (provinceChosen || isPickup) ? ` <small>(${escapeHtml(q.shippingDays)})</small>` : ''}</span><span class="summary-row__value">${shipValue}</span></div>
+        ${q?.member && discount > 0 ? `<div class="summary-member">Store member discount applied ✓</div>` : ''}
+        <div class="summary-row summary-row--total"><span class="summary-row__label">${shippingPending ? 'Total before shipping' : 'Total'}</span><span class="summary-row__value">${formatPrice(shippingPending ? total - shipping : total)}</span></div>`;
+    }
+
+    // The small strip at the top on phones: "2 items · View order   ₱1,145.00"
+    function renderPeek() {
+      const { shipping, total, shippingPending } = totalsNumbers();
+      const count = orderableItems().reduce((sum, i) => sum + i.quantity, 0);
+      return `
+        <span class="order-peek__count">${count} item${count === 1 ? '' : 's'} · <u>View order</u></span>
+        <span class="order-peek__total">${formatPrice(shippingPending ? total - shipping : total)}${shippingPending ? ' <small>+ shipping</small>' : ''}</span>`;
+    }
+
+    // Redraw both places that show money. Call this whenever the numbers may
+    // have changed (new quote, province picked, delivery/pickup switched).
+    function refreshTotals() {
+      const box  = document.getElementById('totalsBox');
+      const peek = document.getElementById('orderPeek');
+      if (box)  box.innerHTML  = renderTotals();
+      if (peek) peek.innerHTML = renderPeek();
+    }
+
+    function updatePaymentHelp() {
+      const form = document.getElementById('checkoutForm');
+      const pay  = form?.paymentMethod?.value || 'maya';
+      const ship = form?.shippingMethod?.value || 'delivery';
+      const el   = document.getElementById('paymentHelp');
+      const btn  = document.getElementById('placeOrderBtn');
+      const codTitle = document.getElementById('codTitle');
+      const codSub   = document.getElementById('codSub');
+      if (codTitle) codTitle.textContent = ship === 'pickup' ? 'Pay in store when you pick up' : 'Cash on delivery';
+      if (codSub)   codSub.textContent   = ship === 'pickup' ? 'Cash or card at the counter when you collect your order.' : 'Pay the courier in cash when it arrives. Please prepare the exact amount.';
+      if (!el) return;
+      if (pay === 'cod') {
+        el.innerHTML = `<strong>No payment now.</strong> ${ship === 'pickup' ? 'Pay at the store when you collect your order.' : 'Pay the courier in cash on delivery.'}`;
+        btn.textContent = 'Place Order';
+      } else {
+        el.innerHTML = `<strong>Secure checkout</strong> — you'll be redirected to Maya to pay by credit/debit card, Maya, or QR Ph (GCash and other banks).`;
+        btn.textContent = 'Continue to Payment';
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // QUOTE — ask the server what the order will cost
+    // ─────────────────────────────────────────────────────────────────
+    function requestQuote() {
+      clearTimeout(state.quoteTimer);
+      state.quoteTimer = setTimeout(fetchQuote, 350);
+    }
+
+    async function fetchQuote() {
+      const form = document.getElementById('checkoutForm');
+      if (!form) return;
+      const body = {
+        items:          orderableItems().map(i => ({ variantId: i.variantId, quantity: i.quantity })),
+        shippingMethod: form.shippingMethod.value,
+        province:       form.province.value,
+        discountCode:   form.discountCode.value.trim() || undefined,
+        phone:          form.phone.value,
+        email:          form.email.value,
+      };
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        const token = state.user ? await getAccessToken() : null;
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const res = await fetch('/api/quote', { method: 'POST', headers, body: JSON.stringify(body) });
+        if (!res.ok) throw new Error('quote failed');
+        state.quote = await res.json();
+      } catch (err) {
+        console.warn('Checkout: quote unavailable, showing fallback totals', err);
+        state.quote = null;
+      }
+      refreshTotals();
+
+      const msg = document.getElementById('codeMsg');
+      const typed = form.discountCode.value.trim();
+      if (!typed) { msg.textContent = ''; msg.className = 'field-hint'; }
+      else if (state.quote?.codeApplied) { msg.textContent = `Code ${state.quote.codeApplied} applied ✓`; msg.className = 'field-hint field-hint--ok'; }
+      else if (state.quote?.codeError) { msg.textContent = state.quote.codeError; msg.className = 'field-hint field-hint--err'; }
     }
 
     // ─────────────────────────────────────────────────────────────────
     // ACCOUNT PREFILL — signed-in customers shouldn't retype anything
     // ─────────────────────────────────────────────────────────────────
-
     function fillAddress(a) {
       const form = document.getElementById('checkoutForm');
       form.address.value  = [a.line1, a.line2].filter(Boolean).join(', ');
@@ -716,57 +879,39 @@
       fillProvinceSelect(form.province, a.province ?? '');
       form.zip.value      = a.postal_code ?? '';
       if (a.phone && !form.phone.value) form.phone.value = a.phone;
-      // Already saved — no need to offer saving it again
       document.getElementById('saveAddrRow').hidden = true;
       document.getElementById('saveAddr').checked = false;
     }
 
     async function prefillFromAccount() {
       const box = document.getElementById('checkoutAccount');
-
       if (!state.user) {
-        box.innerHTML = `Have an account? <a href="/auth/sign-in.html?next=/checkout.html">Sign in</a>
-          for faster checkout — or continue as a guest.`;
+        box.innerHTML = `Have an account? <a href="/auth/sign-in.html?next=/checkout.html">Sign in</a> for faster checkout — or continue as a guest.`;
         return;
       }
-
-      box.innerHTML = `Checking out as <strong>${escapeHtml(state.user.email)}</strong>.
-        This order will appear in <a href="/account/orders.html">My Orders</a>.`;
+      box.innerHTML = `Checking out as <strong>${escapeHtml(state.user.email)}</strong>. This order will appear in <a href="/account/orders.html">My Orders</a>.`;
 
       const form = document.getElementById('checkoutForm');
       form.email.value = state.user.email;
 
       const [{ data: profile }, { data: addresses }] = await Promise.all([
         supabase.from('customer_profiles').select('display_name, phone').eq('id', state.user.id).maybeSingle(),
-        supabase.from('customer_addresses').select('*')
-          .order('is_default', { ascending: false }).order('created_at', { ascending: false }),
+        supabase.from('customer_addresses').select('*').order('is_default', { ascending: false }).order('created_at', { ascending: false }),
       ]);
-
       state.addresses = addresses ?? [];
       const def = state.addresses[0];
-
       if (!form.name.value)  form.name.value  = def?.recipient_name || profile?.display_name || '';
       if (!form.phone.value) form.phone.value = profile?.phone || '';
-
-      if (def) {
-        fillAddress(def);
-      } else {
-        // No saved addresses yet — offer to save this one
-        document.getElementById('saveAddrRow').hidden = false;
-      }
+      if (def) fillAddress(def); else document.getElementById('saveAddrRow').hidden = false;
 
       if (state.addresses.length > 1) {
         const sel = document.getElementById('savedAddr');
-        sel.innerHTML = state.addresses.map(a => `
-          <option value="${escapeHtml(a.id)}">${escapeHtml(
-            [a.label, a.recipient_name, a.line1, a.city].filter(Boolean).join(' · ')
-          )}</option>`).join('') + '<option value="">A new address…</option>';
+        sel.innerHTML = state.addresses.map(a => `<option value="${escapeHtml(a.id)}">${escapeHtml([a.label, a.recipient_name, a.line1, a.city].filter(Boolean).join(' · '))}</option>`).join('')
+          + '<option value="">A new address…</option>';
         document.getElementById('savedAddrWrap').hidden = false;
-
         sel.addEventListener('change', () => {
           const a = state.addresses.find(x => x.id === sel.value);
-          if (a) { form.name.value = a.recipient_name; form.phone.value = a.phone; fillAddress(a); return; }
-          // "A new address…" → clear the address fields and offer to save it
+          if (a) { form.name.value = a.recipient_name; form.phone.value = a.phone; fillAddress(a); requestQuote(); return; }
           for (const f of ['address', 'barangay', 'city', 'zip']) form[f].value = '';
           fillProvinceSelect(form.province);
           document.getElementById('saveAddrRow').hidden = false;
@@ -774,8 +919,6 @@
           form.address.focus();
         });
       }
-
-      // Typing a different address by hand → offer to save it
       for (const f of ['address', 'city', 'zip']) {
         form[f].addEventListener('input', () => { document.getElementById('saveAddrRow').hidden = false; });
       }
@@ -784,148 +927,135 @@
     // ─────────────────────────────────────────────────────────────────
     // VALIDATION
     // ─────────────────────────────────────────────────────────────────
-
-    const VALIDATORS = {
-      name:     v => v.trim().length > 0,
-      email:    v => EMAIL_RE.test(v.trim()),
-      phone:    v => PHONE_RE.test(v.replace(/[\s\-]/g, '')),
+    const CONTACT_VALIDATORS = {
+      name:  v => v.trim().length > 0,
+      email: v => EMAIL_RE.test(v.trim()),
+      phone: v => PHONE_RE.test(v.replace(/[\s\-]/g, '')),
+    };
+    const ADDRESS_VALIDATORS = {
       address:  v => v.trim().length > 0,
       city:     v => v.trim().length > 0,
       province: v => v.trim().length > 0,
       zip:      v => ZIP_RE.test(v.trim()),
     };
+    const ALL_VALIDATORS = { ...CONTACT_VALIDATORS, ...ADDRESS_VALIDATORS };
 
     function setFieldError(name, hasError) {
-      const input = document.getElementById(name);
-      if (!input) return;
-      const wrapper = input.closest('.field');
-      if (!wrapper) return;
-      wrapper.classList.toggle('field--has-error', hasError);
+      document.getElementById(name)?.closest('.field')?.classList.toggle('field--has-error', hasError);
     }
-
     function validateField(name, value) {
-      const isValid = VALIDATORS[name]?.(value) ?? true;
-      setFieldError(name, !isValid);
-      return isValid;
+      const ok = ALL_VALIDATORS[name]?.(value) ?? true;
+      setFieldError(name, !ok);
+      return ok;
     }
-
     function validateAll() {
       const form = document.getElementById('checkoutForm');
       const data = Object.fromEntries(new FormData(form).entries());
+      const isPickup = data.shippingMethod === 'pickup';
+      const validators = isPickup ? CONTACT_VALIDATORS : ALL_VALIDATORS;
       let firstInvalid = null;
-
-      for (const name of Object.keys(VALIDATORS)) {
-        const ok = validateField(name, data[name] ?? '');
-        if (!ok && !firstInvalid) firstInvalid = name;
+      for (const name of Object.keys(validators)) {
+        if (!validateField(name, data[name] ?? '') && !firstInvalid) firstInvalid = name;
       }
+      // Pickup needs a store
+      const storeErr = document.getElementById('storeError');
+      const storeMissing = isPickup && !data.pickupStoreId;
+      storeErr.style.display = storeMissing ? 'block' : 'none';
+      if (storeMissing && !firstInvalid) firstInvalid = 'storeOptions';
       return { ok: !firstInvalid, firstInvalid, data };
     }
 
     // ─────────────────────────────────────────────────────────────────
-    // FORM SUBMIT
+    // FORM EVENTS + SUBMIT
     // ─────────────────────────────────────────────────────────────────
-
     function showBanner(message) {
       const banner = document.getElementById('formBanner');
       banner.textContent = message;
       banner.classList.add('visible');
       banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-
     function hideBanner() {
       const banner = document.getElementById('formBanner');
-      banner.textContent = '';
-      banner.classList.remove('visible');
+      banner.textContent = ''; banner.classList.remove('visible');
     }
-
     function setSubmitting(submitting) {
       state.submitting = submitting;
       const btn = document.getElementById('placeOrderBtn');
       btn.disabled = submitting;
-      btn.textContent = submitting ? 'Processing…' : 'Place Order';
+      if (submitting) btn.textContent = 'Processing…'; else updatePaymentHelp();
     }
 
     function wireFormEvents() {
       const form = document.getElementById('checkoutForm');
 
-      // Live validation — clear error as the user fixes the field
-      for (const name of Object.keys(VALIDATORS)) {
+      for (const name of Object.keys(ALL_VALIDATORS)) {
         const input = document.getElementById(name);
         input?.addEventListener('blur', () => validateField(name, input.value));
         input?.addEventListener('input', () => {
-          if (input.closest('.field')?.classList.contains('field--has-error')) {
-            validateField(name, input.value);
-          }
+          if (input.closest('.field')?.classList.contains('field--has-error')) validateField(name, input.value);
         });
       }
 
-      // Submit handler
+      // Delivery vs pickup
+      form.addEventListener('change', (e) => {
+        if (e.target.name === 'shippingMethod') {
+          const pickup = e.target.value === 'pickup';
+          document.getElementById('addressFields').hidden = pickup;
+          document.getElementById('pickupFields').hidden  = !pickup;
+          updatePaymentHelp();
+          requestQuote();
+        }
+        if (e.target.name === 'paymentMethod') updatePaymentHelp();
+        if (e.target.name === 'pickupStoreId') document.getElementById('storeError').style.display = 'none';
+        if (e.target.id === 'province') requestQuote();
+      });
+
+      // Member discount is matched by phone / email — re-quote when they change
+      form.phone.addEventListener('change', requestQuote);
+      form.email.addEventListener('change', requestQuote);
+
+      // Voucher
+      document.getElementById('applyCodeBtn').addEventListener('click', fetchQuote);
+      form.discountCode.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); fetchQuote(); } });
+      form.discountCode.addEventListener('input', () => { if (!form.discountCode.value.trim()) requestQuote(); });
+
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (state.submitting) return;
-
         hideBanner();
 
         const { ok, firstInvalid, data } = validateAll();
-        if (!ok) {
-          // Focus the first invalid field for keyboard users
-          document.getElementById(firstInvalid)?.focus();
-          return;
-        }
+        if (!ok) { document.getElementById(firstInvalid)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); document.getElementById(firstInvalid)?.focus?.(); return; }
 
         setSubmitting(true);
 
-        // Build the payload — server re-validates everything authoritative
         const payload = {
-          // Only the items shown in the summary (in stock, still for sale)
-          items: state.cart.map(i => ({
-            variantId: i.variantId,
-            quantity:  Math.min(i.quantity, state.stockMap[i.variantId]?.stock ?? 0),
-          })).filter(i => i.quantity > 0 && state.stockMap[i.variantId]?.productActive),
-          customer: {
-            name:  data.name,
-            email: data.email,
-            phone: data.phone,
+          items:          orderableItems().map(i => ({ variantId: i.variantId, quantity: i.quantity })),
+          customer:       { name: data.name, email: data.email, phone: data.phone },
+          shippingMethod: data.shippingMethod,
+          pickupStoreId:  data.pickupStoreId || undefined,
+          shipping:       data.shippingMethod === 'pickup' ? undefined : {
+            address: data.address, barangay: data.barangay || '', city: data.city, province: data.province, zip: data.zip,
           },
-          shipping: {
-            address:  data.address,
-            barangay: data.barangay || '',
-            city:     data.city,
-            province: data.province,
-            zip:      data.zip,
-          },
-          notes: data.notes || '',
+          paymentMethod:  data.paymentMethod,
+          discountCode:   data.discountCode?.trim() || undefined,
+          notes:          data.notes || '',
         };
 
         try {
-          // Signed-in customers send their token so the server links the
-          // order to their account (it shows up in My Orders).
           const headers = { 'Content-Type': 'application/json' };
           const token = state.user ? await getAccessToken() : null;
           if (token) headers.Authorization = `Bearer ${token}`;
 
-          const res = await fetch('/api/create-payment', {
-            method:  'POST',
-            headers,
-            body:    JSON.stringify(payload),
-          });
-          const result = await res.json();
+          const res    = await fetch('/api/create-payment', { method: 'POST', headers, body: JSON.stringify(payload) });
+          const result = await res.json().catch(() => ({}));
 
           if (!res.ok) {
             setSubmitting(false);
+            if (result.field === 'discountCode') { const m = document.getElementById('codeMsg'); m.textContent = result.error; m.className = 'field-hint field-hint--err'; }
             showBanner(result.error || 'Could not create your order. Please try again.');
             return;
           }
-
-          if (!result.paymentUrl) {
-            setSubmitting(false);
-            showBanner('Could not start payment. Please try again.');
-            return;
-          }
-
-          // The bag is NOT emptied here: if the payment fails or the shopper
-          // cancels on Maya, they come back to a full bag and can try again.
-          // /order-confirmation.html removes these items once Maya says "paid".
 
           // Remember the order for the confirmation / tracking pages (this tab only).
           try {
@@ -937,24 +1067,21 @@
           } catch { /* private browsing — the pages still work, just less pre-filled */ }
 
           // Save the address to their account if they asked to
-          if (state.user && data.saveAddr && !document.getElementById('saveAddrRow').hidden) {
+          if (state.user && data.shippingMethod !== 'pickup' && data.saveAddr && !document.getElementById('saveAddrRow').hidden) {
             await supabase.from('customer_addresses').insert({
-              user_id:        state.user.id,
-              recipient_name: data.name.trim(),
-              phone:          data.phone.replace(/[\s\-]/g, ''),
-              line1:          data.address.trim(),
-              barangay:       data.barangay?.trim() || null,
-              city:           data.city.trim(),
-              province:       data.province,
-              postal_code:    data.zip.trim(),
-              is_default:     state.addresses.length === 0,
+              user_id: state.user.id, recipient_name: data.name.trim(), phone: data.phone.replace(/[\s\-]/g, ''),
+              line1: data.address.trim(), barangay: data.barangay?.trim() || null, city: data.city.trim(),
+              province: data.province, postal_code: data.zip.trim(), is_default: state.addresses.length === 0,
             }).then(({ error }) => { if (error) console.warn('Could not save address:', error); });
           }
 
-          // Hand off to Maya. After payment, Maya redirects to
-          // /order-confirmation.html?order=<order_number> (configured via
-          // the success URL in create-payment.js).
-          window.location.href = result.paymentUrl;
+          // COD: no payment page — straight to the thank-you page.
+          // Maya: hand off to Maya; it sends the shopper back to
+          // /order-confirmation.html?order=<number>&provider=maya when done.
+          // The bag is NOT emptied here: the confirmation page removes these
+          // items once the order is confirmed, so a failed payment loses nothing.
+          window.location.href = result.paymentUrl
+            || `/order-confirmation.html?order=${encodeURIComponent(result.orderNumber)}&cod=1`;
 
         } catch (err) {
           console.error('Submit failed:', err);
@@ -967,39 +1094,21 @@
     // ─────────────────────────────────────────────────────────────────
     // INIT
     // ─────────────────────────────────────────────────────────────────
-
     async function init() {
-      // ── Handle redirect from a failed or cancelled payment ──
       const params = new URLSearchParams(window.location.search);
       if (params.get('status') === 'failed' || params.get('status') === 'cancelled') {
-        // Don't clear the cart — let the customer try again
         document.getElementById('checkoutSubheader').innerHTML =
-          '<span style="color: var(--color-error);">Payment was not completed. You can try again below.</span>';
+          '<span style="color: var(--color-error);">Payment was not completed. Your bag is still here — you can try again below.</span>';
       }
 
       state.cart = getCart();
-      state.user = await getCurrentUser();
+      if (state.cart.length === 0) { renderEmpty('empty'); return; }
 
-      if (state.cart.length === 0) {
-        renderEmpty('empty');
-        return;
-      }
-
-      // Fetch fresh data for the order summary
       const ids = state.cart.map(i => i.variantId);
-      state.stockMap = await fetchStockMap(ids);
+      const [stockMap, stores, user] = await Promise.all([fetchStockMap(ids), fetchPickupStores(), getCurrentUser()]);
+      state.stockMap = stockMap; state.stores = stores; state.user = user;
 
-      // If every cart item has gone away or is out of stock, send them back
-      const validItems = state.cart.filter(item => {
-        const info = state.stockMap[item.variantId];
-        return info && info.productActive && info.stock > 0;
-      });
-
-      if (validItems.length === 0) {
-        renderEmpty('invalid');
-        return;
-      }
-
+      if (orderableItems().length === 0) { renderEmpty('invalid'); return; }
       renderCheckout();
     }
 

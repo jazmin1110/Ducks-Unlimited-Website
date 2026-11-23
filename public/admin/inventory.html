@@ -160,6 +160,9 @@
     }
 
     /* ── Inventory table ── */
+    .cell-edit { cursor: text; }
+    .cell-edit:hover { background: #fff8e6; outline: 1px dashed #C9A84C; }
+    .inline-input { width: 70px; padding: 0.3rem 0.4rem; border: 1px solid #1B4D2E; border-radius: 4px; font-size: 16px; text-align: right; }
     .table-wrap {
       background: #fff;
       border-radius: 8px;
@@ -200,6 +203,60 @@
 
     tbody tr:last-child { border-bottom: none; }
     tbody tr:hover { background-color: #faf7f2 !important; }
+
+    /* ── Grouped by product ──
+       Each product is one bold row with its totals. Click it to open the
+       product and see every color + size underneath. */
+    tbody tr.group-row { background: #faf7f2; }
+    tbody tr.group-row td { padding-top: 0.7rem; padding-bottom: 0.7rem; }
+    .group-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      font-weight: 600;
+      color: #1B4D2E;
+      cursor: pointer;
+      text-align: left;
+    }
+    .group-caret {
+      display: inline-block;
+      width: 0.9rem;
+      font-size: 0.75rem;
+      color: #888;
+      transition: transform 0.15s;
+    }
+    tr.group-row.is-open .group-caret { transform: rotate(90deg); }
+    .group-count { font-size: 0.8rem; color: #777; font-weight: 400; margin-left: 0.4rem; }
+    /* The color + size rows sit indented under their product */
+    tbody tr.variant-row td:first-child { padding-left: 2.6rem; }
+    .group-note { font-size: 0.72rem; color: #777; }
+
+    /* Small bar above the table: how many products, and open/close all */
+    .group-tools {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin: 0 0 0.6rem;
+      font-size: 0.85rem;
+      color: #666;
+    }
+    .group-tools button {
+      background: #fff;
+      border: 1px solid #1B4D2E;
+      color: #1B4D2E;
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 0.4rem 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .group-tools button:hover { background: #f5f0e8; }
 
     /* Row tinting based on stock status */
     tbody tr.row-low { background-color: #fffbeb; }
@@ -571,7 +628,7 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">Inventory</h1>
-        <p class="page-subtitle">Track stock per variant across the online shop and the Greenhills store.</p>
+        <p class="page-subtitle">Track stock per variant across the online shop and the Greenhills store. Click a number to change it; press Tab to move down the list.</p>
       </div>
       <!-- Bulk stock import/export in Oboda's CSV format — see /admin/js/stock-import.js -->
       <div class="header-actions">
@@ -636,12 +693,18 @@
 
     </div>
 
+    <!-- ── Count + open/close all (filled in by renderTable) ── -->
+    <div class="group-tools">
+      <span id="groupSummaryText"></span>
+      <button type="button" id="toggleAllBtn">Show all sizes</button>
+    </div>
+
     <!-- ── Inventory table ── -->
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Product / Variant</th>
+            <th>Product / Color &amp; size</th>
             <th>SKU</th>
             <th class="col-num">Online</th>
             <th class="col-num">Store</th>
@@ -805,6 +868,12 @@
     // After filters are applied. This is what we render in the table.
     let filteredView = [];
 
+    // Products that are opened up to show their sizes. Kept here (not in the
+    // page) so a product stays open after you save a number or change a filter.
+    const openProducts = new Set();
+    const groupSummaryEl = document.getElementById('groupSummaryText');
+    const toggleAllBtn   = document.getElementById('toggleAllBtn');
+
     // ─────────────────────────────────────────────────────────────────────
     // HELPERS
     // ─────────────────────────────────────────────────────────────────────
@@ -937,6 +1006,7 @@
           variantId:    v.id,
           productId:    v.products.id,
           productName:  v.products.name,
+          brandName:    v.products.brands?.name ?? '',
           category:     v.products.category,
           isActive:     v.products.is_active,
           color:        v.color,
@@ -1014,41 +1084,116 @@
 
         const clearBtn = document.getElementById('clearFiltersBtn');
         if (clearBtn) clearBtn.addEventListener('click', clearFilters);
+        groupSummaryEl.textContent = '';
         return;
       }
 
       tableBody.innerHTML = '';
 
+      // Group the color + size rows under their product (the list is already
+      // sorted by product name, so each product's rows are next to each other).
+      const groups = [];
       for (const v of filteredView) {
-        const tr = document.createElement('tr');
-        tr.dataset.variantId = v.variantId;
-
-        // Add a tinted row background for low/out of stock
-        if (v.status === 'low') tr.classList.add('row-low');
-        if (v.status === 'out') tr.classList.add('row-out');
-
-        const statusLabel = {
-          in:  'In Stock',
-          low: 'Low Stock',
-          out: 'Out of Stock',
-        }[v.status];
-
-        tr.innerHTML = `
-          <td>
-            <div class="cell-product">${escapeHtml(v.productName)}${v.isActive ? '' : '<span class="cell-hidden" title="Customers cannot see this product">Hidden</span>'}</div>
-            <div class="cell-variant">${escapeHtml(v.color)} · ${escapeHtml(v.size)}</div>
-            <span class="cell-category">${escapeHtml(CATEGORY_LABELS[v.category] ?? v.category)}</span>
-          </td>
-          <td class="cell-sku">${escapeHtml(v.sku)}</td>
-          <td class="col-num cell-num">${v.online}</td>
-          <td class="col-num cell-num">${v.store}</td>
-          <td class="col-num cell-num total">${v.total}</td>
-          <td class="col-status">
-            <span class="status-badge status-${v.status}">${statusLabel}</span>
-          </td>
-        `;
-        tableBody.appendChild(tr);
+        let g = groups[groups.length - 1];
+        if (!g || g.productId !== v.productId) {
+          g = { productId: v.productId, first: v, variants: [] };
+          groups.push(g);
+        }
+        g.variants.push(v);
       }
+
+      // When you're searching or filtering by status, every matching product
+      // opens by itself, so you see the sizes you were looking for right away.
+      const forceOpen = !!(searchInput.value.trim() || statusSelect.value);
+
+      for (const g of groups) {
+        const isOpen = forceOpen || openProducts.has(g.productId);
+
+        const head = document.createElement('tr');
+        head.className = `group-row${isOpen ? ' is-open' : ''}`;
+        head.dataset.productId = g.productId;
+        head.innerHTML = groupRowHtml(g, isOpen);
+        tableBody.appendChild(head);
+
+        if (!isOpen) continue;
+        for (const v of g.variants) tableBody.appendChild(variantRow(v));
+      }
+
+      // "31 products · 190 colors and sizes"
+      const sizes = filteredView.length;
+      groupSummaryEl.textContent =
+        `${groups.length} product${groups.length === 1 ? '' : 's'} · ${sizes} color and size combination${sizes === 1 ? '' : 's'}`;
+      const allOpen = forceOpen || groups.every(g => openProducts.has(g.productId));
+      toggleAllBtn.textContent = allOpen ? 'Hide all sizes' : 'Show all sizes';
+      toggleAllBtn.disabled = forceOpen;   // already open while searching/filtering
+    }
+
+    const STATUS_LABELS = { in: 'In Stock', low: 'Low Stock', out: 'Out of Stock' };
+
+    // The bold row for one product: its name, how many sizes, and the totals
+    function groupRowHtml(g, isOpen) {
+      const p      = g.first;
+      const online = g.variants.reduce((n, v) => n + v.online, 0);
+      const store  = g.variants.reduce((n, v) => n + v.store, 0);
+      const low    = g.variants.filter(v => v.status === 'low').length;
+      const out    = g.variants.filter(v => v.status === 'out').length;
+
+      // Status for the whole product: say how many sizes need attention
+      const badges = [];
+      if (out) badges.push(`<span class="status-badge status-out">${out} out</span>`);
+      if (low) badges.push(`<span class="status-badge status-low">${low} low</span>`);
+      if (!badges.length) badges.push(`<span class="status-badge status-in">In Stock</span>`);
+
+      return `
+        <td>
+          <button type="button" class="group-toggle" aria-expanded="${isOpen}">
+            <span class="group-caret" aria-hidden="true">▶</span>
+            <span>${escapeHtml(p.productName)}</span>
+          </button>
+          <span class="group-count">${g.variants.length} size${g.variants.length === 1 ? '' : 's'}</span>
+          ${p.isActive ? '' : '<span class="cell-hidden" title="Customers cannot see this product">Hidden</span>'}
+          <span class="cell-category">${escapeHtml(CATEGORY_LABELS[p.category] ?? p.category)}</span>${!adminBrandFilter() && p.brandName ? ` <span class="cell-category">${escapeHtml(p.brandName)}</span>` : ''}
+        </td>
+        <td class="group-note">${isOpen ? '' : 'Click to see sizes'}</td>
+        <td class="col-num cell-num">${online}</td>
+        <td class="col-num cell-num">${store}</td>
+        <td class="col-num cell-num total">${online + store}</td>
+        <td class="col-status">${badges.join(' ')}</td>`;
+    }
+
+    // One color + size row (shown when its product is open)
+    function variantRow(v) {
+      const tr = document.createElement('tr');
+      tr.className = 'variant-row';
+      tr.dataset.variantId = v.variantId;
+
+      // Add a tinted row background for low/out of stock
+      if (v.status === 'low') tr.classList.add('row-low');
+      if (v.status === 'out') tr.classList.add('row-out');
+
+      tr.innerHTML = `
+        <td>
+          <div class="cell-variant">${escapeHtml(v.color)} · ${escapeHtml(v.size)}</div>
+        </td>
+        <td class="cell-sku">${escapeHtml(v.sku)}</td>
+        <td class="col-num cell-num cell-edit" data-inline="online" title="Click to edit">${v.online}</td>
+        <td class="col-num cell-num cell-edit" data-inline="greenhills_store" title="Click to edit">${v.store}</td>
+        <td class="col-num cell-num total">${v.total}</td>
+        <td class="col-status">
+          <span class="status-badge status-${v.status}">${STATUS_LABELS[v.status]}</span>
+        </td>
+      `;
+      return tr;
+    }
+
+    // After a number changes, redraw just that product's bold row so its
+    // totals and "2 low" badges stay correct.
+    function refreshGroupRow(productId) {
+      const head = tableBody.querySelector(`tr.group-row[data-product-id="${productId}"]`);
+      if (!head) return;
+      const variants = filteredView.filter(v => v.productId === productId);
+      if (!variants.length) return;
+      head.innerHTML = groupRowHtml({ productId, first: variants[0], variants }, head.classList.contains('is-open'));
     }
 
     function clearFilters() {
@@ -1109,12 +1254,94 @@
       openPanel();
     }
 
-    // Whole row click → open the edit panel for that variant
+    // Whole row click → open the edit panel for that variant …
     tableBody.addEventListener('click', (e) => {
       const tr = e.target.closest('tr');
-      if (!tr || !tr.dataset.variantId) return;
+      if (!tr) return;
+
+      // Clicking a product's bold row opens or closes its sizes
+      if (tr.dataset.productId) {
+        // While searching/filtering everything is already open; nothing to do
+        if (searchInput.value.trim() || statusSelect.value) return;
+        if (openProducts.has(tr.dataset.productId)) openProducts.delete(tr.dataset.productId);
+        else openProducts.add(tr.dataset.productId);
+        renderTable();
+        return;
+      }
+
+      if (!tr.dataset.variantId) return;
+      // … except the Online / Store numbers, which edit in place
+      const cell = e.target.closest('[data-inline]');
+      if (cell) { startInlineEdit(cell, tr.dataset.variantId); return; }
       openEditPanel(tr.dataset.variantId);
     });
+
+    // "Show all sizes" / "Hide all sizes" button above the table
+    toggleAllBtn.addEventListener('click', () => {
+      const ids = [...new Set(filteredView.map(v => v.productId))];
+      const allOpen = ids.every(id => openProducts.has(id));
+      if (allOpen) ids.forEach(id => openProducts.delete(id));
+      else         ids.forEach(id => openProducts.add(id));
+      renderTable();
+    });
+
+    // ── Inline editing: click a number, type, Enter (Tab moves to the next) ──
+    function startInlineEdit(cell, variantId) {
+      if (cell.querySelector('input')) return;
+      const v = allVariants.find(x => x.variantId === variantId);
+      if (!v) return;
+      const channel = cell.dataset.inline;
+      const current = channel === 'online' ? v.online : v.store;
+
+      const input = document.createElement('input');
+      input.type = 'number'; input.min = '0'; input.step = '1'; input.inputMode = 'numeric';
+      input.value = current; input.className = 'inline-input';
+      cell.textContent = ''; cell.appendChild(input);
+      input.focus(); input.select();
+
+      let done = false;
+      const finish = async (save, moveNext) => {
+        if (done) return; done = true;
+        const qty = parseInt(input.value, 10);
+        if (!save || !Number.isInteger(qty) || qty < 0 || qty === current) {
+          cell.textContent = current;
+        } else {
+          cell.textContent = '…';
+          const { error } = await supabase.from('inventory').upsert(
+            { variant_id: variantId, channel, quantity: qty, low_stock_threshold: v.threshold },
+            { onConflict: 'variant_id,channel' }
+          );
+          if (error) { console.error(error); showToast('Could not save.'); cell.textContent = current; }
+          else {
+            if (channel === 'online') v.online = qty; else v.store = qty;
+            v.total  = v.online + v.store;
+            v.status = computeStatus(v.total, v.threshold);
+            cell.textContent = qty;
+            // Refresh the row's total + badge without reloading everything
+            const tr = cell.closest('tr');
+            tr.querySelector('.total').textContent = v.total;
+            tr.classList.toggle('row-low', v.status === 'low');
+            tr.classList.toggle('row-out', v.status === 'out');
+            tr.querySelector('.status-badge').className = `status-badge status-${v.status}`;
+            tr.querySelector('.status-badge').textContent = STATUS_LABELS[v.status];
+            refreshGroupRow(v.productId);
+            updateSummary();
+            showToast('Saved.');
+          }
+        }
+        if (moveNext) {
+          const cells = [...tableBody.querySelectorAll('[data-inline]')];
+          const next = cells[cells.indexOf(cell) + 1];
+          if (next) startInlineEdit(next, next.closest('tr').dataset.variantId);
+        }
+      };
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter')  { e.preventDefault(); finish(true, false); }
+        if (e.key === 'Tab')    { e.preventDefault(); finish(true, true); }
+        if (e.key === 'Escape') { finish(false, false); }
+      });
+      input.addEventListener('blur', () => finish(true, false));
+    }
 
     // − / + buttons next to the stock boxes. Never goes below 0.
     panel.addEventListener('click', (e) => {

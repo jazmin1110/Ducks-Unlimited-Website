@@ -1,16 +1,18 @@
-# Ducks Unlimited — E-Commerce Website
+# Ducks Unlimited + Rocwood — E-Commerce Website
 
-E-commerce site and admin panel for **Ducks Unlimited**, a Filipino retail clothing brand
-crafting Egyptian cotton garments since 1995. Based in Greenhills, San Juan.
+Online shop and admin panel for **Ducks Unlimited** (Egyptian cotton polos and
+shirts, made in the Philippines since 1995) and its sister brand **Rocwood**.
+Based in Greenhills, San Juan.
 
 ---
 
 ## Tech Stack
 
-- **Frontend:** Plain HTML, CSS, vanilla JavaScript (no React, no Next.js, no build step)
+- **Frontend:** Plain HTML, CSS, vanilla JavaScript (no React, no build step)
 - **Database + Auth:** [Supabase](https://supabase.com) (PostgreSQL + Row Level Security)
-- **Payments:** [PayMongo](https://paymongo.com) (Philippine-friendly payment gateway)
-- **Hosting:** [Vercel](https://vercel.com) (static files + serverless functions)
+- **Payments:** [Maya Checkout](https://developers.maya.ph) (cards, Maya wallet, GCash / QR Ph) and cash on delivery. PayMongo is kept as a backup provider.
+- **Emails:** [Resend](https://resend.com) for receipts and shipping notices
+- **Hosting:** Vercel (static files + serverless functions + a cron job)
 - **Fonts:** Cormorant Garamond (headings), DM Sans (body) — via Google Fonts
 
 ---
@@ -19,173 +21,143 @@ crafting Egyptian cotton garments since 1995. Based in Greenhills, San Juan.
 
 ```
 /
-├── public/          # Customer-facing storefront (everything in here is publicly served)
-│   ├── index.html       # Homepage
-│   ├── shop.html        # Product catalog with filters
-│   ├── product.html     # Individual product detail page
-│   ├── cart.html        # Shopping cart
-│   ├── checkout.html    # Checkout form → PayMongo
-│   ├── css/style.css    # Shared design tokens + components
-│   ├── js/
-│   │   ├── cart.js          # Cart state in localStorage
-│   │   └── components.js    # Loads /components/ snippets into pages
-│   └── components/
-│       ├── nav.html         # Reusable navigation
-│       └── footer.html      # Reusable footer
+├── public/                 # Everything customers see (served as-is)
+│   ├── index.html              # Landing page (both brands)
+│   ├── home.html               # Brand homepage (/du/ and /rw/), built from admin sections
+│   ├── shop.html               # Catalog with filters + search
+│   ├── product.html            # Product page (served through /api/product-page for share tags)
+│   ├── cart.html, checkout.html, order-confirmation.html, track-order.html
+│   ├── account/                # My Account: orders, addresses, wishlist, profile
+│   ├── auth/                   # Sign in / sign up / password reset
+│   ├── customer-service/       # Shipping, returns, help, privacy, terms
+│   ├── admin/                  # Staff panel (Supabase Auth + admin_users table)
+│   │   ├── dashboard.html          # To-do cards, sales for a period, top products, "needs a look"
+│   │   ├── orders.html             # Orders: pack / ship / COD cash / cancel / refund / packing slips / CSV
+│   │   ├── products.html           # Products, variants, photos, fit & care, featured, swatch colours
+│   │   ├── inventory.html          # Stock per variant (click a number to edit), CSV import/export
+│   │   ├── customers.html, members.html, vouchers.html, log.html
+│   │   ├── design.html             # Homepage builder (sections)
+│   │   ├── homepage.html           # Announcement bar + shop intro text
+│   │   ├── lookbooks.html, stores.html
+│   │   └── js/                     # admin-guard, CSV import/export, image uploader
+│   ├── components/             # nav, footer, mini-cart, announcement bar, admin nav
+│   ├── js/                     # cart, auth, account helpers, brand switcher, colours, sections
+│   ├── css/                    # style.css (design tokens), home.css, account.css
+│   └── lib/supabase.js         # Shared Supabase client (anon key — safe to expose)
 │
-├── admin/           # Password-protected admin panel (Supabase Auth)
-│   ├── index.html       # Login
-│   ├── dashboard.html   # Overview with stats + recent orders + low stock
-│   ├── products.html    # Manage products, variants, and images
-│   ├── inventory.html   # Update stock per channel
-│   └── orders.html      # View orders, update fulfillment, add tracking
-│
-├── api/             # Vercel serverless functions
-│   ├── create-payment.js     # Creates order + PayMongo payment link
-│   └── paymongo-webhook.js   # Receives payment confirmations, decrements inventory
-│
-├── lib/
-│   └── supabase.js          # Shared Supabase client for frontend pages
+├── api/                    # Vercel serverless functions (server-side, secret keys)
+│   ├── create-payment.js       # Checkout: validates, prices, creates the order, starts Maya or COD
+│   ├── quote.js                # Live totals for the checkout page (shipping zone, member discount, voucher)
+│   ├── maya-verify.js          # Confirms a Maya payment and marks the order paid
+│   ├── expire-orders.js        # Cron: expires abandoned checkouts, catches paid-but-closed-tab orders
+│   ├── track-order.js          # Order lookup by number + email (guests)
+│   ├── cancel-order.js         # Customer cancels while still "pending"
+│   ├── admin-order.js          # Staff: status + tracking, COD cash received, cancel, refund
+│   ├── delete-account.js       # Right-to-erasure
+│   ├── product-page.js         # product.html with Open Graph / JSON-LD injected
+│   ├── paymongo-webhook.js     # Backup provider
+│   └── _lib/                   # Shared: pricing rules, emails, orders, rate limit, Maya, Supabase
 │
 ├── database/
-│   ├── schema.sql                  # Full database schema (run once for new installs)
-│   ├── storage_setup.sql           # Creates the product-images storage bucket
-│   └── migrations/                 # Incremental updates for existing databases
-│       ├── 001_product_images.sql
-│       └── 002_order_notes_and_tracking.sql
+│   ├── schema.sql              # Original schema (historical — the live DB is schema + all migrations)
+│   ├── migrations/             # Apply in order in the Supabase SQL Editor (001 … 033)
+│   └── seed/                   # Demo catalogue
 │
-├── .env.example     # Template for required env vars (copy to .env locally)
-├── vercel.json      # Vercel deployment config
-└── README.md        # You are here
+├── scripts/dev-server.mjs  # Local server that also runs /api/* (no Vercel CLI needed)
+├── .env.example            # Every environment variable, explained
+└── vercel.json             # Rewrites, security headers, caching, the cron
 ```
 
 ---
 
 ## Running Locally
 
-### Prerequisites
+```bash
+cp .env.example .env     # then fill in the values
+node scripts/dev-server.mjs
+```
 
-- **Node.js 18+** — needed for the Vercel CLI to run serverless functions locally
-- **Vercel CLI** — install once with `npm i -g vercel`
-- A **Supabase project** (free tier is fine)
-- A **PayMongo account** (you can use test mode while building)
+Open http://localhost:3000. This serves the site **and** the `/api/*`
+functions, so checkout, quotes and order tracking work locally. (A plain
+static server such as `python -m http.server` shows the pages but checkout
+will say it can't reach the server.)
 
-### First-time setup
-
-1. **Clone this repository**
-   ```bash
-   git clone https://github.com/<your-username>/ducks-unlimited-website.git
-   cd ducks-unlimited-website
-   ```
-
-2. **Create `.env`** from the template
-   ```bash
-   cp .env.example .env
-   ```
-   Then open `.env` in your editor and fill in the values — see the
-   [Environment Variables](#environment-variables) section below for where to get each one.
-
-3. **Set up the database** — in your Supabase project's SQL Editor:
-   - Run the contents of `database/schema.sql` once.
-   - Run `database/storage_setup.sql` to create the storage bucket for product images.
-   - If you ever update the schema later, apply files from `database/migrations/` in order.
-
-4. **Create your first admin user** in Supabase
-   - Go to Supabase dashboard → Authentication → Users → "Add user"
-   - Enter your email + password
-   - You can now log into the admin panel at `/admin/`
-
-5. **Start the dev server**
-   ```bash
-   vercel dev
-   ```
-   This serves the static files AND runs the `/api/*` serverless functions locally.
-   Open [http://localhost:3000](http://localhost:3000).
-
-> **Why `vercel dev` instead of a regular static server?** Because plain `http-server` or `python -m http.server` won't run the serverless functions in `/api/*` — so checkout won't work locally without it.
+In the Claude desktop app, the `site-api` entry in `.claude/launch.json`
+starts this same server.
 
 ---
 
 ## Environment Variables
 
-All of these are required for the site to work end-to-end. Locally they live in
-`.env`. In production they go in the Vercel dashboard (see [Deploy](#deploy-to-vercel)).
+Set these in `.env` locally and in Vercel → Settings → Environment Variables.
+`.env.example` explains each one. The important groups:
 
-| Variable | What it is | Where to get it |
-|---|---|---|
-| `SUPABASE_URL` | Your Supabase project URL | Supabase → Settings → API → "Project URL" |
-| `SUPABASE_ANON_KEY` | Public Supabase key (frontend) | Supabase → Settings → API → "anon public" |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Server-only** admin key. Bypasses RLS. | Supabase → Settings → API → "service_role" — keep this secret! |
-| `PAYMONGO_SECRET_KEY` | **Server-only** PayMongo key | PayMongo → Developers → API Keys → "Secret Key" (use `sk_test_…` while building) |
-| `PAYMONGO_PUBLIC_KEY` | Public PayMongo key (reserved) | PayMongo → Developers → API Keys → "Public Key" |
-| `PAYMONGO_WEBHOOK_SECRET` | Signs webhook payloads from PayMongo | Created when you register a webhook (see [PayMongo setup](#paymongo-setup)) |
-| `SITE_URL` | Your live site URL | `https://ducks-unlimited-website.vercel.app` (production) or `http://localhost:3000` (local dev) |
+| Group | Variables |
+|---|---|
+| Supabase | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (server only) |
+| Maya | `MAYA_ENV` (`sandbox` / `production`), `MAYA_PUBLIC_KEY`, `MAYA_SECRET_KEY` |
+| Site | `SITE_URL` (used for redirect and email links) |
+| Emails | `RESEND_API_KEY`, `EMAIL_FROM`, optional `EMAIL_REPLY_TO`, `EMAIL_BCC`, `EMAIL_STAFF` |
+| Cron | `CRON_SECRET` (protects `/api/expire-orders`) |
+| PayMongo (backup) | `PAYMENT_PROVIDER=paymongo`, `PAYMONGO_SECRET_KEY`, `PAYMONGO_WEBHOOK_SECRET` |
 
-> ⚠️ **Never commit `.env`.** It's already in `.gitignore`. Don't paste the
-> service role key or PayMongo secret key into frontend code — they belong on
-> the server only.
+Without `RESEND_API_KEY` no emails are sent (they're logged instead); the
+shop still works.
 
 ---
 
-## PayMongo Setup
+## How an order flows
 
-1. **Get your API keys**
-   - Sign up at [paymongo.com](https://paymongo.com).
-   - Go to Developers → API Keys.
-   - Copy the **Public Key** and **Secret Key**. Start with the test keys (`pk_test_…` / `sk_test_…`).
-
-2. **Register a webhook** so payments confirm automatically:
-   - In PayMongo dashboard: Developers → Webhooks → "Create Webhook"
-   - **Endpoint URL:** `https://<your-vercel-domain>/api/paymongo-webhook`
-   - **Events to subscribe to:** `link.payment.paid` (and `payment.paid`)
-   - After creating, copy the **Signing Secret** → set as `PAYMONGO_WEBHOOK_SECRET`
-
-3. **(Optional)** Set the global redirect URL in PayMongo → Settings so customers
-   are sent back to your site after paying:
-   - Success: `https://<your-domain>/order-confirmation.html`
-   - Failed:  `https://<your-domain>/checkout.html?status=failed`
-
----
-
-## Deploy to Vercel
-
-### One-time setup
-
-1. **Push your code to GitHub** (see the walkthrough below if you don't have a repo yet).
-
-2. **Import the repo into Vercel**
-   - Go to [vercel.com/new](https://vercel.com/new).
-   - Select your GitHub repo.
-   - Vercel auto-detects the project. **Don't change any settings** — `vercel.json` already configures everything.
-   - Click **Deploy**.
-
-3. **Add environment variables** in Vercel
-   - Go to your project in Vercel → Settings → Environment Variables.
-   - Add each variable from the table above.
-   - Set them for **Production, Preview, and Development** so all environments work.
-
-4. **Redeploy** after adding the env vars (Vercel → Deployments → "Redeploy" on the latest one).
-
-### Future deploys
-
-Every push to the `main` branch automatically deploys to production. Every push
-to a feature branch creates a preview deployment.
+1. **Checkout** (`checkout.html`) asks `/api/quote` for live totals as the
+   shopper fills in the form: shipping zone from the province (Metro Manila
+   ₱100 · Luzon ₱150 · Visayas/Mindanao ₱200, free at ₱3,000+, pickup free),
+   store-member discount (matched by account, phone or email), voucher code.
+   The rules live in one place: `api/_lib/pricing.js`.
+2. **Place order** → `/api/create-payment` re-checks everything server-side
+   and inserts the order as `pending`.
+   - **Maya**: the shopper is sent to Maya's hosted page. Stock is **not**
+     taken yet. When they return, `order-confirmation.html` calls
+     `/api/maya-verify`, which asks Maya and marks the order paid.
+   - **Cash on delivery / pay in store**: stock is taken immediately and a
+     confirmation email goes out. Staff press **Cash received** on the order
+     when the money comes in.
+3. **Paid** → `markOrderPaid()` (in `api/_lib/orders.js`) takes stock in one
+   database call (`deduct_stock_for_order`), flags anything oversold, and
+   emails the receipt.
+4. **Staff** pack and ship from Admin → Orders. Statuses only move forward.
+   Marking it *Shipped* (or *Ready for pickup*) emails the customer with the
+   tracking number.
+5. **Abandoned checkouts**: `/api/expire-orders` runs every 30 minutes and
+   marks online orders still unpaid after 2 hours as `expired` (after one last
+   check with Maya, so a paid-but-closed-tab order is rescued, not expired).
 
 ---
 
 ## Database Migrations
 
-The canonical schema lives in `database/schema.sql`. For incremental updates to
-an existing database, apply migrations in order from `database/migrations/`.
+The live database is `schema.sql` plus every file in `database/migrations/`
+applied in order. New installs: run `schema.sql`, `storage_setup.sql`, then
+all migrations. Existing installs: run only the ones you haven't yet.
 
-Current migrations:
+The latest, `033_checkout_options_emails_and_audit.sql`, adds COD / pickup /
+voucher columns on orders, `order_items.brand_id`, `variants.color_hex`,
+product fit/care notes and `is_featured`, the `discount_codes` table, the
+`admin_log` table with its triggers, `deduct_stock_for_order()`, and the
+forward-only fulfillment rule.
 
-| File | What it adds |
-|---|---|
-| `001_product_images.sql` | The `product_images` table + RLS policies |
-| `002_order_notes_and_tracking.sql` | `orders.tracking_number` and `orders.internal_notes` columns |
+---
 
-To apply: paste the SQL into the Supabase SQL Editor and run.
+## Go-live checklist (Maya)
+
+Still waiting on Maya for production keys. When they arrive:
+
+1. Set `MAYA_ENV=production`, `MAYA_PUBLIC_KEY`, `MAYA_SECRET_KEY` in Vercel.
+2. Add a Maya webhook (Maya Manager → Webhooks, event `PAYMENT_SUCCESS`)
+   that calls `markOrderPaid()` — see the TODO at the top of
+   `api/maya-verify.js`. Until then `/api/expire-orders` re-checks Maya for
+   every stale pending order, so paid orders are never lost.
+3. Delete the sandbox test orders (they're labelled in staff notes).
+4. Set `RESEND_API_KEY` + a verified `EMAIL_FROM` so customers get receipts.
 
 ---
 
@@ -193,13 +165,12 @@ To apply: paste the SQL into the Supabase SQL Editor and run.
 
 - **Plain HTML/CSS/JS** — no build step, no frameworks. The owner is a beginner
   coder, so code stays simple and well-commented.
-- **Mobile-first design** — most Filipino shoppers are on phones. Default styles
-  are for mobile, desktop overrides go in `@media (min-width: ...)` blocks.
-- **Server is the source of truth for prices and stock.** The frontend can hint
-  at these, but `/api/create-payment` re-fetches authoritative values before
-  charging anyone.
-- **Inventory only decrements after PayMongo confirms payment** — never when an
-  order is created. This prevents overselling during abandoned checkouts.
+- **Mobile-first design** — most Filipino shoppers are on phones.
+- **The server is the source of truth for money and stock.** The browser only
+  previews totals; `/api/create-payment` recomputes them before anything is
+  charged, and stock only moves through the database functions.
+- **One place per rule**: shipping, discounts → `api/_lib/pricing.js`;
+  emails → `api/_lib/email.js`; swatch colours → `public/js/colors.js`.
 
 ---
 
