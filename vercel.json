@@ -9,10 +9,6 @@
   "functions": {
     "api/*.js": {
       "memory": 1024,
-      "maxDuration": 10
-    },
-    "api/product-page.js": {
-      "memory": 1024,
       "maxDuration": 10,
       "includeFiles": "public/product.html"
     }

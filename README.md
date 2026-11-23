@@ -127,7 +127,7 @@ shop still works.
 4. **Staff** pack and ship from Admin → Orders. Statuses only move forward.
    Marking it *Shipped* (or *Ready for pickup*) emails the customer with the
    tracking number.
-5. **Abandoned checkouts**: `/api/expire-orders` runs every 30 minutes and
+5. **Abandoned checkouts**: `/api/expire-orders` runs once a day (2am PH time) and
    marks online orders still unpaid after 2 hours as `expired` (after one last
    check with Maya, so a paid-but-closed-tab order is rescued, not expired).
 
