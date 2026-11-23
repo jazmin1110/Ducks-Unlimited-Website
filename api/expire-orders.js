@@ -10,7 +10,8 @@
 // Maya orders that DID get paid are caught first by asking Maya — so a
 // customer who paid but closed the tab still gets marked paid, not expired.
 //
-// Runs automatically on Vercel every 30 minutes (see "crons" in vercel.json).
+// Runs automatically on Vercel once a day at 2am Philippine time (18:00 UTC,
+// see "crons" in vercel.json). The free Hobby plan only allows daily crons.
 // Vercel calls it with  Authorization: Bearer <CRON_SECRET>  — set CRON_SECRET
 // in the environment so nobody else can trigger it.
 // You can also run it by hand:  curl -H "Authorization: Bearer $CRON_SECRET" https://<site>/api/expire-orders

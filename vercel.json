@@ -19,7 +19,7 @@
   },
 
   "crons": [
-    { "path": "/api/expire-orders", "schedule": "*/30 * * * *" }
+    { "path": "/api/expire-orders", "schedule": "0 18 * * *" }
   ],
 
   "redirects": [
