@@ -32,8 +32,9 @@ import {
 } from '/js/section-schemas.js';
 import { createPreviewBridge } from '/admin/js/editor/preview-bridge.js';
 import { createHistory } from '/admin/js/editor/history.js';
+import { createAutosave } from '/admin/js/editor/autosave.js';
 import {
-  moveSection, duplicateSection, setHidden, markRemoved, unmarkRemoved, addSection
+  moveSection, duplicateSection, setHidden, markRemoved, unmarkRemoved, addSection, canPublish
 } from '/admin/js/editor/page-state.js';
 import {
   sectionFormHtml, fieldsHtml, applyShowIf, readFieldValue, escapeHtml
@@ -54,7 +55,8 @@ const state = {
   saved:      new Map(),                    // section id → JSON of { settings, position }
   savedTheme: '',                           // JSON of the theme
   hasUnpublished: false,                    // drafts exist that aren't live yet
-  dirty: false                              // changes not saved yet
+  saveStatus: 'saved',                      // 'saving' | 'saved' | 'error' (from autosave)
+  versionTime: null                         // when this page was last published, as of opening
 };
 
 let bridge = null;
@@ -106,7 +108,7 @@ const THEME_FIELDS = [
 
   // Warn before leaving with changes that aren't saved yet.
   window.addEventListener('beforeunload', (e) => {
-    if (state.dirty) { e.preventDefault(); e.returnValue = ''; }
+    if (autosave.hasPending()) { e.preventDefault(); e.returnValue = ''; }
   });
 
   await load();
@@ -155,7 +157,8 @@ async function load() {
   state.saved = new Map(sections.map((s) => [s.id, savedKey(s)]));
   state.savedTheme = JSON.stringify(theme);
   state.hasUnpublished = (rows || []).some((r) => r.draft || r.draft_position != null) || !!themeRow?.draft;
-  state.dirty = false;
+  // Remember the newest published version, to spot someone else publishing.
+  state.versionTime = await latestVersionTime();
   if (!sections.some((s) => s.id === state.selectedId)) state.selectedId = sections[0]?.id || null;
 
   history.reset(state.page);
@@ -385,7 +388,6 @@ function blockAction(action, blockId) {
 //              become ONE undo step (see history.js)
 function commit(page, groupKey = null) {
   state.page = page;
-  state.dirty = true;
   history.record(page, groupKey);
   renderList();
   refreshPreview();
@@ -394,8 +396,11 @@ function commit(page, groupKey = null) {
   scheduleSave();
 }
 
-// Autosave arrives in the next step; for now Save Draft does it.
-function scheduleSave() {}
+// Save automatically ~2 seconds after the last change.
+function scheduleSave() {
+  autosave.schedule();
+  updateStatus();
+}
 
 
 // ── List actions: drag, hide, duplicate, move, remove ────────────────────────
@@ -546,7 +551,6 @@ function redo() { applyHistory(history.redo()); }
 function applyHistory(page) {
   if (!page) return;
   state.page = page;
-  state.dirty = true;
   // The selected section may not exist (or be removed) in that version.
   const listed = page.sections.filter((s) => !s.settings?._removed);
   if (!listed.some((s) => s.id === state.selectedId)) state.selectedId = listed[0]?.id || null;
@@ -602,7 +606,6 @@ function showToast(text, actionLabel = null, onAction = null, ms = 8000) {
 
 // ── Top bar ──────────────────────────────────────────────────────────────────
 function wireTopBar() {
-  document.querySelector('[data-save-draft-btn]').addEventListener('click', saveDraft);
   document.querySelector('[data-publish-btn]').addEventListener('click', publish);
   document.querySelector('[data-undo]').addEventListener('click', undo);
   document.querySelector('[data-redo]').addEventListener('click', redo);
@@ -628,112 +631,151 @@ function wireTopBar() {
 }
 
 
-// ── Save / Publish ───────────────────────────────────────────────────────────
+// ── Save (automatic) / Publish ───────────────────────────────────────────────
 // Writes every changed section's settings and order to its DRAFT, and the
-// theme to the theme draft. The live site doesn't change.
-// Returns true if everything saved.
+// theme to the theme draft. The live site doesn't change. Called by autosave
+// (/admin/js/editor/autosave.js) about 2 seconds after the last change; if it
+// fails (no internet), autosave keeps the changes and tries again.
+// Throws on any error so autosave knows to retry.
 async function saveDraft() {
-  const btn = document.querySelector('[data-save-draft-btn]');
-  btn.disabled = true;
-  setStatus('Saving…');
-  try {
-    for (const s of state.page.sections) {
-      const key = savedKey(s);
-      if (state.saved.get(s.id) === key) continue; // unchanged
+  for (const s of state.page.sections) {
+    const key = savedKey(s);
+    if (state.saved.get(s.id) === key) continue; // unchanged
 
-      if (s.isNew && !savedNewIds.has(s.id)) {
-        // Added (or duplicated) and removed again before ever being saved:
-        // nothing to keep.
-        if (s.settings?._removed) continue;
-        // A brand-new section: create its row. `published` stays empty, so
-        // the live site can't show it until Publish. Its live `position` is
-        // set far down so it can never collide; Publish uses draft_position.
-        const { error } = await supabase.from('page_sections').insert({
-          id: s.id,
-          page_key: PAGE_KEY,
-          brand_id: state.brandId,
-          section_type: s.section_type,
-          position: 100000 + s.position,
-          draft_position: s.position,
-          published: null,
-          draft: s.settings
-        });
-        if (error) throw error;
-        markSaved(s.id);
-      } else {
-        const { error } = await supabase.from('page_sections')
-          .update({ draft: s.settings, draft_position: s.position })
-          .eq('id', s.id);
-        if (error) throw error;
-      }
-      state.saved.set(s.id, key);
-      state.hasUnpublished = true;
-    }
-
-    // Sections saved earlier that are no longer on the page at all (e.g. an
-    // "Add" that was undone): mark them removed in the draft, so they don't
-    // come back next time and Publish clears them away.
-    const onPage = new Set(state.page.sections.map((s) => s.id));
-    for (const [id, key] of state.saved) {
-      if (onPage.has(id)) continue;
-      const { settings } = JSON.parse(key);
-      if (settings?._removed) continue;
-      const draft = { ...settings, _removed: true };
-      const { error } = await supabase.from('page_sections').update({ draft }).eq('id', id);
+    if (s.isNew && !savedNewIds.has(s.id)) {
+      // Added (or duplicated) and removed again before ever being saved:
+      // nothing to keep.
+      if (s.settings?._removed) continue;
+      // A brand-new section: create its row. `published` stays empty, so
+      // the live site can't show it until Publish. Its live `position` is
+      // set far down so it can never collide; Publish uses draft_position.
+      const { error } = await supabase.from('page_sections').insert({
+        id: s.id,
+        page_key: PAGE_KEY,
+        brand_id: state.brandId,
+        section_type: s.section_type,
+        position: 100000 + s.position,
+        draft_position: s.position,
+        published: null,
+        draft: s.settings
+      });
       if (error) throw error;
-      state.saved.set(id, JSON.stringify({ settings: draft, position: JSON.parse(key).position }));
-    }
-
-    const themeKey = JSON.stringify(state.page.theme);
-    if (themeKey !== state.savedTheme) {
-      const { error } = await supabase.from('theme_settings')
-        .upsert({ brand_id: state.brandId, draft: state.page.theme }, { onConflict: 'brand_id' });
+      markSaved(s.id);
+    } else {
+      const { error } = await supabase.from('page_sections')
+        .update({ draft: s.settings, draft_position: s.position })
+        .eq('id', s.id);
       if (error) throw error;
-      state.savedTheme = themeKey;
-      state.hasUnpublished = true;
     }
+    state.saved.set(s.id, key);
+    state.hasUnpublished = true;
+  }
 
-    state.dirty = false;
+  // Sections saved earlier that are no longer on the page at all (e.g. an
+  // "Add" that was undone): mark them removed in the draft, so they don't
+  // come back next time and Publish clears them away.
+  const onPage = new Set(state.page.sections.map((s) => s.id));
+  for (const [id, key] of state.saved) {
+    if (onPage.has(id)) continue;
+    const { settings, position } = JSON.parse(key);
+    if (settings?._removed) continue;
+    const draft = { ...settings, _removed: true };
+    const { error } = await supabase.from('page_sections').update({ draft }).eq('id', id);
+    if (error) throw error;
+    state.saved.set(id, JSON.stringify({ settings: draft, position }));
+  }
+
+  const themeKey = JSON.stringify(state.page.theme);
+  if (themeKey !== state.savedTheme) {
+    const { error } = await supabase.from('theme_settings')
+      .upsert({ brand_id: state.brandId, draft: state.page.theme }, { onConflict: 'brand_id' });
+    if (error) throw error;
+    state.savedTheme = themeKey;
+    state.hasUnpublished = true;
+  }
+}
+
+const autosave = createAutosave({
+  save: saveDraft,
+  onStatus: (status) => {
+    state.saveStatus = status;
+    if (status === 'error') console.warn('[design] autosave failed — will retry');
     updateStatus();
-    return true;
-  } catch (err) {
-    console.error(err);
-    alert('Save failed: ' + err.message);
-    setStatus("Couldn't save", 'is-error');
-    return false;
+  }
+});
+
+// Publish = save anything left, then ONE database call (publish_page) that
+// makes the whole draft live in one go. If anything fails, nothing on the
+// live site changes.
+let publishing = false;
+async function publish() {
+  if (publishing) return; // a second click while the first is still going
+  publishing = true;
+  const btn = document.querySelector('[data-publish-btn]');
+  btn.disabled = true;
+  try {
+    // An empty homepage can't be published.
+    const check = canPublish(state.page);
+    if (!check.ok) { alert(check.message); return; }
+
+    // Save whatever hasn't been saved yet.
+    try {
+      await autosave.flushNow();
+    } catch {
+      alert("Your latest changes couldn't be saved, so nothing was published. Check your internet connection and try again.");
+      return;
+    }
+
+    // Did someone else publish this page since this editor was opened?
+    const newest = await latestVersionTime();
+    if (newest && state.versionTime && newest > state.versionTime) {
+      const when = new Date(newest).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      if (!confirm(`Someone else published this page at ${when}. Publishing now will replace their changes. Publish anyway?`)) return;
+    }
+
+    if (!confirm(`Make these changes live on the ${state.brandName} homepage?`)) return;
+
+    setStatus('Publishing…');
+    const { error } = await supabase.rpc('publish_page', { p_page_key: PAGE_KEY, p_brand_id: state.brandId });
+    if (error) {
+      alert('Publish failed: ' + error.message);
+      updateStatus();
+      return;
+    }
+    await load(); // fresh from the database; also resets Undo
+    setStatus('Published ✓ ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), 'is-saved');
   } finally {
+    publishing = false;
     btn.disabled = false;
   }
 }
 
-// Publish = save, then one database call (publish_page) that makes the whole
-// draft live in one go — if anything fails, nothing on the live site changes.
-async function publish() {
-  if (state.dirty && !(await saveDraft())) return;
-  if (!confirm(`Make these changes live on the ${state.brandName} homepage?`)) return;
-
-  const btn = document.querySelector('[data-publish-btn]');
-  btn.disabled = true;
-  setStatus('Publishing…');
-  try {
-    const { error } = await supabase.rpc('publish_page', { p_page_key: PAGE_KEY, p_brand_id: state.brandId });
-    if (error) throw error;
-    await load();
-    setStatus('Published ✓ ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), 'is-saved');
-  } catch (err) {
-    console.error(err);
-    alert('Publish failed: ' + err.message);
-    updateStatus();
-  } finally {
-    btn.disabled = false;
-  }
+// When this page was last published (newest saved version), or null.
+async function latestVersionTime() {
+  const { data, error } = await supabase
+    .from('page_versions')
+    .select('published_at')
+    .eq('page_key', PAGE_KEY)
+    .eq('brand_id', state.brandId)
+    .order('published_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) { console.warn('[design] version check:', error.message); return null; }
+  return data?.published_at || null;
 }
 
 
 // ── Status ───────────────────────────────────────────────────────────────────
+// Left of Publish: "Saving…" / "Saved ✓" / "Couldn't save — retrying", and an
+// "Unpublished changes" badge whenever the draft differs from the live site.
 function updateStatus() {
-  document.querySelector('[data-unpublished]').hidden = !(state.hasUnpublished || state.dirty);
-  setStatus(state.dirty ? 'Not saved yet' : 'Saved ✓', state.dirty ? 'is-dirty' : 'is-saved');
+  const pending = autosave.hasPending();
+  document.querySelector('[data-unpublished]').hidden = !(state.hasUnpublished || pending);
+
+  if (state.saveStatus === 'error')       setStatus("Couldn't save — retrying", 'is-error');
+  else if (state.saveStatus === 'saving') setStatus('Saving…');
+  else if (pending)                       setStatus('Saving…');
+  else                                    setStatus('Saved ✓', 'is-saved');
 }
 
 function setStatus(text, cls = '') {
