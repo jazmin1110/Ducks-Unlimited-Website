@@ -240,6 +240,80 @@
       background: #fff;
     }
 
+
+    /* ── Section rows: drag handle, name, eye, ⋯ menu ── */
+    .section-list li.is-hidden .section-list__name { opacity: .45; }
+    .tag-hidden {
+      font-size: .62rem; letter-spacing: .08em; text-transform: uppercase;
+      background: var(--color-bg); color: var(--color-text-muted);
+      padding: .1rem .35rem; margin-left: .3rem; vertical-align: middle;
+    }
+    .section-list li.sortable-ghost { opacity: .35; }
+    .row-menu { position: relative; }
+    .row-menu > summary {
+      list-style: none; cursor: pointer;
+      padding: .25rem .4rem; color: var(--color-text-muted); font-size: 1rem; line-height: 1;
+    }
+    .row-menu > summary::-webkit-details-marker { display: none; }
+    .row-menu > summary:hover { color: var(--color-primary); }
+    .row-menu__items {
+      position: absolute; right: 0; top: 100%; z-index: 30;
+      background: #fff; border: 1px solid var(--color-border-light);
+      box-shadow: 0 6px 18px rgba(0,0,0,.12);
+      min-width: 140px; display: flex; flex-direction: column;
+    }
+    .row-menu__items button {
+      background: none; border: 0; text-align: left; cursor: pointer;
+      font-family: inherit; font-size: .85rem; padding: .55rem .8rem; color: var(--color-text);
+    }
+    .row-menu__items button:hover { background: var(--color-bg-warm); }
+    .row-menu__items button:disabled { opacity: .4; cursor: not-allowed; }
+    .row-menu__items button[data-row-action="remove"] { color: #a33; }
+
+    .section-list__add-btn {
+      display: block; width: calc(100% - 1.5rem); margin: .75rem;
+      padding: .6rem; font-family: inherit; font-size: .85rem;
+      background: #fff; color: var(--color-primary);
+      border: 1px dashed var(--color-primary); cursor: pointer;
+    }
+    .section-list__add-btn:hover { background: rgba(27,77,46,.05); }
+
+    /* ── "Add section" picker ── */
+    .picker {
+      margin: auto;  /* centre it (the site's CSS reset removes the default) */
+      border: 0; padding: 0; width: min(860px, 92vw); max-height: 85vh;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    }
+    .picker::backdrop { background: rgba(0,0,0,.35); }
+    .picker__head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 1.25rem; border-bottom: 1px solid var(--color-border-light);
+      position: sticky; top: 0; background: #fff;
+    }
+    .picker__head h2 { font-family: var(--font-heading); color: var(--color-primary); margin: 0; font-size: 1.3rem; }
+    .picker__grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem; padding: 1.25rem;
+    }
+    .picker__card {
+      text-align: left; background: #fff; border: 1px solid var(--color-border-light);
+      padding: 0; cursor: pointer; font-family: inherit;
+    }
+    .picker__card:hover, .picker__card:focus-visible { border-color: var(--color-primary); outline: none; box-shadow: 0 0 0 2px rgba(27,77,46,.15); }
+    .picker__card img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--color-bg); }
+    .picker__card strong { display: block; padding: .6rem .75rem .2rem; color: var(--color-primary); font-size: .9rem; }
+    .picker__card span { display: block; padding: 0 .75rem .75rem; font-size: .78rem; color: var(--color-text-muted); line-height: 1.4; }
+
+    /* ── Toast ("Section removed. Undo") ── */
+    .toast {
+      position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%);
+      background: #1A1A1A; color: #fff; padding: .7rem 1rem; z-index: 200;
+      display: flex; gap: 1rem; align-items: center; font-size: .88rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,.25);
+    }
+    .toast[hidden] { display: none; }  /* "display: flex" above would beat the hidden attribute */
+    .toast button { background: none; border: 0; color: var(--color-accent); font-weight: 700; cursor: pointer; font-family: inherit; font-size: .88rem; }
+
     /* ── Right column: section form ── */
     .section-form { padding: 1.25rem; }
     .form-group-title {
@@ -373,6 +447,7 @@
       <aside class="panel panel--sections section-list">
         <button type="button" class="section-list__theme" data-theme-btn>🎨 Theme <small style="color:var(--color-text-muted)">colours &amp; fonts</small></button>
         <ul data-section-list></ul>
+        <button type="button" class="section-list__add-btn" data-add-section>+ Add section</button>
       </aside>
 
       <!-- MIDDLE: the real homepage, showing your changes as you type -->
@@ -390,6 +465,24 @@
     </div>
   </div>
 
+  <!-- "Add section" picker (filled by JS) -->
+  <dialog class="picker" data-picker aria-labelledby="picker-title">
+    <div class="picker__head">
+      <h2 id="picker-title">Add a section</h2>
+      <button type="button" class="icon-btn" data-picker-close aria-label="Close">✕</button>
+    </div>
+    <div class="picker__grid" data-picker-grid></div>
+  </dialog>
+
+  <!-- Messages like "Section removed. Undo" appear here -->
+  <div class="toast" data-toast hidden role="status"></div>
+
+  <!-- SortableJS: drag-and-drop reordering of the section list.
+       Pinned to one exact version; "integrity" makes the browser refuse the
+       file if cdnjs ever served something different. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"
+          integrity="sha512-csIng5zcB+XpulRUa+ev1zKo7zRNGpEaVfNB9On1no9KYTEY/rLGAEEpvgdw6nim1WdTuihZY1eqZ31K7/fZjw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script type="module" src="/js/components.js"></script>
   <script type="module" src="/admin/js/design.js"></script>
 </body>

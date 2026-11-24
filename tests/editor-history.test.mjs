@@ -95,3 +95,15 @@ test('nothing to undo returns null', () => {
   assert.equal(h.undo(), null);
   assert.equal(h.redo(), null);
 });
+
+test('endGroup makes the next change in the same field a new undo step', () => {
+  let t = 0;
+  const h = createHistory({ now: () => t });
+  h.reset({ v: 0 });
+  h.record({ v: 1 }, 'field');
+  t = 100;
+  h.endGroup();               // e.g. the person clicked out of the field
+  h.record({ v: 2 }, 'field');
+  assert.deepEqual(h.undo(), { v: 1 });
+  assert.deepEqual(h.undo(), { v: 0 });
+});

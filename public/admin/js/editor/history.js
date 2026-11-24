@@ -52,6 +52,12 @@ export function createHistory({ limit = 50, groupMs = 600, now = () => Date.now(
       lastTime = t;
     },
 
+    // The person left the field (clicked elsewhere): their next typing in
+    // that same field starts a new undo step.
+    endGroup() {
+      lastKey = null;
+    },
+
     undo() {
       if (index <= 0) return null;
       index -= 1;

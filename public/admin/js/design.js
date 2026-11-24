@@ -27,8 +27,14 @@
 import { supabase } from '/lib/supabase.js';
 import { requireAdmin } from '/admin/js/admin-guard.js';
 import { getAdminBrandSlug } from '/js/brand.js';
-import { SECTION_SCHEMAS, buildDefaultSettings, buildDefaultBlock } from '/js/section-schemas.js';
+import {
+  SECTION_SCHEMAS, buildDefaultSettings, buildDefaultBlock, listSectionTypes
+} from '/js/section-schemas.js';
 import { createPreviewBridge } from '/admin/js/editor/preview-bridge.js';
+import { createHistory } from '/admin/js/editor/history.js';
+import {
+  moveSection, duplicateSection, setHidden, markRemoved, unmarkRemoved, addSection
+} from '/admin/js/editor/page-state.js';
 import {
   sectionFormHtml, fieldsHtml, applyShowIf, readFieldValue, escapeHtml
 } from '/admin/js/editor/forms.js';
@@ -52,6 +58,8 @@ const state = {
 };
 
 let bridge = null;
+// Undo / redo memory for this visit (see /admin/js/editor/history.js).
+const history = createHistory();
 
 
 // ── Theme fields ─────────────────────────────────────────────────────────────
@@ -92,6 +100,9 @@ const THEME_FIELDS = [
 
   wireTopBar();
   wireForm();
+  wireList();
+  wirePicker();
+  wireShortcuts();
 
   // Warn before leaving with changes that aren't saved yet.
   window.addEventListener('beforeunload', (e) => {
@@ -147,8 +158,19 @@ async function load() {
   state.dirty = false;
   if (!sections.some((s) => s.id === state.selectedId)) state.selectedId = sections[0]?.id || null;
 
+  history.reset(state.page);
   renderAll();
 }
+
+// A new section now has a row in the database. Undo history may still hold
+// copies of it marked isNew, so we fix those too: undoing must never try to
+// create the same row twice.
+function markSaved(id) {
+  const s = state.page.sections.find((x) => x.id === id);
+  if (s) s.isNew = false;
+  savedNewIds.add(id);
+}
+const savedNewIds = new Set();
 
 // What we compare to decide whether a section needs saving.
 function savedKey(section) {
@@ -162,6 +184,7 @@ function renderAll() {
   renderForm();
   refreshPreview();
   updateStatus();
+  updateUndoButtons();
 }
 
 function refreshPreview() {
@@ -172,7 +195,9 @@ function refreshPreview() {
   });
 }
 
-// Left: the list of sections.
+// Left: the list of sections. Each row:
+//   ⠿ drag handle · name + headline · 👁 hide/show · ⋯ menu
+// Removed sections aren't listed (they go away for real on Publish).
 function renderList() {
   document.querySelector('[data-theme-btn]').classList.toggle('is-active', state.showTheme);
 
@@ -180,25 +205,39 @@ function renderList() {
   ul.innerHTML = '';
 
   const visible = state.page.sections.filter((s) => !s.settings?._removed);
-  for (const s of visible) {
+  visible.forEach((s, i) => {
     const schema = SECTION_SCHEMAS[s.section_type];
+    const hidden = !!s.settings?._hidden;
     const li = document.createElement('li');
     li.dataset.sectionId = s.id;
     if (!state.showTheme && s.id === state.selectedId) li.classList.add('is-active');
+    if (hidden) li.classList.add('is-hidden');
     li.innerHTML = `
+      <span class="section-list__drag" title="Drag to reorder" aria-hidden="true">⠿</span>
       <span class="section-list__name">
-        ${escapeHtml(schema?.name || s.section_type)}
+        ${escapeHtml(schema?.name || s.section_type)}${hidden ? '<span class="tag-hidden">Hidden</span>' : ''}
         <small>${escapeHtml(sectionHint(s))}</small>
       </span>
+      <button type="button" class="section-list__icon-btn" data-row-action="toggle-hidden"
+              title="${hidden ? 'Show on the website' : 'Hide from the website'}"
+              aria-label="${hidden ? 'Show section' : 'Hide section'}" aria-pressed="${hidden}">${hidden ? '🙈' : '👁'}</button>
+      <details class="row-menu">
+        <summary title="More" aria-label="More actions">⋯</summary>
+        <div class="row-menu__items">
+          <button type="button" data-row-action="duplicate">Duplicate</button>
+          <button type="button" data-row-action="up"   ${i === 0 ? 'disabled' : ''}>Move up</button>
+          <button type="button" data-row-action="down" ${i === visible.length - 1 ? 'disabled' : ''}>Move down</button>
+          <button type="button" data-row-action="remove">Remove</button>
+        </div>
+      </details>
     `;
-    li.addEventListener('click', () => selectSection(s.id, { scroll: true }));
     ul.appendChild(li);
-  }
+  });
 
   if (!visible.length) {
     const li = document.createElement('li');
     li.style.cssText = 'color: var(--color-text-muted); font-style: italic; padding: 1rem; cursor: default;';
-    li.textContent = 'No sections yet.';
+    li.textContent = 'No sections yet. Add one below.';
     ul.appendChild(li);
   }
 }
@@ -283,6 +322,10 @@ function wireForm() {
     if (settings && !blockId) applyShowIf(host, settings);
   });
 
+  // Leaving a field ends its typing "group": the next typing there is a
+  // new undo step.
+  host.addEventListener('focusout', () => history.endGroup());
+
   // Block buttons: add, move up/down, remove.
   host.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-block-action]');
@@ -304,14 +347,14 @@ function changeSection(sectionId, fieldId, value, blockId = null) {
   } else {
     s.settings[fieldId] = value;
   }
-  commit(page);
+  commit(page, `${sectionId}.${blockId || ''}.${fieldId}`);
   return s.settings;
 }
 
 function changeTheme(fieldId, value) {
   const page = structuredClone(state.page);
   page.theme[fieldId] = value;
-  commit(page);
+  commit(page, `theme.${fieldId}`);
   return page.theme;
 }
 
@@ -336,13 +379,224 @@ function blockAction(action, blockId) {
   renderForm();
 }
 
-// Every change ends here: keep the new page, redraw the list and preview.
-function commit(page) {
+// Every change ends here: remember it for Undo, keep the new page, redraw
+// the list and preview, and (from the next step on) save it automatically.
+//   groupKey → for typing: changes to the same field close together
+//              become ONE undo step (see history.js)
+function commit(page, groupKey = null) {
   state.page = page;
   state.dirty = true;
+  history.record(page, groupKey);
   renderList();
   refreshPreview();
   updateStatus();
+  updateUndoButtons();
+  scheduleSave();
+}
+
+// Autosave arrives in the next step; for now Save Draft does it.
+function scheduleSave() {}
+
+
+// ── List actions: drag, hide, duplicate, move, remove ────────────────────────
+function wireList() {
+  const ul = document.querySelector('[data-section-list]');
+
+  // Clicks on a row: an action button, or anywhere else = select it.
+  ul.addEventListener('click', (e) => {
+    const li = e.target.closest('li[data-section-id]');
+    if (!li) return;
+    const id = li.dataset.sectionId;
+    const actionBtn = e.target.closest('[data-row-action]');
+    if (actionBtn) { rowAction(actionBtn.dataset.rowAction, id); return; }
+    if (e.target.closest('details')) return; // opening the ⋯ menu
+    selectSection(id, { scroll: true });
+  });
+
+  // Close an open ⋯ menu when clicking anywhere else.
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('.row-menu[open]').forEach((d) => {
+      if (!d.contains(e.target)) d.open = false;
+    });
+  });
+
+  // Drag to reorder — only by the ⠿ handle (SortableJS, loaded in design.html).
+  if (window.Sortable) {
+    window.Sortable.create(ul, {
+      handle: '.section-list__drag',
+      animation: 150,
+      onEnd: (evt) => {
+        if (evt.oldIndex === evt.newIndex) return;
+        const movedId = evt.item.dataset.sectionId;
+        const nextId  = evt.item.nextElementSibling?.dataset.sectionId || null;
+        reorder(movedId, nextId);
+      }
+    });
+  }
+}
+
+// Put section `movedId` just before `nextId` (or after the last listed
+// section when nextId is null). Removed sections aren't listed, so we work
+// with ids rather than list positions.
+function reorder(movedId, nextId) {
+  const from = state.page.sections.findIndex((s) => s.id === movedId);
+  if (from < 0) return;
+  const rest = state.page.sections.filter((s) => s.id !== movedId);
+  let to;
+  if (nextId) {
+    to = rest.findIndex((s) => s.id === nextId);
+  } else {
+    // After the last section that is still listed (not removed).
+    let lastListed = -1;
+    rest.forEach((s, i) => { if (!s.settings?._removed) lastListed = i; });
+    to = lastListed + 1;
+  }
+  if (to < 0) return;
+  commit(moveSection(state.page, from, to));
+}
+
+function rowAction(action, id) {
+  document.querySelectorAll('.row-menu[open]').forEach((d) => { d.open = false; });
+  const listed = state.page.sections.filter((s) => !s.settings?._removed);
+  const pos = listed.findIndex((s) => s.id === id);
+  const section = listed[pos];
+  if (!section) return;
+
+  if (action === 'toggle-hidden') {
+    commit(setHidden(state.page, id, !section.settings?._hidden));
+  } else if (action === 'duplicate') {
+    if (listed.length >= 25) { alert('A page can have at most 25 sections.'); return; }
+    const newId = crypto.randomUUID();
+    commit(duplicateSection(state.page, id, newId));
+    selectSection(newId, { scroll: true });
+  } else if (action === 'up' || action === 'down') {
+    const neighbour = listed[action === 'up' ? pos - 1 : pos + 1];
+    if (!neighbour) return;
+    // Moving down = putting it before the section after the neighbour.
+    const nextId = action === 'up' ? neighbour.id : (listed[pos + 2]?.id || null);
+    reorder(id, nextId);
+  } else if (action === 'remove') {
+    commit(markRemoved(state.page, id));
+    if (state.selectedId === id) {
+      const remaining = state.page.sections.filter((s) => !s.settings?._removed);
+      state.selectedId = (remaining[pos] || remaining[pos - 1])?.id || null;
+      renderList(); renderForm(); refreshPreview();
+    }
+    showToast('Section removed.', 'Undo', () => {
+      commit(unmarkRemoved(state.page, id));
+      selectSection(id, { scroll: true });
+    });
+  }
+}
+
+
+// ── "Add section" picker ─────────────────────────────────────────────────────
+function wirePicker() {
+  const dialog = document.querySelector('[data-picker]');
+  const grid   = document.querySelector('[data-picker-grid]');
+
+  // One card per section type: picture, name, one-line description.
+  grid.innerHTML = listSectionTypes().map((t) => `
+    <button type="button" class="picker__card" data-add-type="${escapeHtml(t.type)}">
+      <img src="/admin/images/sections/${escapeHtml(t.type)}.svg" alt="" loading="lazy"
+           onerror="this.style.visibility='hidden'">
+      <strong>${escapeHtml(t.name)}</strong>
+      <span>${escapeHtml(t.description || '')}</span>
+    </button>
+  `).join('');
+
+  document.querySelector('[data-add-section]').addEventListener('click', () => dialog.showModal());
+  document.querySelector('[data-picker-close]').addEventListener('click', () => dialog.close());
+  // Clicking the dark area around the picker closes it.
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
+
+  grid.addEventListener('click', (e) => {
+    const card = e.target.closest('[data-add-type]');
+    if (!card) return;
+    dialog.close();
+    addNewSection(card.dataset.addType);
+  });
+}
+
+// New sections go right after the selected one (or at the end) and open
+// straight away. They exist only in the draft until Publish.
+function addNewSection(type) {
+  const section = {
+    id: crypto.randomUUID(),
+    section_type: type,
+    position: 0,
+    settings: buildDefaultSettings(type),
+    isNew: true
+  };
+  const afterId = state.showTheme ? null : state.selectedId;
+  try {
+    commit(addSection(state.page, section, afterId));
+  } catch (err) {
+    alert(err.message); // "A page can have at most 25 sections."
+    return;
+  }
+  selectSection(section.id, { scroll: true });
+}
+
+
+// ── Undo / redo ──────────────────────────────────────────────────────────────
+function undo() { applyHistory(history.undo()); }
+function redo() { applyHistory(history.redo()); }
+
+function applyHistory(page) {
+  if (!page) return;
+  state.page = page;
+  state.dirty = true;
+  // The selected section may not exist (or be removed) in that version.
+  const listed = page.sections.filter((s) => !s.settings?._removed);
+  if (!listed.some((s) => s.id === state.selectedId)) state.selectedId = listed[0]?.id || null;
+  renderAll();
+  scheduleSave();
+}
+
+function updateUndoButtons() {
+  document.querySelector('[data-undo]').disabled = !history.canUndo();
+  document.querySelector('[data-redo]').disabled = !history.canRedo();
+}
+
+// Ctrl/Cmd+Z = undo, Shift+Ctrl/Cmd+Z or Ctrl+Y = redo.
+// While typing in a box outside the settings panel (e.g. the browser's own
+// search), we leave the keys alone.
+function wireShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    const mod = e.ctrlKey || e.metaKey;
+    if (!mod) return;
+    const key = e.key.toLowerCase();
+    const isUndo = key === 'z' && !e.shiftKey;
+    const isRedo = (key === 'z' && e.shiftKey) || (key === 'y' && e.ctrlKey);
+    if (!isUndo && !isRedo) return;
+
+    const el = document.activeElement;
+    const typing = el && (el.matches('input, textarea, select, [contenteditable="true"]'));
+    if (typing && !el.closest('[data-section-form]')) return;
+
+    e.preventDefault();
+    if (isUndo) undo(); else redo();
+  });
+}
+
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+// A short message at the bottom, with an optional button (e.g. Undo).
+let toastTimer = null;
+function showToast(text, actionLabel = null, onAction = null, ms = 8000) {
+  const el = document.querySelector('[data-toast]');
+  el.innerHTML = `<span>${escapeHtml(text)}</span>${actionLabel ? `<button type="button">${escapeHtml(actionLabel)}</button>` : ''}`;
+  el.hidden = false;
+  if (actionLabel) {
+    el.querySelector('button').addEventListener('click', () => {
+      el.hidden = true;
+      clearTimeout(toastTimer);
+      onAction?.();
+    });
+  }
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, ms);
 }
 
 
@@ -350,6 +604,8 @@ function commit(page) {
 function wireTopBar() {
   document.querySelector('[data-save-draft-btn]').addEventListener('click', saveDraft);
   document.querySelector('[data-publish-btn]').addEventListener('click', publish);
+  document.querySelector('[data-undo]').addEventListener('click', undo);
+  document.querySelector('[data-redo]').addEventListener('click', redo);
 
   document.querySelector('[data-theme-btn]').addEventListener('click', () => {
     state.showTheme = !state.showTheme;
@@ -384,12 +640,48 @@ async function saveDraft() {
     for (const s of state.page.sections) {
       const key = savedKey(s);
       if (state.saved.get(s.id) === key) continue; // unchanged
-      const { error } = await supabase.from('page_sections')
-        .update({ draft: s.settings, draft_position: s.position })
-        .eq('id', s.id);
-      if (error) throw error;
+
+      if (s.isNew && !savedNewIds.has(s.id)) {
+        // Added (or duplicated) and removed again before ever being saved:
+        // nothing to keep.
+        if (s.settings?._removed) continue;
+        // A brand-new section: create its row. `published` stays empty, so
+        // the live site can't show it until Publish. Its live `position` is
+        // set far down so it can never collide; Publish uses draft_position.
+        const { error } = await supabase.from('page_sections').insert({
+          id: s.id,
+          page_key: PAGE_KEY,
+          brand_id: state.brandId,
+          section_type: s.section_type,
+          position: 100000 + s.position,
+          draft_position: s.position,
+          published: null,
+          draft: s.settings
+        });
+        if (error) throw error;
+        markSaved(s.id);
+      } else {
+        const { error } = await supabase.from('page_sections')
+          .update({ draft: s.settings, draft_position: s.position })
+          .eq('id', s.id);
+        if (error) throw error;
+      }
       state.saved.set(s.id, key);
       state.hasUnpublished = true;
+    }
+
+    // Sections saved earlier that are no longer on the page at all (e.g. an
+    // "Add" that was undone): mark them removed in the draft, so they don't
+    // come back next time and Publish clears them away.
+    const onPage = new Set(state.page.sections.map((s) => s.id));
+    for (const [id, key] of state.saved) {
+      if (onPage.has(id)) continue;
+      const { settings } = JSON.parse(key);
+      if (settings?._removed) continue;
+      const draft = { ...settings, _removed: true };
+      const { error } = await supabase.from('page_sections').update({ draft }).eq('id', id);
+      if (error) throw error;
+      state.saved.set(id, JSON.stringify({ settings: draft, position: JSON.parse(key).position }));
     }
 
     const themeKey = JSON.stringify(state.page.theme);
