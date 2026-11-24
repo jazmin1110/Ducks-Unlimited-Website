@@ -54,7 +54,8 @@ export const SECTION_SCHEMAS = {
     settings: [
       { id: 'image_url', type: 'image',    label: 'Background image' },
       { id: 'eyebrow',   type: 'text',     label: 'Small label above the headline', default: '' },
-      { id: 'headline',  type: 'richtext', label: 'Headline', default: '' },
+      // singleLine: Enter adds a line break, not a new paragraph
+      { id: 'headline',  type: 'richtext', label: 'Headline', default: '', singleLine: true },
       { id: 'sub',       type: 'textarea', label: 'Sub-headline', default: '' },
       { id: 'cta_text',  type: 'text',     label: 'Button label', default: 'Shop the Collection' },
       { id: 'cta_link',  type: 'url',      label: 'Page the button opens',  default: '/shop.html' },

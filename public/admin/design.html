@@ -314,6 +314,35 @@
     .toast[hidden] { display: none; }  /* "display: flex" above would beat the hidden attribute */
     .toast button { background: none; border: 0; color: var(--color-accent); font-weight: 700; cursor: pointer; font-family: inherit; font-size: .88rem; }
 
+
+    /* ── Rich-text box (toolbar + text area) — see /admin/js/editor/richtext.js ── */
+    .rt { border: 1px solid var(--color-border-light); background: #fff; position: relative; }
+    .rt:focus-within { border-color: var(--color-primary); }
+    .rt__toolbar { display: flex; gap: .15rem; padding: .25rem; border-bottom: 1px solid var(--color-border-light); background: var(--color-bg); }
+    .rt__toolbar button {
+      min-width: 30px; height: 28px; padding: 0 .4rem;
+      background: #fff; border: 1px solid transparent; cursor: pointer;
+      font-family: inherit; font-size: .85rem; color: var(--color-text);
+    }
+    .rt__toolbar button:hover { border-color: var(--color-border-light); color: var(--color-primary); }
+    .rt__box { min-height: 90px; padding: .5rem .6rem; font-size: .9rem; line-height: 1.5; outline: none; }
+    .rt__box--single { min-height: 54px; }
+    .rt__box:empty::before { content: attr(data-placeholder); color: var(--color-text-muted); }
+    .rt__box p { margin: 0 0 .6em; }
+    .rt__box a { color: var(--color-primary); text-decoration: underline; }
+    .rt__link {
+      border-top: 1px solid var(--color-border-light); padding: .6rem; background: var(--color-bg-warm);
+    }
+    .rt__link label { font-size: .75rem; color: var(--color-text-muted); display: block; }
+    .rt__link input { width: 100%; margin-top: .25rem; padding: .4rem .5rem; font-family: inherit; font-size: .85rem; border: 1px solid var(--color-border-light); }
+    .rt__picks { display: flex; flex-wrap: wrap; gap: .3rem; margin: .5rem 0; }
+    .rt__picks button {
+      font-family: inherit; font-size: .75rem; padding: .25rem .55rem; cursor: pointer;
+      background: #fff; border: 1px solid var(--color-border-light); color: var(--color-primary);
+    }
+    .rt__picks button:hover { border-color: var(--color-primary); }
+    .rt__link-actions { display: flex; gap: .3rem; }
+
     /* ── Right column: section form ── */
     .section-form { padding: 1.25rem; }
     .form-group-title {

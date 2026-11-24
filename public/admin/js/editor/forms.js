@@ -59,8 +59,10 @@ export function fieldHtml(f, value, blockId = null, allSettings = {}) {
       input = `<textarea ${common}>${escapeHtml(v)}</textarea>`;
       break;
     case 'richtext':
-      // A plain box for now; the formatting toolbar replaces it (richtext.js).
-      input = `<textarea ${common} placeholder="Type your text here">${escapeHtml(v)}</textarea>`;
+      // An empty spot that design.js fills with the formatting toolbar and
+      // text box (/admin/js/editor/richtext.js). It deliberately has no
+      // data-field-id: the toolbar reports changes itself.
+      input = `<div data-richtext="${escapeAttr(f.id)}"${blockId ? ` data-richtext-block="${escapeAttr(blockId)}"` : ''}${f.singleLine ? ' data-single-line' : ''}></div>`;
       break;
     case 'image':
       input = `

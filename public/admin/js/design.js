@@ -33,6 +33,7 @@ import {
 import { createPreviewBridge } from '/admin/js/editor/preview-bridge.js';
 import { createHistory } from '/admin/js/editor/history.js';
 import { createAutosave } from '/admin/js/editor/autosave.js';
+import { mountRichText } from '/admin/js/editor/richtext.js';
 import {
   moveSection, duplicateSection, setHidden, markRemoved, unmarkRemoved, addSection, canPublish
 } from '/admin/js/editor/page-state.js';
@@ -288,6 +289,23 @@ function renderForm() {
     return;
   }
   host.innerHTML = sectionFormHtml(schema, s.settings);
+  mountRichTextFields(host, s);
+}
+
+// Put a formatting toolbar + text box in every rich-text spot of the form.
+function mountRichTextFields(host, section) {
+  host.querySelectorAll('[data-richtext]').forEach((spot) => {
+    const fieldId = spot.dataset.richtext;
+    const blockId = spot.dataset.richtextBlock || null;
+    const value = blockId
+      ? (section.settings.blocks || []).find((b) => b.id === blockId)?.[fieldId]
+      : section.settings[fieldId];
+    mountRichText(spot, {
+      value: value || '',
+      singleLine: spot.hasAttribute('data-single-line'),
+      onChange: (html) => changeSection(section.id, fieldId, html, blockId)
+    });
+  });
 }
 
 function selectedSection() {
