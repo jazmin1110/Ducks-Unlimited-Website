@@ -49,9 +49,15 @@
       ]
     },
     {
-      "source": "/(images|css|js|lib|admin/js)/(.*)",
+      "source": "/(images|lib)/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+      ]
+    },
+    {
+      "source": "/(css|js|admin/js)/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
       ]
     },
     {
