@@ -55,15 +55,29 @@
 
   <!-- Mount shared components (nav, footer, etc.) -->
   <script type="module" src="/js/components.js"></script>
+  <!-- Slideshow sections: arrows, dots and timing (first slide shows without it) -->
+  <script type="module" src="/js/slideshow.js?v=20261124"></script>
+  <!-- Video sections: load the YouTube player only when someone presses play -->
+  <script type="module" src="/js/video-embed.js?v=20261124"></script>
+  <!-- Email sign-up sections: thank-you message, send without reloading -->
+  <script type="module" src="/js/newsletter-signup.js?v=20261124"></script>
 
   <!-- Render page sections from the DB -->
   <script type="module">
-    import { renderPageSections } from '/js/sections-render.js';
+    import { renderPageSections } from '/js/sections-render.js?v=20261124';
     import { supabase }           from '/lib/supabase.js';
 
     (async function () {
       const params  = new URLSearchParams(location.search);
       const preview = params.get('preview') === '1';
+
+      // Inside the admin Design editor (?editor=1): the editor sends the page
+      // to draw, so we don't read the database here and don't show the banner.
+      // /js/editor-preview.js does the drawing and the click-to-edit.
+      if (params.get('editor') === '1') {
+        await import('/js/editor-preview.js?v=20261124');
+        return;
+      }
 
       // Show the "Preview" banner only if an admin is signed in — anonymous
       // visitors shouldn't see the banner even if they land here with ?preview=1.

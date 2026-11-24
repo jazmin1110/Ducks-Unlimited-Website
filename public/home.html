@@ -37,6 +37,12 @@
        if JavaScript is off or the database can't be reached. It is no
        longer edited from the admin — change the live homepage in
        Admin → Design instead.
+
+       Known gap (accepted for now): with JavaScript off, visitors see this
+       fallback, not the sections built in Admin → Design. Sections added in
+       the editor (slideshow, FAQ, sign-up…) therefore don't appear without
+       JavaScript. Almost every visitor has JavaScript on; drawing the
+       sections on the server would close the gap and is a possible later step.
        ──────────────────────────────────────────────────────── -->
   <main id="home-sections">
 
@@ -233,11 +239,17 @@
        ──────────────────────────────────────────────────────────── -->
 
   <script type="module" src="/js/components.js"></script>
+  <!-- Slideshow sections: arrows, dots and timing (first slide shows without it) -->
+  <script type="module" src="/js/slideshow.js?v=20261124"></script>
+  <!-- Video sections: load the YouTube player only when someone presses play -->
+  <script type="module" src="/js/video-embed.js?v=20261124"></script>
+  <!-- Email sign-up sections: thank-you message, send without reloading -->
+  <script type="module" src="/js/newsletter-signup.js?v=20261124"></script>
   <script type="module" src="/js/cart.js"></script>
 
   <!-- Paint the homepage from the sections saved in Admin → Design. -->
   <script type="module">
-    import { renderPageSections } from '/js/sections-render.js';
+    import { renderPageSections } from '/js/sections-render.js?v=20261124';
 
     const main = document.getElementById('home-sections');
     renderPageSections('home', main)

@@ -160,6 +160,23 @@
           </table>
         </div>
       </section>
+
+      <!-- Email sign-ups from the homepage "Email sign-up" section -->
+      <section class="admin-panel" id="signupsPanel">
+        <div class="toolbar" style="justify-content:space-between;">
+          <h2 style="font-family:var(--font-heading); color:var(--color-primary); margin:0; font-size:1.3rem;">
+            Email sign-ups <small class="muted" id="signupCount"></small>
+          </h2>
+          <button type="button" class="filter-pill" id="signupExport" disabled>Export CSV</button>
+        </div>
+        <p class="muted" style="font-size:0.8rem; margin:0 0 .75rem;">People who left their email on the homepage (the Email sign-up section or the footer form).</p>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr><th>Email</th><th>Brand</th><th>From</th><th>Signed up</th></tr></thead>
+            <tbody id="signupTable"><tr><td colspan="4">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
     </div>
 
     <!-- ═════════════ DETAIL VIEW (shown for ?c=<customer>) ═════════════ -->
@@ -507,6 +524,60 @@
   </script>
 
   <!-- Mounts the shared <div data-component="admin-nav"> at the top of <body> -->
+  <!-- Email sign-ups list + CSV export -->
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+    import { requireAdmin } from '/admin/js/admin-guard.js';
+    import { toCsv, downloadCsv, todayStamp } from '/admin/js/csv.js';
+
+    await requireAdmin();
+
+    const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const BRAND_NAMES = { du: 'Ducks Unlimited', rw: 'Rocwood' };
+    const table = document.getElementById('signupTable');
+
+    // Two places collect emails today:
+    //   - the homepage "Email sign-up" section → newsletter_signups (per brand)
+    //   - the older form in the site footer     → newsletter_subscribers
+    // Both are listed here (newest first), so nobody is missed.
+    const [signups, footer] = await Promise.all([
+      supabase.from('newsletter_signups').select('email, created_at, brands ( slug )'),
+      supabase.from('newsletter_subscribers').select('email, subscribed_at, status')
+    ]);
+
+    if (signups.error && footer.error) {
+      table.innerHTML = `<tr><td colspan="4">Couldn't load the sign-ups. Please refresh the page.</td></tr>`;
+    } else {
+      const rows = [
+        ...(signups.data || []).map((r) => ({
+          email: r.email, brand: r.brands?.slug || '', from: 'Homepage section', signed_up: r.created_at
+        })),
+        ...(footer.data || []).filter((r) => r.status !== 'unsubscribed').map((r) => ({
+          email: r.email, brand: '', from: 'Footer form', signed_up: r.subscribed_at
+        }))
+      ].sort((a, b) => String(b.signed_up).localeCompare(String(a.signed_up)));
+
+      document.getElementById('signupCount').textContent = `(${rows.length})`;
+      table.innerHTML = rows.length
+        ? rows.map((r) => `<tr><td>${esc(r.email)}</td><td>${esc(BRAND_NAMES[r.brand] || '—')}</td><td>${esc(r.from)}</td>
+             <td>${esc(new Date(r.signed_up).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }))}</td></tr>`).join('')
+        : `<tr><td colspan="4" class="muted">No sign-ups yet. Add an "Email sign-up" section in Admin → Design to start collecting them.</td></tr>`;
+
+      // Export CSV: email, brand, from, signed_up (date as YYYY-MM-DD).
+      // A cell starting with = + - @ would run as a formula in Excel/Sheets,
+      // so those get a ' in front (shown as plain text).
+      const safeCell = (v) => /^[=+\-@]/.test(String(v ?? '')) ? `'${v}` : v;
+      const btn = document.getElementById('signupExport');
+      btn.disabled = !rows.length;
+      btn.addEventListener('click', () => {
+        const out = rows.map((r) => ({
+          email: safeCell(r.email), brand: r.brand, from: r.from, signed_up: String(r.signed_up || '').slice(0, 10)
+        }));
+        downloadCsv(`email-signups-${todayStamp()}.csv`, toCsv(['email', 'brand', 'from', 'signed_up'], out));
+      });
+    }
+  </script>
+
   <script type="module" src="/js/components.js"></script>
 </body>
 </html>
