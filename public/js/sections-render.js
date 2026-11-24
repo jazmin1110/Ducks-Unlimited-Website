@@ -94,12 +94,34 @@ export function renderSectionsFromData(container, sections, theme, ctx = {}) {
   }));
 }
 
-// Load the extra data some sections need (products for product rails, and —
-// later — stores and lookbooks). Only fetches what the sections refer to.
+// Load the extra data some sections need: products for product rails, the
+// store for "Visit our store", the lookbook for "Lookbook". Only fetches
+// what the sections actually refer to.
 export async function loadRenderContext(sections, brandId) {
-  return {
-    productsByCollection: await loadProductsForRails(sections, brandId)
-  };
+  const [productsByCollection, storesById, lookbooksById] = await Promise.all([
+    loadProductsForRails(sections, brandId),
+    loadReferenced(sections, 'store-visit', 'store_id', 'stores',
+      'id, name, address, city, phone, hours, lat, lng', (q) => q.eq('is_active', true)),
+    loadReferenced(sections, 'lookbook-feature', 'lookbook_id', 'lookbooks',
+      'id, slug, title, subtitle, hero_image', (q) => q.not('published_at', 'is', null))
+  ]);
+  return { productsByCollection, storesById, lookbooksById };
+}
+
+// Rows of `table` whose ids are picked in sections of `type` (setting
+// `field`), as { id: row }. Inactive stores / unpublished lookbooks are left
+// out, so their section simply doesn't show.
+async function loadReferenced(sections, type, field, table, cols, filter) {
+  const ids = [...new Set(sections
+    .filter((s) => s.section_type === type && s.settings?.[field])
+    .map((s) => s.settings[field]))];
+  if (!ids.length) return {};
+  const { data, error } = await filter(supabase.from(table).select(cols).in('id', ids));
+  if (error) {
+    console.warn(`[sections-render] ${table} load failed:`, error.message);
+    return {};
+  }
+  return Object.fromEntries((data || []).map((row) => [row.id, row]));
 }
 
 

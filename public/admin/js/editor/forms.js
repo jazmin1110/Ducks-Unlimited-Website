@@ -17,6 +17,13 @@
 // =============================================================================
 
 
+import { youtubeId } from '/js/section-templates.js?v=20261124';
+
+// Choices for 'ref' fields (a dropdown of stores or lookbooks), loaded once
+// by design.js:  setRefOptions({ stores: [{ value, label }], lookbooks: [...] })
+let refOptions = {};
+export function setRefOptions(options) { refOptions = options || {}; }
+
 // The whole form for one section.
 export function sectionFormHtml(schema, settings) {
   return `
@@ -97,6 +104,18 @@ export function fieldHtml(f, value, blockId = null, allSettings = {}) {
     case 'toggle':
       input = `<input type="checkbox" ${v ? 'checked' : ''} ${common}>`;
       break;
+    case 'ref': {
+      // A dropdown of rows from another admin page (Stores, Lookbooks).
+      const opts = refOptions[f.source] || [];
+      const missing = v && !opts.some((o) => o.value === v);
+      input = `<select ${common}>
+        <option value="">Choose…</option>
+        ${opts.map((o) => `<option value="${escapeAttr(o.value)}"${o.value === v ? ' selected' : ''}>${escapeHtml(o.label)}</option>`).join('')}
+        ${missing ? `<option value="${escapeAttr(v)}" selected>(no longer available)</option>` : ''}
+      </select>
+      ${opts.length ? '' : `<small class="field__hint">Nothing to choose yet — add one in Admin → ${f.source === 'stores' ? 'Stores' : 'Lookbooks'} first.</small>`}`;
+      break;
+    }
     default:
       input = `<input type="text" value="${escapeAttr(v)}" ${common}>`;
   }
@@ -110,12 +129,24 @@ export function fieldHtml(f, value, blockId = null, allSettings = {}) {
     if (String(current ?? '') !== String(f.showIf.equals)) hidden = ' hidden';
   }
 
+  // A YouTube link box says so when the link isn't a YouTube link.
+  if (f.id === 'youtube_url') {
+    const bad = v && !youtubeId(v);
+    input += `<small class="field__error" data-youtube-error${bad ? '' : ' hidden'}>That doesn't look like a YouTube link. Copy it from the video's Share button.</small>`;
+  }
+
   return `
     <div class="field"${showIfAttrs}${hidden}>
       <label>${escapeHtml(f.label)}</label>
       ${input}
     </div>
   `;
+}
+
+// Show/hide the "not a YouTube link" message while typing.
+export function checkYoutubeField(input) {
+  const msg = input.closest('.field')?.querySelector('[data-youtube-error]');
+  if (msg) msg.hidden = !input.value || !!youtubeId(input.value);
 }
 
 // The list of blocks (tiles, slides…) under a section's own fields.

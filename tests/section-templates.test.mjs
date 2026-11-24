@@ -151,3 +151,58 @@ test('the Add section picker lists all 11 section types', () => {
     assert.ok(types.includes(t), `missing ${t}`);
   }
 });
+
+
+// ── Task 13: store visit, lookbook feature, YouTube video ───────────────────
+import { youtubeId } from '../public/js/section-templates.js';
+
+test('youtubeId understands the usual YouTube links and nothing else', () => {
+  assert.equal(youtubeId('https://youtu.be/dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
+  assert.equal(youtubeId('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=3'), 'dQw4w9WgXcQ');
+  assert.equal(youtubeId('https://www.youtube.com/shorts/dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
+  assert.equal(youtubeId('https://www.youtube.com/embed/dQw4w9WgXcQ'), 'dQw4w9WgXcQ');
+  assert.equal(youtubeId('https://vimeo.com/1'), null);
+  assert.equal(youtubeId('javascript:alert(1)'), null);
+  assert.equal(youtubeId(''), null);
+});
+
+test('video shows a cover with the video id, and no player until clicked', () => {
+  const html = renderSectionsHtml([section('v', 'video', {
+    heading: 'Watch', youtube_url: 'https://youtu.be/dQw4w9WgXcQ'
+  })], ctx());
+  assert.ok(html.includes('data-video-id="dQw4w9WgXcQ"'));
+  assert.ok(!html.includes('<iframe'));
+});
+
+test('video with a link that is not YouTube shows nothing', () => {
+  const html = renderSectionsHtml([section('v', 'video', { youtube_url: 'https://vimeo.com/1' })], ctx());
+  assert.ok(!html.includes('data-video-id'));
+});
+
+const GREENHILLS = {
+  id: 'st1', name: 'Greenhills Shopping Center', address: 'Ortigas Ave', city: 'San Juan',
+  phone: '0917 530 5428', hours: { Mon: '10:00 – 20:00', Sun: '11:00 – 19:00' }, lat: 14.6047, lng: 121.0411
+};
+
+test('store visit shows the address, and the map only when asked', () => {
+  const withMap = renderSectionsHtml([section('s', 'store-visit', { heading: 'Visit us', store_id: 'st1', show_map: true })],
+    ctx({ storesById: { st1: GREENHILLS } }));
+  assert.ok(withMap.includes('Ortigas Ave'));
+  assert.ok(withMap.includes('<iframe'));
+  const noMap = renderSectionsHtml([section('s', 'store-visit', { heading: 'Visit us', store_id: 'st1', show_map: false })],
+    ctx({ storesById: { st1: GREENHILLS } }));
+  assert.ok(noMap.includes('Ortigas Ave'));
+  assert.ok(!noMap.includes('<iframe'));
+});
+
+test('store visit for a store that no longer exists shows nothing', () => {
+  const html = renderSectionsHtml([section('s', 'store-visit', { heading: 'Visit us', store_id: 'gone' })], ctx());
+  assert.ok(!html.includes('Visit us'));
+});
+
+test('lookbook feature links to the lookbook page', () => {
+  const html = renderSectionsHtml([section('l', 'lookbook-feature', { lookbook_id: 'lb1' })],
+    ctx({ lookbooksById: { lb1: { id: 'lb1', slug: 'holiday-2026', title: 'Holiday 2026', subtitle: '', hero_image: '' } } }));
+  assert.ok(html.includes('/lookbooks/view.html?slug=holiday-2026'));
+  assert.ok(html.includes('Holiday 2026'));
+});

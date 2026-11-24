@@ -95,13 +95,13 @@ async function drawPage({ page, brandId, selectedId: sel }) {
 // What data this list of sections needs, as one string. Same string → the
 // data we already have is still right.
 function contextKey(sections) {
-  const collections = new Set();
+  const needs = new Set();
   for (const s of sections) {
-    if (s.section_type === 'product-rail' && s.settings?.collection) {
-      collections.add(s.settings.collection);
-    }
+    if (s.section_type === 'product-rail' && s.settings?.collection) needs.add('c:' + s.settings.collection);
+    if (s.section_type === 'store-visit' && s.settings?.store_id) needs.add('s:' + s.settings.store_id);
+    if (s.section_type === 'lookbook-feature' && s.settings?.lookbook_id) needs.add('l:' + s.settings.lookbook_id);
   }
-  return JSON.stringify([...collections].sort());
+  return JSON.stringify([...needs].sort());
 }
 
 function markSelected() {

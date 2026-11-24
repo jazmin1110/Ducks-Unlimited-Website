@@ -298,11 +298,104 @@ export const TEMPLATES = {
         </div>
       </section>
     `;
+  },
+
+  // One of our shops: address, phone, hours and (optionally) a map.
+  // The store comes from ctx.storesById (loaded by sections-render.js).
+  'store-visit'(s, ctx) {
+    const store = ctx.storesById?.[s.store_id];
+    if (!store) return ''; // no store picked, or it was removed
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const hours = store.hours && typeof store.hours === 'object' ? store.hours : null;
+    const lat = Number(store.lat), lng = Number(store.lng);
+    const hasMap = s.show_map !== false && Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng);
+    return `
+      <section class="store-visit section-xl">
+        <div class="container store-visit__grid${hasMap ? '' : ' store-visit__grid--no-map'}">
+          <div class="store-visit__info">
+            ${s.heading ? `<h2 class="display-sm">${esc(s.heading)}</h2>` : ''}
+            <h3 class="store-visit__name">${esc(store.name)}</h3>
+            <p class="store-visit__address">${esc([store.address, store.city].filter(Boolean).join(', '))}</p>
+            ${store.phone ? `<p class="store-visit__phone"><a href="tel:${escAttr(String(store.phone).replace(/[^\d+]/g, ''))}">${esc(store.phone)}</a></p>` : ''}
+            ${hours ? `
+              <table class="store-visit__hours">
+                <caption>Opening hours</caption>
+                ${days.filter((d) => hours[d]).map((d) => `<tr><th scope="row">${d}</th><td>${esc(hours[d])}</td></tr>`).join('')}
+              </table>` : ''}
+            <p><a class="btn btn-outline-dark" href="/stores.html">All our stores</a></p>
+          </div>
+          ${hasMap ? `
+          <div class="store-visit__map">
+            <iframe title="Map to ${escAttr(store.name)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                    src="https://www.google.com/maps?q=${lat},${lng}&amp;output=embed"></iframe>
+          </div>` : ''}
+        </div>
+      </section>
+    `;
+  },
+
+  // A big link to one published lookbook (ctx.lookbooksById).
+  'lookbook-feature'(s, ctx) {
+    const lb = ctx.lookbooksById?.[s.lookbook_id];
+    if (!lb || !lb.slug) return '';
+    const href = `/lookbooks/view.html?slug=${encodeURIComponent(lb.slug)}`;
+    const heading = s.heading || lb.title || '';
+    return `
+      <section class="lookbook-feature${lb.hero_image ? '' : ' lookbook-feature--plain'}">
+        ${lb.hero_image ? `<img class="lookbook-feature__img" src="${escAttr(lb.hero_image)}" alt="" loading="lazy" decoding="async" />` : ''}
+        <div class="lookbook-feature__content">
+          <p class="eyebrow">Lookbook</p>
+          ${heading ? `<h2 class="lookbook-feature__heading">${esc(heading)}</h2>` : ''}
+          ${lb.subtitle ? `<p class="lookbook-feature__sub">${esc(lb.subtitle)}</p>` : ''}
+          <a class="btn btn-outline-light" href="${escAttr(href)}">${esc(s.cta_text || 'View the lookbook')}</a>
+        </div>
+      </section>
+    `;
+  },
+
+  // A YouTube video: a cover picture with a play button. /js/video-embed.js
+  // swaps in the player when it's pressed; without it, the cover links to
+  // the video on YouTube.
+  video(s) {
+    const id = youtubeId(s.youtube_url);
+    if (!id) return '';
+    const cover = s.cover_image_url || `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+    return `
+      <section class="video-section section-xl">
+        <div class="container">
+          ${s.heading ? `<h2 class="display-sm video-section__heading">${esc(s.heading)}</h2>` : ''}
+          <a class="video-embed" data-video-id="${id}" href="https://www.youtube.com/watch?v=${id}"
+             target="_blank" rel="noopener" aria-label="Play video${s.heading ? ': ' + escAttr(s.heading) : ''}">
+            <img src="${escAttr(cover)}" alt="" loading="lazy" decoding="async" />
+            <span class="video-embed__play" aria-hidden="true"></span>
+          </a>
+        </div>
+      </section>
+    `;
   }
 };
 
 
 // ── Small helpers ───────────────────────────────────────────────────────────
+
+// The 11-character video id from a YouTube link, or null if it isn't one.
+// Accepts youtu.be/<id>, youtube.com/watch?v=<id>, /shorts/<id>, /embed/<id>.
+export function youtubeId(url) {
+  let u;
+  try { u = new URL(String(url || '').trim()); } catch { return null; }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+  const host = u.hostname.replace(/^www\.|^m\./, '');
+  let id = null;
+  if (host === 'youtu.be') id = u.pathname.slice(1).split('/')[0];
+  else if (host === 'youtube.com' || host === 'youtube-nocookie.com') {
+    if (u.pathname === '/watch') id = u.searchParams.get('v');
+    else {
+      const m = u.pathname.match(/^\/(?:shorts|embed)\/([^/?#]+)/);
+      if (m) id = m[1];
+    }
+  }
+  return /^[A-Za-z0-9_-]{11}$/.test(id || '') ? id : null;
+}
 
 // Centered eyebrow + heading + gold rule, used at the top of several sections.
 function introHtml(eyebrow, heading, className) {

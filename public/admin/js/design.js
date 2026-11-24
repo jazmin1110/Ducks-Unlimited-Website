@@ -41,7 +41,8 @@ import {
   restoreSnapshot
 } from '/admin/js/editor/page-state.js';
 import {
-  sectionFormHtml, themeFormHtml, applyShowIf, readFieldValue, escapeHtml
+  sectionFormHtml, themeFormHtml, applyShowIf, readFieldValue, escapeHtml,
+  setRefOptions, checkYoutubeField
 } from '/admin/js/editor/forms.js';
 import { HEADING_FONTS, BODY_FONTS } from '/js/theme-fonts.js';
 
@@ -123,7 +124,7 @@ const COLOUR_KEYS = ['brand_color', 'accent_color', 'bg_color', 'text_color'];
     if (autosave.hasPending()) { e.preventDefault(); e.returnValue = ''; }
   });
 
-  await load();
+  await Promise.all([load(), loadRefOptions()]);
 })().catch((err) => {
   console.error('[design] boot failed:', err);
   alert('The Design editor could not load. Please refresh the page. If it keeps happening, check your internet connection.');
@@ -193,6 +194,20 @@ function markSaved(id) {
   savedNewIds.add(id);
 }
 const savedNewIds = new Set();
+
+// Choices for the "Which store?" / "Which lookbook?" dropdowns.
+async function loadRefOptions() {
+  const [stores, lookbooks] = await Promise.all([
+    supabase.from('stores').select('id, name, city').eq('is_active', true).order('name'),
+    supabase.from('lookbooks').select('id, title, published_at').not('published_at', 'is', null)
+      .order('published_at', { ascending: false })
+  ]);
+  setRefOptions({
+    stores: (stores.data || []).map((r) => ({ value: r.id, label: r.city ? `${r.name} (${r.city})` : r.name })),
+    lookbooks: (lookbooks.data || []).map((r) => ({ value: r.id, label: r.title }))
+  });
+  renderForm(); // in case a section with a dropdown is already open
+}
 
 // What we compare to decide whether a section needs saving.
 function savedKey(section) {
@@ -409,10 +424,7 @@ function wireForm() {
       const label = field?.querySelector('[data-range-label]');
       if (label) label.textContent = value;
     }
-    if (kind === 'image') {
-      const img = field?.querySelector('[data-image-preview]');
-      if (img) img.src = value || '';
-    }
+    if (fieldId === 'youtube_url') checkYoutubeField(input);
     if (kind === 'color' && state.showTheme) {
       const hex = field?.querySelector('.colour-row__hex');
       if (hex) hex.textContent = value;

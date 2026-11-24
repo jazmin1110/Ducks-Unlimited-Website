@@ -317,6 +317,52 @@ export const SECTION_SCHEMAS = {
       ],
       defaults: { question: 'Your question here?', answer: '<p>The answer goes here.</p>' }
     }
+  },
+
+
+  // ────────────────────────────────────────────────────────────────────────
+  // STORE VISIT — one of our shops (from Admin → Stores) with address,
+  // opening hours and a map.
+  // ────────────────────────────────────────────────────────────────────────
+  'store-visit': {
+    name: 'Visit Our Store',
+    description: 'One of your shops from Admin → Stores: address, phone, opening hours and a map.',
+    settings: [
+      { id: 'heading',  type: 'text',   label: 'Heading', default: 'Visit our store' },
+      // type 'ref' → a dropdown filled from the stores table
+      { id: 'store_id', type: 'ref',    source: 'stores', label: 'Which store?', default: '' },
+      { id: 'show_map', type: 'toggle', label: 'Show a map', default: true }
+    ]
+  },
+
+
+  // ────────────────────────────────────────────────────────────────────────
+  // LOOKBOOK FEATURE — a big link to one published lookbook.
+  // ────────────────────────────────────────────────────────────────────────
+  'lookbook-feature': {
+    name: 'Lookbook',
+    description: 'A large picture linking to one of your published lookbooks.',
+    settings: [
+      { id: 'lookbook_id', type: 'ref',  source: 'lookbooks', label: 'Which lookbook?', default: '' },
+      { id: 'heading',     type: 'text', label: 'Heading (leave empty to use the lookbook\'s title)', default: '' },
+      { id: 'cta_text',    type: 'text', label: 'Button label', default: 'View the lookbook' }
+    ]
+  },
+
+
+  // ────────────────────────────────────────────────────────────────────────
+  // VIDEO — a YouTube video. Shows a picture with a play button; the video
+  // only loads when someone presses play (/js/video-embed.js).
+  // ────────────────────────────────────────────────────────────────────────
+  video: {
+    name: 'Video',
+    allowFullWidth: true,
+    description: 'A YouTube video. It only loads when someone presses play, so the page stays fast.',
+    settings: [
+      { id: 'heading',         type: 'text',  label: 'Heading (optional)', default: '' },
+      { id: 'youtube_url',     type: 'url',   label: 'YouTube link (e.g. https://youtu.be/…)', default: '' },
+      { id: 'cover_image_url', type: 'image', label: 'Cover picture (optional — YouTube\'s own is used otherwise)' }
+    ]
   }
 };
 
