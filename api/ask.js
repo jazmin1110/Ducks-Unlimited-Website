@@ -195,7 +195,6 @@ async function loadPolicies(host) {
 
 
 // ─── Talk to Claude ──────────────────────────────────────────────────────────
-let lastDebug = null; // TEMP: debugging
 async function callClaude(body) {
   // The whole function may only run 10s (vercel.json), so give up on the AI at 8.5s
   const ctrl = new AbortController();
@@ -214,10 +213,9 @@ async function callClaude(body) {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       console.error('[ask] Claude API error', res.status, data?.error?.message);
-      lastDebug = { status: res.status, error: data?.error?.message };
-      return null;
+        return null;
     }
-    lastDebug = { stop: data.stop_reason, usage: data.usage, blocks: (data.content || []).map(c => c.type) };
+    if (data.stop_reason === 'max_tokens') console.warn('[ask] answer was cut off (max_tokens)');
     return (data.content || [])
       .filter(c => c.type === 'text')
       .map(c => c.text)
@@ -228,7 +226,6 @@ async function callClaude(body) {
       .trim();
   } catch (err) {
     console.error('[ask] Claude call failed', err.name === 'AbortError' ? 'timeout' : err);
-    lastDebug = { failed: err.name === 'AbortError' ? 'timeout' : String(err) };
     return null;
   } finally {
     clearTimeout(timer);
@@ -320,13 +317,17 @@ ${sw.extra || '(none)'}`;
       : question;
 
     const answer = await callClaude({
-      max_tokens: 350,
+      // Newer models "think" before answering by default. For short shop answers
+      // that only adds wait time and eats the word budget (answers got cut off),
+      // so it's switched off here.
+      thinking: { type: 'disabled' },
+      max_tokens: 600,
       // cache_control: the big product list is re-used across questions, so it's billed at a discount
       system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
       messages: [...history, { role: 'user', content: userTurn }],
     });
 
-    return res.status(200).json({ answer: answer || fallback, _debug: lastDebug });
+    return res.status(200).json({ answer: answer || fallback });
   } catch (err) {
     console.error('[ask] failed', err);
     return res.status(200).json({ answer: fallback, enabled: false });
