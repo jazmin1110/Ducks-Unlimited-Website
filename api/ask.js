@@ -195,6 +195,7 @@ async function loadPolicies(host) {
 
 
 // ─── Talk to Claude ──────────────────────────────────────────────────────────
+let lastDebug = null; // TEMP: debugging
 async function callClaude(body) {
   // The whole function may only run 10s (vercel.json), so give up on the AI at 8.5s
   const ctrl = new AbortController();
@@ -213,8 +214,10 @@ async function callClaude(body) {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       console.error('[ask] Claude API error', res.status, data?.error?.message);
+      lastDebug = { status: res.status, error: data?.error?.message };
       return null;
     }
+    lastDebug = { stop: data.stop_reason, usage: data.usage, blocks: (data.content || []).map(c => c.type) };
     return (data.content || [])
       .filter(c => c.type === 'text')
       .map(c => c.text)
@@ -225,6 +228,7 @@ async function callClaude(body) {
       .trim();
   } catch (err) {
     console.error('[ask] Claude call failed', err.name === 'AbortError' ? 'timeout' : err);
+    lastDebug = { failed: err.name === 'AbortError' ? 'timeout' : String(err) };
     return null;
   } finally {
     clearTimeout(timer);
@@ -322,7 +326,7 @@ ${sw.extra || '(none)'}`;
       messages: [...history, { role: 'user', content: userTurn }],
     });
 
-    return res.status(200).json({ answer: answer || fallback });
+    return res.status(200).json({ answer: answer || fallback, _debug: lastDebug });
   } catch (err) {
     console.error('[ask] failed', err);
     return res.status(200).json({ answer: fallback, enabled: false });
