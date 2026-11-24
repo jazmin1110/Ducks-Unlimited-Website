@@ -77,9 +77,21 @@ export async function mountComponents(root = document) {
   window.dispatchEvent(new CustomEvent('brand:change', { detail: getCurrentBrand() }));
 }
 
+// "Ask us" AI chat bubble (/js/ask-widget.js). Loaded on the side AFTER the
+// page is built, so it never slows anything down. Skipped on staff and
+// sign-in pages. It stays hidden unless /api/ask says the helper is on.
+function loadAskWidget() {
+  const p = window.location.pathname;
+  if (/(^|\/)(admin|auth)\//.test(p) || p.includes('preview-home')) return;
+  import('/js/ask-widget.js')
+    .then((m) => m.mountAskWidget())
+    .catch((err) => console.warn('[ask] helper not loaded', err));
+}
+
 // Auto-run on load
+const start = () => mountComponents().then(loadAskWidget);
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => mountComponents());
+  document.addEventListener('DOMContentLoaded', start);
 } else {
-  mountComponents();
+  start();
 }
