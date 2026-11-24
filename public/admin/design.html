@@ -131,7 +131,7 @@
     /* Phone view: a 390px-wide page in a subtle phone frame */
     .preview-stage.is-phone { padding: 1rem 0; }
     .preview-stage.is-phone iframe {
-      width: 390px;
+      width: calc(390px + 16px); /* the page inside is 390px; the frame adds 8px each side */
       border: 8px solid #1A1A1A;
       border-radius: 28px;
       box-shadow: 0 10px 30px rgba(0,0,0,.18);
@@ -412,6 +412,13 @@
     }
     .preview-note[hidden] { display: none; }
     .preview-note button { background: none; border: 0; text-decoration: underline; font: inherit; font-weight: 700; cursor: pointer; }
+
+
+    /* Photo fields: "…or paste a photo's web address" under the upload box */
+    .field__paste-url { margin-top: .4rem; }
+    .field__paste-url summary { font-size: .75rem; color: var(--color-text-muted); cursor: pointer; }
+    .field__paste-url input { margin-top: .35rem; }
+    .block__drag { cursor: grab; color: var(--color-text-muted); margin-right: .2rem; }
 
     /* ── Right column: section form ── */
     .section-form { padding: 1.25rem; }

@@ -167,6 +167,137 @@ export const TEMPLATES = {
         </div>
       </section>
     `;
+  },
+
+  // A wide photo with words and a button on top.
+  'image-banner'(s, ctx) {
+    const photo  = homePhoto(s.image_url, ctx.brandSlug, 'hero');
+    const height = ['short', 'medium', 'tall'].includes(s.height) ? s.height : 'medium';
+    const pos    = s.text_position === 'left' ? 'left' : 'center';
+    return `
+      <section class="image-banner image-banner--${height} image-banner--${pos}${photo ? '' : ' image-banner--plain'}">
+        ${photo ? `<img class="image-banner__img" src="${escAttr(photo)}" alt="${escAttr(s.image_alt || '')}" loading="lazy" decoding="async" />` : ''}
+        <div class="image-banner__content">
+          ${s.heading ? `<h2 class="image-banner__heading">${esc(s.heading)}</h2>` : ''}
+          ${s.text ? `<div class="image-banner__text">${sanitizeHtml(s.text)}</div>` : ''}
+          ${s.cta_text && s.cta_link ? `<a class="btn btn-outline-light" href="${escAttr(s.cta_link)}">${esc(s.cta_text)}</a>` : ''}
+        </div>
+      </section>
+    `;
+  },
+
+  // Photos that change every few seconds. /js/slideshow.js adds the arrows,
+  // dots and timing; without it, only the first slide shows.
+  slideshow(s, ctx) {
+    const slides = Array.isArray(s.blocks) ? s.blocks : [];
+    if (!slides.length) return '';
+    const seconds = Math.min(10, Math.max(3, Number(s.seconds) || 5));
+    return `
+      <section class="slideshow" data-slideshow data-autoplay="${s.autoplay === false ? 'false' : 'true'}"
+               data-seconds="${seconds}" aria-roledescription="carousel" aria-label="Slideshow">
+        ${slides.map((b, i) => {
+          const photo = homePhoto(b.image_url, ctx.brandSlug, 'hero');
+          return `
+          <div class="slideshow__slide${photo ? '' : ' slideshow__slide--plain'}"${i === 0 ? '' : ' hidden'} aria-roledescription="slide" aria-label="${i + 1} of ${slides.length}">
+            ${photo ? `<img class="slideshow__img" src="${escAttr(photo)}" alt="${escAttr(b.image_alt || '')}" ${i === 0 ? '' : 'loading="lazy" '}decoding="async" />` : ''}
+            <div class="slideshow__content">
+              ${b.heading ? `<h2 class="slideshow__heading">${esc(b.heading)}</h2>` : ''}
+              ${b.text ? `<p class="slideshow__text">${esc(b.text)}</p>` : ''}
+              ${b.cta_text && b.cta_link ? `<a class="btn btn-outline-light" href="${escAttr(b.cta_link)}">${esc(b.cta_text)}</a>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </section>
+    `;
+  },
+
+  // Two to four columns side by side.
+  multicolumn(s) {
+    const cols  = ['2', '3', '4'].includes(String(s.columns)) ? String(s.columns) : '3';
+    const items = Array.isArray(s.blocks) ? s.blocks : [];
+    return `
+      <section class="multicolumn multicolumn--${cols} section-xl">
+        <div class="container">
+          ${introHtml('', s.heading, 'multicolumn__intro')}
+          <div class="multicolumn__grid">
+            ${items.map((b) => {
+              const inner = `
+                ${b.image_url ? `<div class="multicolumn__media">${imgHtml(b.image_url, b.image_alt)}</div>` : ''}
+                ${b.heading ? `<h3 class="multicolumn__heading">${esc(b.heading)}</h3>` : ''}
+                ${b.text ? `<div class="multicolumn__text">${sanitizeHtml(b.text)}</div>` : ''}`;
+              return b.link
+                ? `<a class="multicolumn__item multicolumn__item--link" href="${escAttr(b.link)}">${inner}</a>`
+                : `<div class="multicolumn__item">${inner}</div>`;
+            }).join('')}
+          </div>
+        </div>
+      </section>
+    `;
+  },
+
+  // What customers say.
+  testimonials(s) {
+    const quotes = Array.isArray(s.blocks) ? s.blocks : [];
+    return `
+      <section class="testimonials section-xl">
+        <div class="container">
+          ${introHtml('', s.heading, 'testimonials__intro')}
+          <div class="testimonials__grid">
+            ${quotes.map((q) => `
+              <figure class="testimonial">
+                <blockquote class="testimonial__quote">${esc(q.quote)}</blockquote>
+                ${q.name || q.place ? `
+                <figcaption class="testimonial__who">
+                  ${q.name ? `<span class="testimonial__name">${esc(q.name)}</span>` : ''}
+                  ${q.place ? `<span class="testimonial__place">${esc(q.place)}</span>` : ''}
+                </figcaption>` : ''}
+              </figure>`).join('')}
+          </div>
+        </div>
+      </section>
+    `;
+  },
+
+  // A grid of photos, each optionally a link.
+  'image-gallery'(s) {
+    const cols   = String(s.columns) === '3' ? '3' : '4';
+    const photos = Array.isArray(s.blocks) ? s.blocks : [];
+    return `
+      <section class="gallery gallery--${cols} section-xl">
+        <div class="container">
+          ${introHtml('', s.heading, 'gallery__intro')}
+          <div class="gallery__grid">
+            ${photos.map((p) => {
+              const img = p.image_url
+                ? imgHtml(p.image_url, p.image_alt)
+                : `<span class="gallery__blank" aria-hidden="true"></span>`;
+              return p.link
+                ? `<a class="gallery__item" href="${escAttr(p.link)}">${img}</a>`
+                : `<div class="gallery__item">${img}</div>`;
+            }).join('')}
+          </div>
+        </div>
+      </section>
+    `;
+  },
+
+  // Questions that open to show the answer. <details> works without JavaScript.
+  faq(s) {
+    const items = Array.isArray(s.blocks) ? s.blocks : [];
+    return `
+      <section class="faq section-xl">
+        <div class="container faq__container">
+          ${introHtml('', s.heading, 'faq__intro')}
+          <div class="faq__list">
+            ${items.map((q) => `
+              <details class="faq__item">
+                <summary class="faq__question">${esc(q.question)}</summary>
+                <div class="faq__answer">${sanitizeHtml(q.answer || '')}</div>
+              </details>`).join('')}
+          </div>
+        </div>
+      </section>
+    `;
   }
 };
 

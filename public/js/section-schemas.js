@@ -169,6 +169,154 @@ export const SECTION_SCHEMAS = {
         ]
       }
     ]
+  },
+
+  // ────────────────────────────────────────────────────────────────────────
+  // IMAGE BANNER — one wide photo with words and a button on top.
+  // ────────────────────────────────────────────────────────────────────────
+  'image-banner': {
+    name: 'Image Banner',
+    allowFullWidth: true,
+    description: 'A wide photo with a heading, a little text and a button on top of it.',
+    settings: [
+      { id: 'image_url', type: 'image',    label: 'Photo' },
+      { id: 'image_alt', type: 'text',     label: 'Photo description (for screen readers)', default: '' },
+      { id: 'heading',   type: 'text',     label: 'Heading', default: 'A new season of classics' },
+      { id: 'text',      type: 'richtext', label: 'Text', default: '' },
+      { id: 'cta_text',  type: 'text',     label: 'Button label', default: 'Shop now' },
+      { id: 'cta_link',  type: 'url',      label: 'Page the button opens', default: '/shop.html' },
+      { id: 'text_position', type: 'select', label: 'Where the words sit', default: 'center',
+        options: [{ value: 'left', label: 'Left' }, { value: 'center', label: 'Middle' }] },
+      { id: 'height', type: 'select', label: 'Banner height', default: 'medium',
+        options: [{ value: 'short', label: 'Short' }, { value: 'medium', label: 'Medium' }, { value: 'tall', label: 'Tall' }] }
+    ]
+  },
+
+
+  // ────────────────────────────────────────────────────────────────────────
+  // SLIDESHOW — photos that change every few seconds (/js/slideshow.js).
+  // Without JavaScript, the first slide shows.
+  // ────────────────────────────────────────────────────────────────────────
+  slideshow: {
+    name: 'Slideshow',
+    allowFullWidth: true,
+    description: 'Up to 6 photos that change every few seconds, each with its own words and button.',
+    settings: [
+      { id: 'autoplay', type: 'toggle', label: 'Change slides automatically', default: true },
+      { id: 'seconds',  type: 'range',  label: 'Seconds per slide', default: 5, min: 3, max: 10, step: 1 }
+    ],
+    blocks: {
+      name: 'Slide',
+      max: 6,
+      starter: 2,
+      settings: [
+        { id: 'image_url', type: 'image', label: 'Photo' },
+        { id: 'image_alt', type: 'text',  label: 'Photo description (for screen readers)', default: '' },
+        { id: 'heading',   type: 'text',  label: 'Heading', default: '' },
+        { id: 'text',      type: 'textarea', label: 'Text', default: '' },
+        { id: 'cta_text',  type: 'text',  label: 'Button label', default: '' },
+        { id: 'cta_link',  type: 'url',   label: 'Page the button opens', default: '/shop.html' }
+      ],
+      defaults: { image_url: '', image_alt: '', heading: 'Slide heading', text: '', cta_text: 'Shop now', cta_link: '/shop.html' }
+    }
+  },
+
+
+  // ────────────────────────────────────────────────────────────────────────
+  // MULTICOLUMN — 2 to 4 columns side by side, each with a picture and text.
+  // ────────────────────────────────────────────────────────────────────────
+  multicolumn: {
+    name: 'Columns',
+    description: 'Two to four columns side by side, each with an optional picture, a heading and text. Good for "Why shop with us".',
+    settings: [
+      { id: 'heading', type: 'text', label: 'Heading', default: 'Why shop with us' },
+      { id: 'columns', type: 'select', label: 'Columns on a computer screen', default: '3',
+        options: [{ value: '2', label: '2' }, { value: '3', label: '3' }, { value: '4', label: '4' }] }
+    ],
+    blocks: {
+      name: 'Column',
+      max: 8,
+      starter: 3,
+      settings: [
+        { id: 'image_url', type: 'image',    label: 'Picture (optional)' },
+        { id: 'image_alt', type: 'text',     label: 'Picture description (for screen readers)', default: '' },
+        { id: 'heading',   type: 'text',     label: 'Heading', default: '' },
+        { id: 'text',      type: 'richtext', label: 'Text', default: '' },
+        { id: 'link',      type: 'url',      label: 'Page it links to (optional)', default: '' }
+      ],
+      defaults: { image_url: '', image_alt: '', heading: 'Column heading', text: '<p>A sentence or two about this.</p>', link: '' }
+    }
+  },
+
+
+  // ────────────────────────────────────────────────────────────────────────
+  // TESTIMONIALS — what customers say.
+  // ────────────────────────────────────────────────────────────────────────
+  testimonials: {
+    name: 'Testimonials',
+    description: 'Quotes from happy customers, with their name and where they are from.',
+    settings: [
+      { id: 'heading', type: 'text', label: 'Heading', default: 'What our customers say' }
+    ],
+    blocks: {
+      name: 'Quote',
+      max: 6,
+      starter: 2,
+      settings: [
+        { id: 'quote', type: 'textarea', label: 'What they said', default: '' },
+        { id: 'name',  type: 'text',     label: 'Name', default: '' },
+        { id: 'place', type: 'text',     label: 'Where they are from (optional)', default: '' }
+      ],
+      defaults: { quote: 'The softest polo I own.', name: 'Customer name', place: 'Manila' }
+    }
+  },
+
+
+  // ────────────────────────────────────────────────────────────────────────
+  // IMAGE GALLERY — a grid of photos, each optionally a link.
+  // ────────────────────────────────────────────────────────────────────────
+  'image-gallery': {
+    name: 'Photo Gallery',
+    allowFullWidth: true,
+    description: 'A grid of up to 12 photos. Each one can link to a page.',
+    settings: [
+      { id: 'heading', type: 'text', label: 'Heading', default: '' },
+      { id: 'columns', type: 'select', label: 'Photos per row on a computer screen', default: '4',
+        options: [{ value: '3', label: '3' }, { value: '4', label: '4' }] }
+    ],
+    blocks: {
+      name: 'Photo',
+      max: 12,
+      starter: 4,
+      settings: [
+        { id: 'image_url', type: 'image', label: 'Photo' },
+        { id: 'image_alt', type: 'text',  label: 'Photo description (for screen readers)', default: '' },
+        { id: 'link',      type: 'url',   label: 'Page it links to (optional)', default: '' }
+      ],
+      defaults: { image_url: '', image_alt: '', link: '' }
+    }
+  },
+
+
+  // ────────────────────────────────────────────────────────────────────────
+  // FAQ — questions that open to show their answer (works without JS).
+  // ────────────────────────────────────────────────────────────────────────
+  faq: {
+    name: 'FAQ',
+    description: 'Questions that open to show the answer when tapped.',
+    settings: [
+      { id: 'heading', type: 'text', label: 'Heading', default: 'Frequently asked questions' }
+    ],
+    blocks: {
+      name: 'Question',
+      max: 20,
+      starter: 2,
+      settings: [
+        { id: 'question', type: 'text',     label: 'Question', default: '' },
+        { id: 'answer',   type: 'richtext', label: 'Answer', default: '' }
+      ],
+      defaults: { question: 'Your question here?', answer: '<p>The answer goes here.</p>' }
+    }
   }
 };
 
@@ -195,7 +343,10 @@ export function buildDefaultSettings(type) {
     out[s.id] = s.default ?? '';
   }
   if (schema.blocks) {
+    // Newer section types start with a few example blocks (`starter`), so a
+    // freshly added section already looks like something.
     out.blocks = [];
+    for (let i = 0; i < (schema.blocks.starter || 0); i++) out.blocks.push(buildDefaultBlock(type));
   }
   return out;
 }

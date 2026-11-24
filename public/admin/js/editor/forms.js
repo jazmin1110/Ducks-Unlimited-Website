@@ -65,10 +65,14 @@ export function fieldHtml(f, value, blockId = null, allSettings = {}) {
       input = `<div data-richtext="${escapeAttr(f.id)}"${blockId ? ` data-richtext-block="${escapeAttr(blockId)}"` : ''}${f.singleLine ? ' data-single-line' : ''}></div>`;
       break;
     case 'image':
+      // An upload box (filled by design.js with /admin/js/image-uploader.js),
+      // plus — for photos already online — a box to paste a web address.
       input = `
-        <input type="url" value="${escapeAttr(v)}" placeholder="Paste the photo's web address (https://…)" ${common}>
-        <img data-image-preview src="${escapeAttr(v)}" class="field__image-preview" alt=""
-             onerror="this.style.display='none'" onload="this.style.display='block'">
+        <div data-image-upload="${escapeAttr(f.id)}"${blockId ? ` data-image-upload-block="${escapeAttr(blockId)}"` : ''}></div>
+        <details class="field__paste-url"${v && !/supabase\.co\/storage/.test(v) ? ' open' : ''}>
+          <summary>…or paste a photo's web address</summary>
+          <input type="url" value="${escapeAttr(v)}" placeholder="https://…" ${common}>
+        </details>
       `;
       break;
     case 'color':

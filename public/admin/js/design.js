@@ -35,6 +35,7 @@ import { createHistory } from '/admin/js/editor/history.js';
 import { createAutosave } from '/admin/js/editor/autosave.js';
 import { mountRichText } from '/admin/js/editor/richtext.js';
 import { openVersionsPanel } from '/admin/js/editor/versions.js';
+import { mountImageUploader } from '/admin/js/image-uploader.js';
 import {
   moveSection, duplicateSection, setHidden, markRemoved, unmarkRemoved, addSection, canPublish,
   restoreSnapshot
@@ -313,6 +314,55 @@ function renderForm() {
   }
   host.innerHTML = sectionFormHtml(schema, s.settings);
   mountRichTextFields(host, s);
+  mountImageFields(host, s);
+  mountBlockDrag(host, s);
+}
+
+// Photo fields: an upload box (pick or drop a photo). Uploaded photos go to
+// the "site-content" storage bucket, folder "homepage".
+function mountImageFields(host, section) {
+  host.querySelectorAll('[data-image-upload]').forEach((spot) => {
+    const fieldId = spot.dataset.imageUpload;
+    const blockId = spot.dataset.imageUploadBlock || null;
+    const current = blockId
+      ? (section.settings.blocks || []).find((b) => b.id === blockId)?.[fieldId]
+      : section.settings[fieldId];
+    // The paste-an-address box for the same photo, kept in step.
+    const pasteBox = spot.parentElement.querySelector(`[data-field-id="${CSS.escape(fieldId)}"]`);
+    mountImageUploader({
+      container: spot,
+      hiddenInput: document.createElement('input'), // the uploader wants one; we use onChange
+      bucket: 'site-content',
+      pathPrefix: 'homepage',
+      currentUrl: current || '',
+      onChange: (url) => {
+        if (pasteBox) pasteBox.value = url;
+        changeSection(section.id, fieldId, url, blockId);
+        history.endGroup();
+      }
+    });
+  });
+}
+
+// Blocks (tiles, slides, questions…) can be dragged by their ⠿ handle.
+function mountBlockDrag(host, section) {
+  const list = host.querySelector('[data-block-list]');
+  if (!list || !window.Sortable) return;
+  window.Sortable.create(list, {
+    handle: '.block__drag',
+    animation: 150,
+    onEnd: (evt) => {
+      if (evt.oldIndex === evt.newIndex) return;
+      const page = structuredClone(state.page);
+      const s = page.sections.find((x) => x.id === section.id);
+      const blocks = s?.settings.blocks;
+      if (!blocks) return;
+      const [moved] = blocks.splice(evt.oldIndex, 1);
+      blocks.splice(evt.newIndex, 0, moved);
+      commit(page);
+      renderForm(); // renumber "Slide 1, Slide 2…"
+    }
+  });
 }
 
 // Put a formatting toolbar + text box in every rich-text spot of the form.
