@@ -404,6 +404,19 @@
 
     .product-card:hover { text-decoration: none; }
 
+    /* Photo + hover buttons. Quick View and the heart sit inside this box,
+       so they always line up with the photo, never with the text below. */
+    .product-card__media { position: relative; }
+
+    .product-card__color {
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      margin: -0.15rem 0 0.3rem;
+      letter-spacing: 0.03em;
+    }
+
+    .color-dot.is-current { box-shadow: 0 0 0 2px var(--color-white), 0 0 0 3px var(--color-text); }
+
     .product-card__link,
     .product-card__body {
       display: block;
@@ -639,12 +652,56 @@
     }
 
     .qv-swatch {
-      width: 28px;
-      height: 28px;
+      width: 30px;
+      height: 30px;
+      padding: 0;
       border-radius: 50%;
-      border: 1px solid rgba(0,0,0,0.1);
+      border: 1px solid rgba(0,0,0,0.15);
       box-shadow: inset 0 0 0 2px var(--color-white);
+      cursor: pointer;
+      transition: box-shadow 0.15s;
     }
+
+    .qv-swatch:hover { box-shadow: inset 0 0 0 2px var(--color-white), 0 0 0 1px var(--color-border); }
+    .qv-swatch.is-active { box-shadow: inset 0 0 0 2px var(--color-white), 0 0 0 2px var(--color-text); }
+
+    .qv-block__label strong { color: var(--color-text); font-weight: 500; letter-spacing: 0.06em; text-transform: none; }
+
+    /* Main photo + a column of thumbnails beside it, kept short so the
+       name, colourways, sizes and Add to Bag fit on a laptop screen. */
+    .qv-gallery {
+      display: grid;
+      grid-template-columns: 1fr 56px;
+      gap: 0.5rem;
+      height: min(36vh, 380px);
+      margin-bottom: var(--space-md);
+    }
+
+    .qv-gallery--single { grid-template-columns: 1fr; }
+
+    .qv-gallery .qv-image { height: 100%; aspect-ratio: auto; max-height: none; margin: 0; }
+
+    .qv-thumbs {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      overflow-y: auto;
+    }
+
+    .qv-thumb { flex: 0 0 auto; width: 100%; }
+
+    .qv-thumb {
+      padding: 0;
+      border: 1px solid transparent;
+      background: var(--color-bg-warm);
+      aspect-ratio: 3 / 4;
+      overflow: hidden;
+      cursor: pointer;
+      opacity: 0.7;
+    }
+
+    .qv-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .qv-thumb.is-active, .qv-thumb:hover { opacity: 1; border-color: var(--color-text); }
 
     .qv-sizes {
       display: flex;
@@ -656,14 +713,20 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 42px;
-      padding: 0.45rem 0.75rem;
+      min-width: 48px;
+      padding: 0.55rem 0.75rem;
+      font-family: var(--font-body);
       font-size: 0.78rem;
       letter-spacing: 0.06em;
       color: var(--color-text);
       background: var(--color-white);
       border: 1px solid var(--color-border);
+      cursor: pointer;
     }
+
+    .qv-size:hover:not(:disabled) { border-color: var(--color-text); }
+    .qv-size.is-active { background: var(--color-text); color: var(--color-white); border-color: var(--color-text); }
+    .qv-size:disabled { color: var(--color-text-light); text-decoration: line-through; cursor: not-allowed; opacity: 0.6; }
 
     .qv-desc {
       color: var(--color-text);
@@ -680,7 +743,16 @@
       background: var(--color-bg-warm);
     }
 
-    .qv-actions .btn { border-radius: 0; letter-spacing: 0.14em; text-transform: uppercase; font-size: 0.8rem; padding: 0.95rem; }
+    .qv-actions .btn { border-radius: 0; letter-spacing: 0.14em; text-transform: uppercase; font-size: 0.8rem; padding: 0.95rem; text-align: center; }
+    .qv-actions .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .qv-actions__link { background: transparent; border: 1px solid var(--color-text); color: var(--color-text); }
+    /* Buttons side by side to save height */
+    .qv-actions { flex-direction: row; padding: 0.75rem var(--space-md); }
+    .qv-actions .btn { flex: 1; padding: 0.85rem 0.5rem; }
+
+    .qv-name { font-size: 1.35rem; }
+    .qv-price { margin-bottom: 0.9rem; }
+    .qv-block { margin-bottom: 0.9rem; }
 
     /* Branded placeholder when no image — duck silhouette + brand name */
     .product-card__placeholder {
@@ -1165,7 +1237,8 @@
       <!-- Filled by JS when a Quick View button is clicked -->
     </div>
     <div class="qv-actions" id="qvActions" hidden>
-      <a class="btn btn-primary" id="qvViewLink" href="#">View Full Details</a>
+      <button type="button" class="btn btn-primary" id="qvAddBtn" disabled>Select a size</button>
+      <a class="btn qv-actions__link" id="qvViewLink" href="#">View Full Details</a>
     </div>
   </aside>
 
@@ -1182,6 +1255,7 @@
     import { supabase } from '/lib/supabase.js';
     import { productPhotos } from '/js/stock-photos.js';
     import { toggleWishlist, isInWishlist } from '/js/wishlist.js';
+    import { addToCart } from '/js/cart.js';
     import { applySiteContent } from '/js/site-content.js';
     import { colorToHex as baseColorToHex, swatchStyle as baseSwatchStyle, sizeRank } from '/js/colors.js';
 
@@ -1326,12 +1400,12 @@
         .select(`
           id, name, description, base_price, category, created_at,
           ${withAudience ? 'audience,' : ''}
-          brands!inner ( slug ),
+          brands!inner ( slug, name ),
           variants (
-            id, color, size, price_override, ${withAudience ? 'color_hex,' : ''}
+            id, color, size, sku, price_override, ${withAudience ? 'color_hex,' : ''}
             inventory ( channel, quantity )
           ),
-          product_images ( image_url, is_primary, display_order )
+          product_images ( image_url, is_primary, display_order, color )
         `)
         .eq('is_active', true)
         .eq('brands.slug', brandSlug);
@@ -1391,6 +1465,62 @@
         imageUrl:    pickPrimaryImage(images),
         imageAltUrl: pickSecondaryImage(images),
       };
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // ONE TILE PER COLOURWAY
+    // Like most clothing shops, every colourway gets its own tile in the
+    // grid (its own photos, link and stock). A colour only gets its own tile
+    // when it has photos tagged with that colour in the admin; colours with
+    // no photos of their own stay together on one tile (the old behaviour),
+    // so we never show two tiles with the same photo.
+    // ─────────────────────────────────────────────────────────────────
+
+    const sameColor = (a, b) => (a ?? '').trim().toLowerCase() === (b ?? '').trim().toLowerCase();
+
+    function splitByColor(raw, p) {
+      const images = raw.product_images ?? [];
+      const allColors = p.colors;
+      p.key = p.id;                // unique tile id (product id + colour)
+      p.color = allColors.length === 1 ? allColors[0] : null;
+      p.allColors = allColors;
+      p.brandSlug = raw.brands?.slug ?? '';
+      p.brandName = raw.brands?.name ?? '';
+      p.allImages = images;
+      p.allVariants = p.variants;
+
+      const withPhotos = allColors.filter(c => images.some(i => sameColor(i.color, c)));
+      if (allColors.length < 2 || withPhotos.length === 0) return [p];
+
+      const tiles = [];
+      const leftover = allColors.filter(c => !withPhotos.includes(c));
+      const groups = [...withPhotos.map(c => [c]), ...(leftover.length ? [leftover] : [])];
+
+      for (const colors of groups) {
+        const variants = p.variants.filter(v => colors.includes(v.color));
+        const imgs = colors.length === 1
+          ? images.filter(i => sameColor(i.color, colors[0]))
+          : images.filter(i => !i.color);
+        const useImgs = imgs.length ? imgs : images;
+        const prices = variants.map(v => Number(v.price_override ?? p.basePrice));
+        const stock = variants.reduce((t, v) =>
+          t + ((v.inventory ?? []).find(i => i.channel === 'online')?.quantity ?? 0), 0);
+        tiles.push({
+          ...p,
+          key:         `${p.id}|${colors.join('+')}`,
+          color:       colors.length === 1 ? colors[0] : null,
+          colors,
+          variants,
+          sizes:       [...new Set(variants.map(v => v.size))],
+          minPrice:    prices.length ? Math.min(...prices) : p.basePrice,
+          maxPrice:    prices.length ? Math.max(...prices) : p.basePrice,
+          onlineStock: stock,
+          outOfStock:  stock === 0,
+          imageUrl:    pickPrimaryImage(useImgs),
+          imageAltUrl: pickSecondaryImage(useImgs),
+        });
+      }
+      return tiles;
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -1614,21 +1744,27 @@
           ? `<p class="product-card__price">₱${formatPrice(p.minPrice)}</p>`
           : `<p class="product-card__price"><small>From</small> ₱${formatPrice(p.minPrice)}</p>`;
 
-        // Color dots — show up to 5, then a "+N" pill for the rest
-        const colorsToShow = p.colors.slice(0, 5);
-        const remainingColors = p.colors.length - colorsToShow.length;
-        const colorsHtml = p.colors.length
+        // Color dots — every colourway of this product (up to 5, then "+N");
+        // the one this tile shows is ringed.
+        const dotColors = p.allColors ?? p.colors;
+        const colorsToShow = dotColors.slice(0, 5);
+        const remainingColors = dotColors.length - colorsToShow.length;
+        const colorsHtml = dotColors.length > 1
           ? `
             <div class="product-card__colors">
               ${colorsToShow.map(c => `
-                <span class="color-dot" style="${swatchStyle(c)}" title="${escapeHtml(c)}"></span>
+                <span class="color-dot${p.color && sameColor(c, p.color) ? ' is-current' : ''}" style="${swatchStyle(c)}" title="${escapeHtml(c)}"></span>
               `).join('')}
               ${remainingColors > 0 ? `<span class="color-dot color-dot--more">+${remainingColors}</span>` : ''}
             </div>
           `
           : '';
+        const colorNameHtml = p.color && (p.allColors ?? []).length > 1
+          ? `<p class="product-card__color">${escapeHtml(p.color)}</p>`
+          : '';
 
-        const productHref = `/product.html?id=${encodeURIComponent(p.id)}`;
+        const productHref = `/product.html?id=${encodeURIComponent(p.id)}`
+          + (p.color ? `&color=${encodeURIComponent(p.color)}` : '');
         const inWishlist = isInWishlist(p.id);
 
         // Heart icon (filled outline)
@@ -1641,7 +1777,8 @@
         `;
 
         wrapper.innerHTML = `
-          <a class="product-card__link" href="${productHref}" aria-label="${escapeHtml(p.name)}">
+          <div class="product-card__media">
+          <a class="product-card__link" href="${productHref}" aria-label="${escapeHtml(p.name)}${p.color ? ', ' + escapeHtml(p.color) : ''}">
             <div class="product-card__image">
               ${p.imageUrl
                 ? `<img src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" loading="lazy" />`
@@ -1666,13 +1803,15 @@
           ${!p.outOfStock ? `
             <div class="product-card__quick">
               <button type="button" class="product-card__quick-btn"
-                      data-quick-view="${escapeHtml(p.id)}">
+                      data-quick-view="${escapeHtml(p.key ?? p.id)}">
                 Quick View
               </button>
             </div>
           ` : ''}
+          </div>
           <a class="product-card__body" href="${productHref}">
             <h3 class="product-card__name">${escapeHtml(p.name)}</h3>
+            ${colorNameHtml}
             ${priceHtml}
             ${colorsHtml}
           </a>
@@ -2018,54 +2157,106 @@
     const qvBody     = document.getElementById('qvBody');
     const qvActions  = document.getElementById('qvActions');
     const qvViewLink = document.getElementById('qvViewLink');
+    const qvAddBtn   = document.getElementById('qvAddBtn');
     const qvClose    = document.getElementById('qvClose');
 
-    function openQuickView(productId) {
-      const p = state.products.find(x => x.id === productId);
-      if (!p) return;
+    // Quick View: photos, colourway picker, sizes and Add to Bag for one
+    // product. Opens on the colourway of the tile that was clicked; the
+    // shopper can switch colourways without leaving the grid.
+    const qv = { tile: null, color: null, size: null, img: 0 };
 
-      const category = CATEGORY_LABELS[p.category] ?? p.category;
-      const priceText = p.minPrice === p.maxPrice
-        ? `₱${formatPrice(p.minPrice)}`
-        : `From ₱${formatPrice(p.minPrice)}`;
+    const stockOf = (v) => (v.inventory ?? []).find(i => i.channel === 'online')?.quantity ?? 0;
 
-      // Distinct sizes/colors for the at-a-glance summary
-      const colorChips = p.colors.length
-        ? `<div class="qv-block">
-             <span class="qv-block__label">Colors · ${p.colors.length}</span>
-             <div class="qv-swatches">
-               ${p.colors.map(c => `<span class="qv-swatch"
-                 style="${swatchStyle(c)}"
-                 title="${escapeHtml(c)}"></span>`).join('')}
-             </div>
-           </div>`
-        : '';
+    function qvImages() {
+      const t = qv.tile;
+      const all = [...(t.allImages ?? [])].sort((a, b) =>
+        (b.is_primary - a.is_primary) || (a.display_order - b.display_order));
+      if (!all.length) return t.imageUrl ? [{ image_url: t.imageUrl }] : [];
+      if (!qv.color) return all;
+      const mine = all.filter(i => sameColor(i.color, qv.color));
+      if (mine.length) return mine;
+      const shared = all.filter(i => !i.color);
+      return shared.length ? shared : all;
+    }
 
-      const sizeChips = p.sizes.length
-        ? `<div class="qv-block">
-             <span class="qv-block__label">Sizes</span>
-             <div class="qv-sizes">
-               ${p.sizes
-                 .sort((a, b) => sizeRank(a) - sizeRank(b))
-                 .map(s => `<span class="qv-size">${escapeHtml(s)}</span>`).join('')}
-             </div>
-           </div>`
-        : '';
+    function qvVariant() {
+      const vs = qv.tile.allVariants ?? qv.tile.variants;
+      return vs.find(v => (!qv.color || v.color === qv.color) && v.size === qv.size) ?? null;
+    }
+
+    function renderQuickView() {
+      const t = qv.tile;
+      const vs = (t.allVariants ?? t.variants).filter(v => !qv.color || v.color === qv.color);
+      const colors = t.allColors ?? t.colors;
+      const imgs = qvImages();
+      if (qv.img >= imgs.length) qv.img = 0;
+
+      const prices = vs.map(v => Number(v.price_override ?? t.basePrice));
+      const lo = prices.length ? Math.min(...prices) : t.basePrice;
+      const hi = prices.length ? Math.max(...prices) : t.basePrice;
+      const picked = qvVariant();
+      const priceText = picked
+        ? `₱${formatPrice(Number(picked.price_override ?? t.basePrice))}`
+        : (lo === hi ? `₱${formatPrice(lo)}` : `From ₱${formatPrice(lo)}`);
+
+      const sizes = [...new Set(vs.map(v => v.size))].sort((a, b) => sizeRank(a) - sizeRank(b));
+      const category = CATEGORY_LABELS[t.category] ?? t.category;
 
       qvBody.innerHTML = `
-        <div class="qv-image">
-          ${p.imageUrl
-            ? `<img src="${escapeHtml(p.imageUrl)}" alt="${escapeHtml(p.name)}" />`
-            : ''}
+        <div class="qv-gallery${imgs.length > 1 ? '' : ' qv-gallery--single'}">
+          <div class="qv-image">
+            ${imgs[qv.img] ? `<img src="${escapeHtml(imgs[qv.img].image_url)}" alt="${escapeHtml(t.name)}" />` : ''}
+          </div>
+          ${imgs.length > 1 ? `
+            <div class="qv-thumbs">
+              ${imgs.slice(0, 6).map((im, i) => `
+                <button type="button" class="qv-thumb${i === qv.img ? ' is-active' : ''}" data-qv-img="${i}" aria-label="Photo ${i + 1}">
+                  <img src="${escapeHtml(im.image_url)}" alt="" loading="lazy" />
+                </button>`).join('')}
+            </div>` : ''}
         </div>
         <p class="qv-category">${escapeHtml(category)}</p>
-        <h2 class="qv-name">${escapeHtml(p.name)}</h2>
+        <h2 class="qv-name">${escapeHtml(t.name)}</h2>
         <p class="qv-price">${priceText}</p>
-        ${colorChips}
-        ${sizeChips}
+        ${colors.length ? `
+          <div class="qv-block">
+            <span class="qv-block__label">Colour${qv.color ? `: <strong>${escapeHtml(qv.color)}</strong>` : ''}</span>
+            <div class="qv-swatches">
+              ${colors.map(c => `
+                <button type="button" class="qv-swatch${sameColor(c, qv.color) ? ' is-active' : ''}"
+                        data-qv-color="${escapeHtml(c)}" style="${swatchStyle(c)}"
+                        title="${escapeHtml(c)}" aria-label="${escapeHtml(c)}"
+                        aria-pressed="${sameColor(c, qv.color)}"></button>`).join('')}
+            </div>
+          </div>` : ''}
+        ${sizes.length ? `
+          <div class="qv-block">
+            <span class="qv-block__label">Size</span>
+            <div class="qv-sizes">
+              ${sizes.map(sz => {
+                const v = vs.find(x => x.size === sz);
+                const out = !v || stockOf(v) <= 0;
+                return `<button type="button" class="qv-size${qv.size === sz ? ' is-active' : ''}"
+                          data-qv-size="${escapeHtml(sz)}" ${out ? 'disabled title="Out of stock"' : ''}>${escapeHtml(sz)}</button>`;
+              }).join('')}
+            </div>
+          </div>` : ''}
       `;
 
-      qvViewLink.href = `/product.html?id=${encodeURIComponent(p.id)}`;
+      qvViewLink.href = `/product.html?id=${encodeURIComponent(t.id)}`
+        + (qv.color ? `&color=${encodeURIComponent(qv.color)}` : '');
+      qvAddBtn.disabled = !picked || stockOf(picked) <= 0;
+      qvAddBtn.textContent = picked ? 'Add to Bag' : 'Select a size';
+    }
+
+    function openQuickView(tileKey) {
+      const t = state.products.find(x => (x.key ?? x.id) === tileKey);
+      if (!t) return;
+      qv.tile = t;
+      qv.color = t.color ?? (t.allColors ?? t.colors)[0] ?? null;
+      qv.size = null;
+      qv.img = 0;
+      renderQuickView();
       qvActions.hidden = false;
 
       qvDrawer.hidden = false;
@@ -2075,6 +2266,39 @@
       });
       document.body.style.overflow = 'hidden';
     }
+
+    qvBody.addEventListener('click', (e) => {
+      const c = e.target.closest('[data-qv-color]');
+      const z = e.target.closest('[data-qv-size]');
+      const im = e.target.closest('[data-qv-img]');
+      if (c) {
+        qv.color = c.getAttribute('data-qv-color');
+        qv.img = 0;
+        // keep the chosen size if this colourway has it in stock
+        if (qv.size && !qvVariant()) qv.size = null;
+      } else if (z && !z.disabled) {
+        qv.size = z.getAttribute('data-qv-size');
+      } else if (im) {
+        qv.img = Number(im.getAttribute('data-qv-img'));
+      } else return;
+      renderQuickView();
+    });
+
+    qvAddBtn.addEventListener('click', () => {
+      const v = qvVariant();
+      if (!v || stockOf(v) <= 0) return;
+      const t = qv.tile;
+      addToCart(v.id, 1, {
+        productName:  t.name,
+        variantLabel: `${v.color} · ${v.size}`,
+        sku:          v.sku ?? '',
+        price:        Number(v.price_override ?? t.basePrice),
+        imageUrl:     qvImages()[0]?.image_url ?? t.imageUrl ?? '',
+        brandSlug:    t.brandSlug ?? '',
+        brandName:    t.brandName ?? '',
+      });
+      closeQuickView();
+    });
 
     function closeQuickView() {
       qvDrawer.classList.remove('is-open');
@@ -2156,11 +2380,11 @@
       await swrCache({
         // Bump the version suffix when the product fetch shape changes
         // (e.g. you add a new column) so old caches get invalidated.
-        key: 'shop:products:v3',
+        key: 'shop:products:v4',
         maxAgeMs: 5 * 60 * 1000, // 5 minutes
         fetcher: loadProducts,
         onData: (raw, _source) => {
-          state.products = raw.map(enrichProduct);
+          state.products = raw.flatMap(p => splitByColor(p, enrichProduct(p)));
           buildFilterUI();
           syncUIFromState();
           updatePriceFill();

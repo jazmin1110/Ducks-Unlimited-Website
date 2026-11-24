@@ -1846,7 +1846,10 @@
       // (most users will pick one anyway — this saves a click and prevents
       // the "Select a color..." hint from being the first thing they see)
       if (state.allColors.length > 0) {
-        state.selectedColor = state.allColors[0];
+        // Open on the colourway the shopper clicked in the shop (?color=…),
+        // otherwise the first colour.
+        const wanted = (new URLSearchParams(window.location.search).get('color') ?? '').trim().toLowerCase();
+        state.selectedColor = state.allColors.find(c => c.trim().toLowerCase() === wanted) ?? state.allColors[0];
         // Start the gallery on the first color's photos
         state.images = imagesForColor(state.selectedColor);
       }
