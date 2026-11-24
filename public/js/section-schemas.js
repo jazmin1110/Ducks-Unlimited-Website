@@ -38,6 +38,9 @@
 //   toggle    → <input type="checkbox"> (boolean)
 
 
+import { STYLE_FIELDS } from './section-style.js';
+
+
 export const SECTION_SCHEMAS = {
 
   // ────────────────────────────────────────────────────────────────────────
@@ -46,11 +49,12 @@ export const SECTION_SCHEMAS = {
   // ────────────────────────────────────────────────────────────────────────
   hero: {
     name: 'Hero',
+    allowFullWidth: true,
     description: 'A full-screen image with a headline and a call-to-action button. Leave the image empty to show a solid brand-color background.',
     settings: [
       { id: 'image_url', type: 'image',    label: 'Background image' },
       { id: 'eyebrow',   type: 'text',     label: 'Small label above the headline', default: '' },
-      { id: 'headline',  type: 'richtext', label: 'Headline (to start a new line, type <br>)', default: '' },
+      { id: 'headline',  type: 'richtext', label: 'Headline', default: '' },
       { id: 'sub',       type: 'textarea', label: 'Sub-headline', default: '' },
       { id: 'cta_text',  type: 'text',     label: 'Button label', default: 'Shop the Collection' },
       { id: 'cta_link',  type: 'url',      label: 'Page the button opens',  default: '/shop.html' },
@@ -133,7 +137,7 @@ export const SECTION_SCHEMAS = {
       { id: 'image_alt', type: 'text',     label: 'Image description (for screen readers)', default: '' },
       { id: 'eyebrow',   type: 'text',     label: 'Small label above the heading',  default: '' },
       { id: 'headline',  type: 'text',     label: 'Headline', default: '' },
-      { id: 'body',      type: 'richtext', label: 'Text (put each paragraph between <p> and </p>)', default: '' },
+      { id: 'body',      type: 'richtext', label: 'Text', default: '' },
       { id: 'cta_text',  type: 'text',     label: 'Button label', default: '' },
       { id: 'cta_link',  type: 'url',      label: 'Page the button opens',  default: '' },
       { id: 'layout',    type: 'select',   label: 'Image side', default: 'image-left',
@@ -155,7 +159,7 @@ export const SECTION_SCHEMAS = {
     description: 'A simple text block — heading + paragraph.',
     settings: [
       { id: 'heading', type: 'text',     label: 'Heading', default: '' },
-      { id: 'body',    type: 'richtext', label: 'Text (put each paragraph between <p> and </p>)', default: '' },
+      { id: 'body',    type: 'richtext', label: 'Text', default: '' },
       { id: 'align',   type: 'select',   label: 'Text alignment', default: 'center',
         options: [
           { value: 'left',   label: 'Left'   },
@@ -166,6 +170,16 @@ export const SECTION_SCHEMAS = {
     ]
   }
 };
+
+
+// Add the shared "Style" fields (space above/below, background, width) to
+// the end of every section type's settings. See /js/section-style.js.
+// "Width" is only added to types marked `allowFullWidth: true`.
+for (const schema of Object.values(SECTION_SCHEMAS)) {
+  schema.settings.push(
+    ...STYLE_FIELDS.filter((f) => !f.onlyIfFullWidth || schema.allowFullWidth)
+  );
+}
 
 
 // Build a fresh draft blob for a brand-new section — populated with each

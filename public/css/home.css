@@ -10,7 +10,8 @@
 /* Two editorial blocks in a row: keep the thin divider between them.
    (Each editorial block is its own <section> now, so the original
    `.editorial__row + .editorial__row` rule no longer reaches it.) */
-.editorial + .editorial .editorial__row {
+.editorial + .editorial .editorial__row,
+.sec:has(> .editorial) + .sec:has(> .editorial) .editorial__row {
   border-top: 1px solid var(--color-border-light);
 }
 
@@ -445,3 +446,44 @@
 .hero--photo .hero__sub {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55), 0 2px 18px rgba(0, 0, 0, 0.45);
 }
+
+
+/* ── SECTION STYLE (Admin → Design → a section → "Style") ─────────────────
+   Every homepage section sits inside <div class="sec ...">. The classes come
+   from each section's Style choices (see /js/section-style.js):
+     sec--above-none|sm|md|lg   space above the section
+     sec--below-none|sm|md|lg   space below the section
+     sec--bg-page|white|brand|accent|custom   background
+     sec--dark                  background is dark → light text
+     sec--full                  edge-to-edge width
+   "md" (Medium) and "page" (Page colour) are the defaults and add nothing,
+   so a section keeps its own built-in look unless someone changes it. */
+
+.sec--above-none > section { padding-top: 0; }
+.sec--above-sm   > section { padding-top: var(--space-lg); }
+.sec--above-lg   > section { padding-top: var(--space-3xl); }
+.sec--below-none > section { padding-bottom: 0; }
+.sec--below-sm   > section { padding-bottom: var(--space-lg); }
+.sec--below-lg   > section { padding-bottom: var(--space-3xl); }
+
+/* Phones: "Large" is one step smaller so it doesn't feel like a gap */
+@media (max-width: 767px) {
+  .sec--above-sm > section { padding-top: var(--space-md); }
+  .sec--above-lg > section { padding-top: var(--space-2xl); }
+  .sec--below-sm > section { padding-bottom: var(--space-md); }
+  .sec--below-lg > section { padding-bottom: var(--space-2xl); }
+}
+
+.sec--bg-white  > section { background: #FFFFFF; }
+.sec--bg-brand  > section { background: var(--color-primary); }
+.sec--bg-accent > section { background: var(--color-accent); }
+.sec--bg-custom > section { background: var(--sec-bg); }
+
+/* Dark background → light words and outline buttons */
+.sec--dark > section,
+.sec--dark > section :is(h1, h2, h3, h4, p, .eyebrow, .display-sm) { color: #FFFFFF; }
+.sec--dark > section .btn-outline-dark { color: #FFFFFF; border-color: #FFFFFF; }
+.sec--dark > section .btn-outline-dark:hover { background: #FFFFFF; color: var(--color-text); }
+
+/* Full width: let the inner container stretch edge to edge */
+.sec--full > section .container { max-width: none; }

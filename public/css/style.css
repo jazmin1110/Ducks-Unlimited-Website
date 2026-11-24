@@ -312,7 +312,9 @@ p:last-child { margin-bottom: 0; }
 .btn {
   display: inline-block;
   padding: 0.75rem 1.5rem;
-  border-radius: var(--radius);
+  /* --btn-radius comes from the theme's "Button shape" (Admin → Design → Theme).
+     Not set → the normal rounded corner. */
+  border-radius: var(--btn-radius, var(--radius));
   font-family: var(--font-body);
   font-size: 0.95rem;
   font-weight: 500;

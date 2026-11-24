@@ -29,6 +29,7 @@
 import { homePhoto, tilePhoto, editorialPhoto } from './stock-photos.js';
 import { sanitizeHtml } from './safe-html.js';
 import { SECTION_SCHEMAS } from './section-schemas.js';
+import { sectionWrapperAttrs } from './section-style.js';
 
 
 // ── Public API ──────────────────────────────────────────────────────────────
@@ -40,11 +41,17 @@ export function renderSectionsHtml(sections, ctx) {
     .filter((s) => s && s.settings && !s.settings._hidden && !s.settings._removed)
     .map((s) => {
       const html = renderOne(s, ctx);
-      if (!ctx?.editor) return html;
-      // In the editor, wrap each section so a click on it can be traced back
-      // to the section it belongs to.
-      const name = SECTION_SCHEMAS[s.section_type]?.name || s.section_type;
-      return `<div data-editor-section-id="${escAttr(s.id)}" data-editor-section-name="${escAttr(name)}">${html}</div>`;
+      // Every section sits in a <div> carrying its Style choices (space,
+      // background, width) as classes — see /js/section-style.js.
+      const { className, style } = sectionWrapperAttrs(s.settings, ctx?.theme);
+      let attrs = `class="${className}"${style ? ` style="${escAttr(style)}"` : ''}`;
+      // In the editor, also tag it so a click on it can be traced back to
+      // the section it belongs to.
+      if (ctx?.editor) {
+        const name = SECTION_SCHEMAS[s.section_type]?.name || s.section_type;
+        attrs += ` data-editor-section-id="${escAttr(s.id)}" data-editor-section-name="${escAttr(name)}"`;
+      }
+      return `<div ${attrs}>${html}</div>`;
     })
     .join('');
 }

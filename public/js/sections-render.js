@@ -30,6 +30,7 @@ import { productPhotos } from '/js/stock-photos.js';
 // templates (Vercel lets browsers keep /js/ files for a day). Bump it whenever
 // section-templates.js changes.
 import { renderSectionsHtml } from '/js/section-templates.js?v=20261124';
+import { themeCssVars, fontStylesheetUrl } from '/js/theme-fonts.js';
 
 
 // ── Public API ──────────────────────────────────────────────────────────────
@@ -241,17 +242,28 @@ function applyThemeVars(container, theme) {
   if (!theme) return;
   // Override the site's own CSS variables (from /css/style.css), scoped to
   // the sections container — so the Theme form recolors every section while
-  // the nav and footer keep the brand defaults.
-  const map = {
-    '--color-primary': theme.brand_color,
-    '--color-accent':  theme.accent_color,
-    '--color-bg':      theme.bg_color,
-    '--color-text':    theme.text_color,
-    '--font-heading':  theme.heading_font && `'${theme.heading_font}', Georgia, serif`,
-    '--font-body':     theme.body_font    && `'${theme.body_font}', -apple-system, sans-serif`
-  };
-  for (const [k, v] of Object.entries(map)) {
-    if (v) container.style.setProperty(k, v);
+  // the nav and footer keep the brand defaults. themeCssVars() (in
+  // /js/theme-fonts.js) skips anything that isn't a real colour or a font
+  // from our menu.
+  for (const [k, v] of Object.entries(themeCssVars(theme))) {
+    container.style.setProperty(k, v);
+  }
+
+  // A font other than the defaults needs its Google Fonts stylesheet.
+  // One <link> tag, reused and updated if the theme changes (the editor's
+  // preview changes it while you pick fonts).
+  const href = fontStylesheetUrl(theme);
+  let link = document.getElementById('theme-font-link');
+  if (href) {
+    if (!link) {
+      link = document.createElement('link');
+      link.id  = 'theme-font-link';
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+    if (link.href !== href) link.href = href;
+  } else if (link) {
+    link.remove();
   }
 }
 
