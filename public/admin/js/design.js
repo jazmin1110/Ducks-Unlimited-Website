@@ -34,8 +34,10 @@ import { createPreviewBridge } from '/admin/js/editor/preview-bridge.js';
 import { createHistory } from '/admin/js/editor/history.js';
 import { createAutosave } from '/admin/js/editor/autosave.js';
 import { mountRichText } from '/admin/js/editor/richtext.js';
+import { openVersionsPanel } from '/admin/js/editor/versions.js';
 import {
-  moveSection, duplicateSection, setHidden, markRemoved, unmarkRemoved, addSection, canPublish
+  moveSection, duplicateSection, setHidden, markRemoved, unmarkRemoved, addSection, canPublish,
+  restoreSnapshot
 } from '/admin/js/editor/page-state.js';
 import {
   sectionFormHtml, themeFormHtml, applyShowIf, readFieldValue, escapeHtml
@@ -58,6 +60,7 @@ const state = {
   saved:      new Map(),                    // section id → JSON of { settings, position }
   savedTheme: '',                           // JSON of the theme
   hasUnpublished: false,                    // drafts exist that aren't live yet
+  previewSnapshot: null,                    // a saved version shown in the preview (History)
   saveStatus: 'saved',                      // 'saving' | 'saved' | 'error' (from autosave)
   versionTime: null                         // when this page was last published, as of opening
 };
@@ -206,6 +209,13 @@ function renderAll() {
 }
 
 function refreshPreview() {
+  // History → Preview shows a saved version instead of the draft.
+  if (state.previewSnapshot) {
+    bridge?.render({ sections: state.previewSnapshot.sections || [], theme: state.previewSnapshot.theme || state.page.theme }, {
+      brandSlug: state.brandSlug, brandId: state.brandId, selectedId: null
+    });
+    return;
+  }
   bridge?.render(state.page, {
     brandSlug:  state.brandSlug,
     brandId:    state.brandId,
@@ -432,6 +442,11 @@ function blockAction(action, blockId) {
 //   groupKey → for typing: changes to the same field close together
 //              become ONE undo step (see history.js)
 function commit(page, groupKey = null) {
+  // Editing while looking at an old version → show the draft again.
+  if (state.previewSnapshot) {
+    state.previewSnapshot = null;
+    document.querySelector('[data-preview-note]').hidden = true;
+  }
   state.page = page;
   history.record(page, groupKey);
   renderList();
@@ -649,10 +664,41 @@ function showToast(text, actionLabel = null, onAction = null, ms = 8000) {
 }
 
 
+// ── History (saved versions) ─────────────────────────────────────────────────
+function openHistory() {
+  openVersionsPanel({
+    pageKey: PAGE_KEY,
+    brandId: state.brandId,
+    onPreview: (snapshot) => showVersionInPreview(snapshot),
+    onRestore: (snapshot) => {
+      showVersionInPreview(null);
+      // Sections deleted since that version come back as new sections.
+      const page = restoreSnapshot(state.page, snapshot, () => crypto.randomUUID());
+      commit(page); // one Undo step; saved as a draft — live only after Publish
+      const listed = page.sections.filter((s) => !s.settings?._removed);
+      if (!listed.some((s) => s.id === state.selectedId)) state.selectedId = listed[0]?.id || null;
+      renderForm();
+      renderList();
+      showToast('Version restored as your draft. Press Publish to make it live.');
+    },
+    onClose: () => showVersionInPreview(null)
+  });
+}
+
+// Show a saved version in the preview (snapshot), or go back to the draft (null).
+function showVersionInPreview(snapshot) {
+  state.previewSnapshot = snapshot;
+  document.querySelector('[data-preview-note]').hidden = !snapshot;
+  refreshPreview();
+}
+
+
 // ── Top bar ──────────────────────────────────────────────────────────────────
 function wireTopBar() {
   document.querySelector('[data-publish-btn]').addEventListener('click', publish);
   document.querySelector('[data-undo]').addEventListener('click', undo);
+  document.querySelector('[data-history-btn]').addEventListener('click', openHistory);
+  document.querySelector('[data-preview-back]').addEventListener('click', () => showVersionInPreview(null));
   document.querySelector('[data-redo]').addEventListener('click', redo);
 
   document.querySelector('[data-theme-btn]').addEventListener('click', () => {

@@ -382,6 +382,37 @@
     .shape-choice__sample--rounded { border-radius: 6px; }
     .shape-choice__sample--pill    { border-radius: 999px; }
 
+
+    /* ── History panel + "Previewing a saved version" note ── */
+    .editor-grid { position: relative; }
+    .versions {
+      position: absolute; top: 0; right: 0; bottom: 0; width: 340px; z-index: 25;
+      background: #fff; border-left: 1px solid var(--color-border-light);
+      box-shadow: -8px 0 24px rgba(0,0,0,.08); overflow-y: auto; padding: 1rem 1.25rem;
+    }
+    .versions[hidden] { display: none; }
+    .versions__head { display: flex; justify-content: space-between; align-items: center; }
+    .versions__head h2 { font-family: var(--font-heading); color: var(--color-primary); margin: 0; font-size: 1.3rem; }
+    .versions__intro { font-size: .8rem; color: var(--color-text-muted); margin: .4rem 0 1rem; }
+    .versions__list { list-style: none; margin: 0; padding: 0; }
+    .versions__item { border: 1px solid var(--color-border-light); padding: .7rem .8rem; margin-bottom: .5rem; }
+    .versions__item.is-previewing { border-color: var(--color-accent); background: rgba(201,168,76,.08); }
+    .versions__when { font-size: .88rem; color: var(--color-text); font-weight: 500; }
+    .versions__live {
+      font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; margin-left: .35rem;
+      background: rgba(27,77,46,.1); color: var(--color-primary); padding: .1rem .35rem; vertical-align: middle;
+    }
+    .versions__who { font-size: .75rem; color: var(--color-text-muted); margin: .15rem 0 .5rem; word-break: break-all; }
+    .versions__actions { display: flex; gap: .4rem; }
+    .versions__actions button { font-size: .75rem; padding: .35rem .7rem; }
+    .versions__empty { font-size: .85rem; color: var(--color-text-muted); font-style: italic; }
+    .panel--preview { flex-direction: column; }
+    .preview-note {
+      background: var(--color-accent); color: #1A1A1A; font-size: .82rem; text-align: center; padding: .45rem;
+    }
+    .preview-note[hidden] { display: none; }
+    .preview-note button { background: none; border: 0; text-decoration: underline; font: inherit; font-weight: 700; cursor: pointer; }
+
     /* ── Right column: section form ── */
     .section-form { padding: 1.25rem; }
     .form-group-title {
@@ -505,6 +536,7 @@
       <div class="design-top__spacer"></div>
       <span class="badge-unpublished" data-unpublished hidden>Unpublished changes</span>
       <span class="design-top__status" data-status aria-live="polite"></span>
+      <button class="btn-secondary" data-history-btn type="button">History</button>
       <button class="btn-primary"   data-publish-btn    type="button">Publish</button>
     </div>
 
@@ -519,10 +551,16 @@
 
       <!-- MIDDLE: the real homepage, showing your changes as you type -->
       <section class="panel panel--preview" aria-label="Preview">
+        <div class="preview-note" data-preview-note hidden>
+          Previewing a saved version · <button type="button" data-preview-back>Back to your draft</button>
+        </div>
         <div class="preview-stage" data-preview-stage>
           <iframe data-preview-frame title="Homepage preview"></iframe>
         </div>
       </section>
+
+      <!-- History panel (opens over the settings column) -->
+      <aside class="versions" data-versions-panel hidden aria-label="Version history"></aside>
 
       <!-- RIGHT: settings for the selected section (filled by JS) -->
       <section class="panel panel--settings section-form" data-section-form>
