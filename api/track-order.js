@@ -80,6 +80,15 @@ export default async function handler(req, res) {
       const user = await getUserFromRequest(req);
       if (!user) return res.status(401).json({ error: 'Please sign in first.' });
 
+      // Only the person who owns the checkout email may add the order to their
+      // account. Without this, anyone who knew an order number and the buyer's
+      // email could claim it and then see the buyer's address and phone.
+      if (String(user.email || '').trim().toLowerCase() !== email) {
+        return res.status(403).json({
+          error: 'This order was placed with a different email from the one on your account, so it can’t be added here.',
+        });
+      }
+
       if (order.user_id && order.user_id !== user.id) {
         return res.status(409).json({ error: 'This order is already linked to another account.' });
       }

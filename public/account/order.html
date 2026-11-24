@@ -101,7 +101,7 @@
         <div class="panel">
           <dl class="kv">
             <div><dt>${o.shippingMethod === 'pickup' ? 'Pick up at' : 'Shipping to'}</dt><dd>${escapeHtml(o.pickupStore ? `${o.pickupStore.name}, ${o.pickupStore.address}, ${o.pickupStore.city}` : o.shippingAddress)}</dd></div>
-            <div><dt>Payment</dt><dd>${o.paymentMethod === 'cod' ? (o.shippingMethod === 'pickup' ? 'Pay in store' : 'Cash on delivery') : 'Paid online'}</dd></div>
+            <div><dt>Payment</dt><dd>${o.paymentMethod === 'cod' ? (o.shippingMethod === 'pickup' ? 'Pay in store' : 'Cash on delivery') : (o.paymentStatus === 'paid' ? 'Paid online' : 'Online payment')}</dd></div>
             ${o.customerNotes ? `<div><dt>Your note</dt><dd>${escapeHtml(o.customerNotes)}</dd></div>` : ''}
           </dl>
         </div>

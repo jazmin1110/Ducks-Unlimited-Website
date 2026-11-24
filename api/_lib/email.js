@@ -20,7 +20,8 @@
 // =============================================================================
 
 const peso = (n) => '₱' + Number(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const esc  = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// Make customer-typed text safe to put inside an email's HTML.
+export const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 function siteUrl() {
   return (process.env.SITE_URL || 'https://ducks-unlimited-website.vercel.app').replace(/\/$/, '');

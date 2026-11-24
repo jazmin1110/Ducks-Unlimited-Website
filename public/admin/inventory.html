@@ -1307,11 +1307,15 @@
           cell.textContent = current;
         } else {
           cell.textContent = '…';
-          const { error } = await supabase.from('inventory').upsert(
-            { variant_id: variantId, channel, quantity: qty, low_stock_threshold: v.threshold },
-            { onConflict: 'variant_id,channel' }
-          );
-          if (error) { console.error(error); showToast('Could not save.'); cell.textContent = current; }
+          // Only overwrites if the stock is still the number shown (see saveChannelQty).
+          const result = await saveChannelQty(variantId, channel, qty, current, v.threshold);
+          if (result.conflict) {
+            // Stock moved (e.g. a sale came in). Show the real number; don't overwrite.
+            if (channel === 'online') v.online = result.currentQty; else v.store = result.currentQty;
+            cell.textContent = result.currentQty;
+            showToast(`Stock changed to ${result.currentQty} while you were editing — not saved. Check it and try again.`);
+          }
+          else if (result.error) { console.error(result.error); showToast('Could not save.'); cell.textContent = current; }
           else {
             if (channel === 'online') v.online = qty; else v.store = qty;
             v.total  = v.online + v.store;
@@ -1366,6 +1370,43 @@
 
     saveBtn.addEventListener('click', handleSave);
 
+    // Save one channel's stock count SAFELY.
+    // Checkout takes stock while this page is open. If we simply wrote the
+    // number typed here, we could put back units that were sold a minute ago
+    // (and sell them twice). So we only overwrite when the database still has
+    // the number the manager saw (`expectedQty`). If it moved, we stop and say so.
+    // Returns { ok } | { conflict, currentQty } | { error }.
+    async function saveChannelQty(variantId, channel, newQty, expectedQty, threshold) {
+      const { data, error } = await supabase
+        .from('inventory')
+        .update({ quantity: newQty, low_stock_threshold: threshold })
+        .eq('variant_id', variantId)
+        .eq('channel', channel)
+        .eq('quantity', expectedQty)
+        .select('variant_id');
+      if (error) return { error };
+      if (data && data.length) return { ok: true };
+
+      // Nothing matched: either this stock row doesn't exist yet, or the
+      // number changed since the page loaded. Look to see which.
+      const { data: row, error: readErr } = await supabase
+        .from('inventory')
+        .select('quantity')
+        .eq('variant_id', variantId)
+        .eq('channel', channel)
+        .maybeSingle();
+      if (readErr) return { error: readErr };
+      if (row) return { conflict: true, currentQty: row.quantity };
+
+      // Row missing (rare) — create it.
+      const { error: insErr } = await supabase
+        .from('inventory')
+        .insert({ variant_id: variantId, channel, quantity: newQty, low_stock_threshold: threshold });
+      return insErr ? { error: insErr } : { ok: true };
+    }
+
+    const CHANNEL_NAMES = { online: 'Online', greenhills_store: 'Store' };
+
     async function handleSave() {
       clearPanelError();
 
@@ -1394,24 +1435,44 @@
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving…';
 
-      // Upsert both inventory rows in one call. The (variant_id, channel)
-      // unique constraint means existing rows are updated; missing rows
-      // (defensive — variants page always creates both) are inserted.
-      const { error } = await supabase
-        .from('inventory')
-        .upsert(
-          [
-            { variant_id: variantId, channel: 'online',           quantity: onlineQty, low_stock_threshold: threshold },
-            { variant_id: variantId, channel: 'greenhills_store', quantity: storeQty,  low_stock_threshold: threshold },
-          ],
-          { onConflict: 'variant_id,channel' }
-        );
+      // Save each channel. A channel whose number was NOT changed only gets
+      // its low-stock threshold updated — its count is left alone, so a sale
+      // that happened while this panel was open is never undone.
+      const v = allVariants.find(x => x.variantId === variantId);
+      const channels = [
+        ['online',           onlineQty, v?.online ?? 0],
+        ['greenhills_store', storeQty,  v?.store  ?? 0],
+      ];
+      let failed = null;
+      for (const [channel, newQty, seenQty] of channels) {
+        let result;
+        if (newQty === seenQty) {
+          const { error } = await supabase
+            .from('inventory')
+            .update({ low_stock_threshold: threshold })
+            .eq('variant_id', variantId)
+            .eq('channel', channel);
+          result = error ? { error } : { ok: true };
+        } else {
+          result = await saveChannelQty(variantId, channel, newQty, seenQty, threshold);
+        }
+        if (!result.ok) { failed = { channel, ...result }; break; }
+      }
 
       saveBtn.disabled = false;
       saveBtn.textContent = 'Save Changes';
 
-      if (error) {
-        console.error(error);
+      if (failed?.conflict) {
+        showPanelError(
+          `${CHANNEL_NAMES[failed.channel]} stock changed to ${failed.currentQty} while this was open ` +
+          `(probably a sale). Nothing was overwritten — check the number and save again.`
+        );
+        if (failed.channel === 'online') { onlineStockIn.value = failed.currentQty; if (v) v.online = failed.currentQty; }
+        else                             { storeStockIn.value  = failed.currentQty; if (v) v.store  = failed.currentQty; }
+        return;
+      }
+      if (failed) {
+        console.error(failed.error);
         showPanelError('Could not save changes. Please try again.');
         return;
       }

@@ -35,7 +35,7 @@
 import { getUserFromRequest, supabaseAdmin } from './_lib/supabase-admin.js';
 import { createMayaCheckout } from './_lib/maya.js';
 import { computeTotals, findMember, checkDiscountCode } from './_lib/pricing.js';
-import { sendOrderEmail, sendStaffEmail } from './_lib/email.js';
+import { sendOrderEmail, sendStaffEmail, esc } from './_lib/email.js';
 import { loadOrderForEmail, flagOversold } from './_lib/orders.js';
 import { allowRequest } from './_lib/ratelimit.js';
 
@@ -250,7 +250,9 @@ export default async function handler(req, res) {
       if (Array.isArray(oversold) && oversold.length) await flagOversold(full, oversold);
       await sendOrderEmail('placed', full);
       await sendStaffEmail(`New COD order ${order.order_number}`,
-        `<p>${full.customer_name} — ₱${Number(full.total_amount).toFixed(2)} — ${shippingMethod === 'pickup' ? 'pickup at ' + store.name : 'deliver to ' + shippingStr}</p>`);
+        // esc(): the name and address are typed by the customer, so they must
+        // not be able to put links or HTML into the staff email.
+        `<p>${esc(full.customer_name)} — ₱${Number(full.total_amount).toFixed(2)} — ${esc(shippingMethod === 'pickup' ? 'pickup at ' + store.name : 'deliver to ' + shippingStr)}</p>`);
 
       return res.status(200).json({ orderId: order.id, orderNumber: order.order_number, paymentUrl: null });
     }
