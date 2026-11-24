@@ -38,8 +38,9 @@ import {
   moveSection, duplicateSection, setHidden, markRemoved, unmarkRemoved, addSection, canPublish
 } from '/admin/js/editor/page-state.js';
 import {
-  sectionFormHtml, fieldsHtml, applyShowIf, readFieldValue, escapeHtml
+  sectionFormHtml, themeFormHtml, applyShowIf, readFieldValue, escapeHtml
 } from '/admin/js/editor/forms.js';
+import { HEADING_FONTS, BODY_FONTS } from '/js/theme-fonts.js';
 
 
 const PAGE_KEY = 'home';
@@ -53,6 +54,7 @@ const state = {
   selectedId: null,                         // the section open on the right
   showTheme:  false,                        // true → right panel shows the theme form
   // What the database holds, so we only save what changed:
+  themeDefaults: {},                        // colours "Reset to brand default" goes back to
   saved:      new Map(),                    // section id → JSON of { settings, position }
   savedTheme: '',                           // JSON of the theme
   hasUnpublished: false,                    // drafts exist that aren't live yet
@@ -65,16 +67,21 @@ let bridge = null;
 const history = createHistory();
 
 
-// ── Theme fields ─────────────────────────────────────────────────────────────
-// Shape mirrors what the storefront reads. Keep in sync with migration 015.
-const THEME_FIELDS = [
-  { id: 'brand_color',  type: 'color',  label: 'Brand color',       default: '#1B4D2E' },
-  { id: 'accent_color', type: 'color',  label: 'Accent color',      default: '#C9A84C' },
-  { id: 'bg_color',     type: 'color',  label: 'Background color',  default: '#F5F0E8' },
-  { id: 'text_color',   type: 'color',  label: 'Text color',        default: '#1A1A1A' },
-  { id: 'heading_font', type: 'text',   label: 'Heading font',      default: 'Cormorant Garamond' },
-  { id: 'body_font',    type: 'text',   label: 'Body font',         default: 'DM Sans' },
-];
+// ── Theme defaults ───────────────────────────────────────────────────────────
+// What a theme setting is when nothing has been chosen. These are the Ducks
+// Unlimited brand colours and fonts. "Reset to brand default" uses them for
+// Ducks Unlimited; for another brand (Rocwood) it uses that brand's colours
+// as they are live now — see load().
+const THEME_DEFAULTS = {
+  brand_color:  '#1B4D2E',
+  accent_color: '#C9A84C',
+  bg_color:     '#F5F0E8',
+  text_color:   '#1A1A1A',
+  heading_font: HEADING_FONTS[0],   // Cormorant Garamond
+  body_font:    BODY_FONTS[0],      // DM Sans
+  button_shape: 'rounded'
+};
+const COLOUR_KEYS = ['brand_color', 'accent_color', 'bg_color', 'text_color'];
 
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
@@ -150,9 +157,16 @@ async function load() {
 
   // Theme: draft, else live, with defaults for anything missing.
   const base = themeRow?.draft || themeRow?.published || {};
-  const theme = {};
-  for (const f of THEME_FIELDS) theme[f.id] = base[f.id] ?? f.default;
-  for (const [k, v] of Object.entries(base)) if (!(k in theme)) theme[k] = v;
+  const theme = { ...THEME_DEFAULTS, ...base };
+
+  // "Reset to brand default" colours: Ducks Unlimited → the brand palette;
+  // any other brand → its colours as they are live now (if it has any).
+  state.themeDefaults = { ...THEME_DEFAULTS };
+  if (state.brandSlug !== 'du') {
+    for (const k of COLOUR_KEYS) {
+      if (themeRow?.published?.[k]) state.themeDefaults[k] = themeRow.published[k];
+    }
+  }
 
   state.page = { sections, theme };
   state.saved = new Map(sections.map((s) => [s.id, savedKey(s)]));
@@ -270,11 +284,10 @@ function renderForm() {
   const host = document.querySelector('[data-section-form]');
 
   if (state.showTheme) {
-    host.innerHTML = `
-      <h2>Theme</h2>
-      <p class="section-form__desc">Colours and fonts used by every section on the page.</p>
-      ${fieldsHtml(THEME_FIELDS, state.page.theme)}
-    `;
+    host.innerHTML = themeFormHtml(state.page.theme, state.themeDefaults, {
+      headingFonts: HEADING_FONTS,
+      bodyFonts: BODY_FONTS
+    });
     return;
   }
 
@@ -340,6 +353,12 @@ function wireForm() {
       const img = field?.querySelector('[data-image-preview]');
       if (img) img.src = value || '';
     }
+    if (kind === 'color' && state.showTheme) {
+      const hex = field?.querySelector('.colour-row__hex');
+      if (hex) hex.textContent = value;
+      const reset = field?.querySelector('[data-theme-reset]');
+      if (reset) reset.disabled = String(value).toLowerCase() === String(state.themeDefaults[fieldId]).toLowerCase();
+    }
     if (settings && !blockId) applyShowIf(host, settings);
   });
 
@@ -349,6 +368,14 @@ function wireForm() {
 
   // Block buttons: add, move up/down, remove.
   host.addEventListener('click', (e) => {
+    // Theme: "Reset to brand default" for one colour.
+    const reset = e.target.closest('[data-theme-reset]');
+    if (reset && state.showTheme) {
+      changeTheme(reset.dataset.themeReset, state.themeDefaults[reset.dataset.themeReset]);
+      history.endGroup();
+      renderForm();
+      return;
+    }
     const btn = e.target.closest('[data-block-action]');
     if (!btn || state.showTheme) return;
     blockAction(btn.dataset.blockAction, btn.dataset.blockId);

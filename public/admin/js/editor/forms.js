@@ -166,3 +166,80 @@ export function escapeHtml(s) {
 export function escapeAttr(s) {
   return escapeHtml(s).replace(/"/g, '&quot;');
 }
+
+
+// ── Theme form ───────────────────────────────────────────────────────────────
+// Colours (each with "Reset to brand default"), heading and body font picked
+// from our menu — each choice written in its own font — and button shape.
+//
+//   themeFormHtml(theme, defaults, { headingFonts, bodyFonts })
+//     theme    → the settings being edited
+//     defaults → the brand's own colours, for the Reset buttons
+
+export const THEME_COLOURS = [
+  { id: 'brand_color',  label: 'Brand colour',      hint: 'Buttons, headings and dark backgrounds' },
+  { id: 'accent_color', label: 'Accent colour',     hint: 'Small highlights and labels' },
+  { id: 'bg_color',     label: 'Background colour', hint: 'Behind every section' },
+  { id: 'text_color',   label: 'Text colour',       hint: 'Body text' }
+];
+
+export const BUTTON_SHAPES = [
+  { value: 'square',  label: 'Square' },
+  { value: 'rounded', label: 'Rounded' },
+  { value: 'pill',    label: 'Pill' }
+];
+
+export function themeFormHtml(theme, defaults, { headingFonts, bodyFonts }) {
+  const colour = (c) => {
+    const value = theme[c.id] || defaults[c.id] || '#000000';
+    const isDefault = String(value).toLowerCase() === String(defaults[c.id] || '').toLowerCase();
+    return `
+      <div class="field field--colour">
+        <label for="theme-${c.id}">${escapeHtml(c.label)}</label>
+        <div class="colour-row">
+          <input type="color" id="theme-${c.id}" value="${escapeAttr(value)}" data-field-id="${c.id}" data-field-kind="color">
+          <span class="colour-row__hex">${escapeHtml(value)}</span>
+          <button type="button" class="btn-ghost colour-row__reset" data-theme-reset="${c.id}" ${isDefault ? 'disabled' : ''}>Reset to brand default</button>
+        </div>
+        <small class="field__hint">${escapeHtml(c.hint)}</small>
+      </div>`;
+  };
+
+  // A font choice = a radio button whose label is written in that font.
+  // (Radio buttons work with the keyboard and screen readers out of the box.)
+  const fontGroup = (id, label, fonts, sample) => `
+    <fieldset class="font-choices">
+      <legend>${escapeHtml(label)}</legend>
+      ${fonts.map((name) => `
+        <label class="font-choice">
+          <input type="radio" name="${id}" value="${escapeAttr(name)}" data-field-id="${id}" data-field-kind="radio"
+                 ${theme[id] === name ? 'checked' : ''}>
+          <span class="font-choice__sample" style="font-family:'${escapeAttr(name)}', serif">${escapeHtml(sample)}</span>
+          <span class="font-choice__name">${escapeHtml(name)}</span>
+        </label>`).join('')}
+    </fieldset>`;
+
+  return `
+    <h2>Theme</h2>
+    <p class="section-form__desc">Colours, fonts and buttons used by every section on the homepage.</p>
+
+    <h3 class="form-group-title form-group-title--first">Colours</h3>
+    ${THEME_COLOURS.map(colour).join('')}
+
+    <h3 class="form-group-title">Fonts</h3>
+    ${fontGroup('heading_font', 'Headings', headingFonts, 'Affordable luxury')}
+    ${fontGroup('body_font', 'Body text', bodyFonts, 'Egyptian cotton, made locally')}
+
+    <h3 class="form-group-title">Buttons</h3>
+    <fieldset class="shape-choices">
+      <legend>Button shape</legend>
+      ${BUTTON_SHAPES.map((s) => `
+        <label class="shape-choice">
+          <input type="radio" name="button_shape" value="${s.value}" data-field-id="button_shape" data-field-kind="radio"
+                 ${theme.button_shape === s.value ? 'checked' : ''}>
+          <span class="shape-choice__sample shape-choice__sample--${s.value}">Shop now</span>
+          <span>${escapeHtml(s.label)}</span>
+        </label>`).join('')}
+    </fieldset>
+  `;
+}

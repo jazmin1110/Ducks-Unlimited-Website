@@ -6,6 +6,10 @@
   <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
   <title>Design — Admin · Ducks Unlimited</title>
   <link rel="stylesheet" href="/css/style.css" />
+  <!-- The theme form shows each font choice written in that font, so the
+       admin page loads all of them once (regular weight only — it's small).
+       Cormorant Garamond and DM Sans already come with style.css. -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display&family=EB+Garamond&family=Libre+Baskerville&family=Lora&family=DM+Serif+Display&family=Inter&family=Lato&family=Work+Sans&family=Nunito+Sans&family=Karla&display=swap" />
 
   <style>
     /* =========================================================================
@@ -342,6 +346,41 @@
     }
     .rt__picks button:hover { border-color: var(--color-primary); }
     .rt__link-actions { display: flex; gap: .3rem; }
+
+
+    /* ── Theme form ── */
+    .form-group-title--first { margin-top: .5rem; padding-top: 0; border-top: 0; }
+    .field__hint { display: block; font-size: .72rem; color: var(--color-text-muted); margin-top: .25rem; }
+    .colour-row { display: flex; align-items: center; gap: .6rem; }
+    .colour-row__hex { font-size: .8rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; min-width: 4.5em; }
+    .colour-row__reset { font-size: .75rem; padding: .3rem .4rem; margin-left: auto; }
+    .colour-row__reset:disabled { opacity: .35; cursor: default; }
+    .font-choices, .shape-choices { border: 0; padding: 0; margin: 0 0 1rem; }
+    .font-choices legend, .shape-choices legend { font-size: .78rem; color: var(--color-text-muted); letter-spacing: .05em; margin-bottom: .35rem; }
+    .font-choice {
+      display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: .6rem;
+      padding: .45rem .6rem; border: 1px solid var(--color-border-light); margin-bottom: -1px; cursor: pointer;
+    }
+    .font-choice:has(input:checked) { border-color: var(--color-primary); background: rgba(27,77,46,.05); position: relative; }
+    .font-choice input { grid-row: span 2; accent-color: var(--color-primary); }
+    .font-choice__sample { font-size: 1.15rem; line-height: 1.2; color: var(--color-text); }
+    .font-choice__name { font-size: .7rem; color: var(--color-text-muted); }
+    .shape-choices { display: flex; gap: .5rem; }
+    .shape-choices legend { width: 100%; }
+    .shape-choice {
+      position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: .4rem;
+      padding: .6rem .3rem; border: 1px solid var(--color-border-light); cursor: pointer; font-size: .78rem;
+    }
+    .shape-choice:has(input:checked) { border-color: var(--color-primary); background: rgba(27,77,46,.05); }
+    .shape-choice input { position: absolute; opacity: 0; pointer-events: none; }
+    .shape-choice:has(input:focus-visible) { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+    .shape-choice__sample {
+      background: var(--color-primary); color: #fff; font-size: .65rem; letter-spacing: .08em;
+      text-transform: uppercase; padding: .4rem .7rem;
+    }
+    .shape-choice__sample--square  { border-radius: 0; }
+    .shape-choice__sample--rounded { border-radius: 6px; }
+    .shape-choice__sample--pill    { border-radius: 999px; }
 
     /* ── Right column: section form ── */
     .section-form { padding: 1.25rem; }
