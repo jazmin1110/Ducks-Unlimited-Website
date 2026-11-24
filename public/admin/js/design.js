@@ -118,6 +118,7 @@ const COLOUR_KEYS = ['brand_color', 'accent_color', 'bg_color', 'text_color'];
   wireList();
   wirePicker();
   wireShortcuts();
+  wireSmallScreens();
 
   // Warn before leaving with changes that aren't saved yet.
   window.addEventListener('beforeunload', (e) => {
@@ -262,6 +263,8 @@ function renderList() {
         ${escapeHtml(schema?.name || s.section_type)}${hidden ? '<span class="tag-hidden">Hidden</span>' : ''}
         <small>${escapeHtml(sectionHint(s))}</small>
       </span>
+      <button type="button" class="section-list__icon-btn row-move" data-row-action="up" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>↑</button>
+      <button type="button" class="section-list__icon-btn row-move" data-row-action="down" aria-label="Move down" ${i === visible.length - 1 ? 'disabled' : ''}>↓</button>
       <button type="button" class="section-list__icon-btn" data-row-action="toggle-hidden"
               title="${hidden ? 'Show on the website' : 'Hide from the website'}"
               aria-label="${hidden ? 'Show section' : 'Hide section'}" aria-pressed="${hidden}">${hidden ? '🙈' : '👁'}</button>
@@ -303,14 +306,17 @@ function selectSection(id, { scroll }) {
   renderForm();
   refreshPreview();
   if (scroll) bridge?.scrollTo(id);
+  openSettings();
 }
 
 // Right: the settings form.
 function renderForm() {
   const host = document.querySelector('[data-section-form]');
 
+  const closeBtn = `<button type="button" class="icon-btn drawer-close" data-drawer-close aria-label="Close settings">✕</button>`;
+
   if (state.showTheme) {
-    host.innerHTML = themeFormHtml(state.page.theme, state.themeDefaults, {
+    host.innerHTML = closeBtn + themeFormHtml(state.page.theme, state.themeDefaults, {
       headingFonts: HEADING_FONTS,
       bodyFonts: BODY_FONTS
     });
@@ -327,7 +333,7 @@ function renderForm() {
     host.innerHTML = `<div class="section-form__empty">This section type (${escapeHtml(s.section_type)}) can't be edited here.</div>`;
     return;
   }
-  host.innerHTML = sectionFormHtml(schema, s.settings);
+  host.innerHTML = closeBtn + sectionFormHtml(schema, s.settings);
   mountRichTextFields(host, s);
   mountImageFields(host, s);
   mountBlockDrag(host, s);
@@ -755,6 +761,39 @@ function showVersionInPreview(snapshot) {
 }
 
 
+// ── Smaller screens ──────────────────────────────────────────────────────────
+// 900–1099px: the settings column is a drawer over the preview.
+// Under 900px: one panel at a time, picked with the Sections · Settings ·
+// Preview tabs (see the CSS in design.html).
+const isPhone = () => window.matchMedia('(max-width: 899px)').matches;
+
+function wireSmallScreens() {
+  document.querySelectorAll('[data-tab-btn]').forEach((btn) => {
+    btn.addEventListener('click', () => showTab(btn.dataset.tabBtn));
+  });
+  // The drawer's ✕ (only visible at drawer widths).
+  document.querySelector('[data-section-form]').addEventListener('click', (e) => {
+    if (e.target.closest('[data-drawer-close]')) {
+      document.querySelector('.editor').classList.remove('is-drawer-open');
+    }
+  });
+}
+
+function showTab(tab) {
+  const editor = document.querySelector('.editor');
+  editor.dataset.tab = tab;
+  document.querySelectorAll('[data-tab-btn]').forEach((b) => {
+    b.setAttribute('aria-selected', String(b.dataset.tabBtn === tab));
+  });
+}
+
+// Something was picked to edit: make sure its settings are visible.
+function openSettings() {
+  document.querySelector('.editor').classList.add('is-drawer-open');
+  if (isPhone()) showTab('settings');
+}
+
+
 // ── Top bar ──────────────────────────────────────────────────────────────────
 function wireTopBar() {
   document.querySelector('[data-publish-btn]').addEventListener('click', publish);
@@ -768,6 +807,7 @@ function wireTopBar() {
     renderList();
     renderForm();
     refreshPreview();
+    if (state.showTheme) openSettings();
   });
 
   // Phone / desktop preview.

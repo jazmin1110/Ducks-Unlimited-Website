@@ -49,13 +49,53 @@
     .panel--sections { border-right: 1px solid var(--color-border-light); }
     .panel--settings { border-left: 1px solid var(--color-border-light); }
 
-    /* Smaller screens get their own layout in a later step; until then the
-       columns simply stack. */
-    @media (max-width: 1099px) {
-      .editor { height: auto; }
+    /* ── Smaller laptops (900–1099px): settings slide in over the preview ──
+       The settings column becomes a "drawer" on the right, open while a
+       section (or Theme) is being edited; ✕ closes it. */
+    .drawer-close { display: none; }
+    @media (min-width: 900px) and (max-width: 1099px) {
+      .editor-grid { grid-template-columns: 240px 1fr; }
+      .panel--settings {
+        position: absolute; top: 0; right: 0; bottom: 0; width: 340px; z-index: 20;
+        box-shadow: -8px 0 24px rgba(0,0,0,.12);
+        transform: translateX(100%); transition: transform .2s ease;
+      }
+      .editor.is-drawer-open .panel--settings { transform: none; }
+      .drawer-close { display: block; float: right; }
+      .versions { width: 320px; }
+    }
+
+    /* ── Phones (< 900px): one panel at a time, chosen with tabs ──
+       Sections · Settings · Preview. No dragging (use ↑ ↓ in each row). */
+    .mobile-tabs { display: none; }
+    .row-move { display: none; }
+    @media (max-width: 899px) {
+      .editor { height: calc(100dvh - var(--admin-nav-h, 56px)); grid-template-rows: auto auto 1fr; }
+      .design-top { padding: .5rem .75rem; gap: .4rem; }
+      .design-top h1 { font-size: 1rem; flex-basis: 100%; }
+      .design-top__spacer { display: none; }
+      .badge-unpublished { order: 10; }
+      .mobile-tabs {
+        display: grid; grid-template-columns: repeat(3, 1fr);
+        border-bottom: 1px solid var(--color-border-light); background: #fff;
+      }
+      .mobile-tabs button {
+        font-family: inherit; font-size: .85rem; padding: .7rem 0;
+        background: none; border: 0; border-bottom: 2px solid transparent; color: var(--color-text-muted); cursor: pointer;
+      }
+      .mobile-tabs button[aria-selected="true"] { color: var(--color-primary); border-bottom-color: var(--color-primary); font-weight: 600; }
       .editor-grid { grid-template-columns: 1fr; }
-      .panel { overflow: visible; }
-      .panel--preview { height: 75vh; }
+      .editor-grid > .panel { display: none; }
+      .editor[data-tab="sections"] .panel--sections,
+      .editor[data-tab="settings"] .panel--settings,
+      .editor[data-tab="preview"]  .panel--preview { display: flex; flex-direction: column; }
+      .editor[data-tab="settings"] .panel--settings { display: block; }
+      .editor[data-tab="sections"] .panel--sections { display: block; }
+      .section-list__drag, .block__drag { display: none; }
+      .row-move { display: inline-block; }
+      .versions { width: 100%; }
+      /* The phone preview button makes no sense on a phone — it already is one */
+      [data-device] { display: none; }
     }
 
     /* ── Top bar ── */
@@ -530,7 +570,7 @@
   <!-- Shared admin nav mounted by /js/components.js -->
   <div data-component="admin-nav"></div>
 
-  <div class="editor">
+  <div class="editor" data-tab="sections">
 
     <!-- TOP BAR: what you're editing, undo/redo, phone/desktop, save status, Publish -->
     <div class="design-top">
@@ -548,6 +588,13 @@
       <span class="design-top__status" data-status aria-live="polite"></span>
       <button class="btn-secondary" data-history-btn type="button">History</button>
       <button class="btn-primary"   data-publish-btn    type="button">Publish</button>
+    </div>
+
+    <!-- Phones only: one panel at a time -->
+    <div class="mobile-tabs" role="tablist" aria-label="Editor panels">
+      <button type="button" role="tab" data-tab-btn="sections" aria-selected="true">Sections</button>
+      <button type="button" role="tab" data-tab-btn="settings" aria-selected="false">Settings</button>
+      <button type="button" role="tab" data-tab-btn="preview"  aria-selected="false">Preview</button>
     </div>
 
     <div class="editor-grid">
