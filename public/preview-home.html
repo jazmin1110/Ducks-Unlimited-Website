@@ -65,6 +65,14 @@
       const params  = new URLSearchParams(location.search);
       const preview = params.get('preview') === '1';
 
+      // Inside the admin Design editor (?editor=1): the editor sends the page
+      // to draw, so we don't read the database here and don't show the banner.
+      // /js/editor-preview.js does the drawing and the click-to-edit.
+      if (params.get('editor') === '1') {
+        await import('/js/editor-preview.js?v=20261124');
+        return;
+      }
+
       // Show the "Preview" banner only if an admin is signed in — anonymous
       // visitors shouldn't see the banner even if they land here with ?preview=1.
       const { data: { session } } = await supabase.auth.getSession();

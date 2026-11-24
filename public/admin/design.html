@@ -4,72 +4,134 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
-  <title>Homepage Design — Admin · Ducks Unlimited</title>
+  <title>Design — Admin · Ducks Unlimited</title>
   <link rel="stylesheet" href="/css/style.css" />
 
   <style>
     /* =========================================================================
-       Admin Design page — a Shopify-style sections editor for the storefront.
+       Admin Design page — a Shopify-style editor for the storefront homepage.
 
-       Layout: a 2-column workspace below the shared admin-nav.
-         Left column  (320px): the section LIST — reorderable, with Add button.
-         Right column (fluid): the section FORM for the currently-selected row.
-                                Generated from /js/section-schemas.js — no
-                                hand-written forms per section type.
-
-       The sticky bar across the top holds Save Draft / Publish / Preview.
+       Layout below the shared admin nav:
+         Top bar: undo/redo, phone/desktop preview, save status, Publish.
+         Left   (260px): Theme + the list of sections.
+         Middle (rest):  the real homepage in an <iframe>, updated live.
+         Right  (340px): the settings form for the selected section,
+                         generated from /js/section-schemas.js.
        ======================================================================= */
 
     body { background: var(--color-bg-warm); }
 
-    main.design-shell {
+    /* ── The editor fills the screen below the admin nav ──
+       Top bar across the top, then three columns:
+         Sections (260px) | Preview (the rest) | Settings (340px)
+       Each column scrolls on its own; the top bar never scrolls away. */
+    .editor {
+      height: calc(100vh - var(--admin-nav-h, 56px));
+      height: calc(100dvh - var(--admin-nav-h, 56px));
       display: grid;
-      grid-template-columns: 320px 1fr;
-      gap: 1rem;
-      padding: 1rem;
-      max-width: 1400px;
-      margin: 0 auto;
-      min-height: calc(100vh - 56px);
+      grid-template-rows: auto 1fr;
+      min-height: 480px;
+    }
+    .editor-grid {
+      display: grid;
+      grid-template-columns: 260px 1fr 340px;
+      min-height: 0;               /* lets the columns scroll inside the grid */
+    }
+    .panel {
+      min-height: 0;
+      overflow-y: auto;
+      background: #fff;
+    }
+    .panel--sections { border-right: 1px solid var(--color-border-light); }
+    .panel--settings { border-left: 1px solid var(--color-border-light); }
+
+    /* Smaller screens get their own layout in a later step; until then the
+       columns simply stack. */
+    @media (max-width: 1099px) {
+      .editor { height: auto; }
+      .editor-grid { grid-template-columns: 1fr; }
+      .panel { overflow: visible; }
+      .panel--preview { height: 75vh; }
     }
 
-    @media (max-width: 900px) {
-      main.design-shell { grid-template-columns: 1fr; }
-    }
-
-    /* Sticky top bar (page title + action buttons + status) */
+    /* ── Top bar ── */
     .design-top {
-      position: sticky;
-      top: var(--admin-nav-h, 56px); /* sits right below the admin nav */
-      z-index: 40;
       background: var(--color-bg-warm);
       border-bottom: 1px solid var(--color-border-light);
-      padding: .9rem 1rem;
+      padding: .6rem 1rem;
       display: flex;
       align-items: center;
-      gap: .75rem;
+      gap: .6rem;
       flex-wrap: wrap;
     }
     .design-top h1 {
       font-family: var(--font-heading);
       color: var(--color-primary);
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       margin: 0;
+      white-space: nowrap;
     }
-    .design-top__page-select {
-      font-family: inherit;
-      font-size: .85rem;
-      padding: .35rem .5rem;
-      border: 1px solid var(--color-border-light);
-      background: #fff;
-    }
+    .design-top__group { display: flex; gap: .2rem; }
     .design-top__spacer { flex: 1; }
+    .icon-btn {
+      font-family: inherit;
+      font-size: .95rem;
+      line-height: 1;
+      padding: .45rem .6rem;
+      background: #fff;
+      border: 1px solid var(--color-border-light);
+      color: var(--color-text);
+      cursor: pointer;
+    }
+    .icon-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+    .icon-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .icon-btn.is-active { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
     .design-top__status {
       font-size: .78rem;
       color: var(--color-text-muted);
-      margin-right: .5rem;
+      white-space: nowrap;
     }
     .design-top__status.is-dirty { color: var(--color-warning); }
     .design-top__status.is-saved { color: var(--color-success); }
+    .design-top__status.is-error { color: var(--color-error, #a33); }
+    .badge-unpublished {
+      font-size: .7rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      background: rgba(201,168,76,.18);
+      color: #6b5418;
+      padding: .25rem .5rem;
+      white-space: nowrap;
+    }
+
+    /* ── Middle: the live preview ── */
+    .panel--preview {
+      background: #e9e4da;
+      overflow: hidden;
+      display: flex;
+    }
+    .preview-stage {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      padding: 0;
+      transition: padding .2s;
+    }
+    .preview-stage iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: var(--color-bg-warm);
+      transition: width .2s;
+    }
+    /* Phone view: a 390px-wide page in a subtle phone frame */
+    .preview-stage.is-phone { padding: 1rem 0; }
+    .preview-stage.is-phone iframe {
+      width: 390px;
+      border: 8px solid #1A1A1A;
+      border-radius: 28px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.18);
+    }
 
     .btn-primary, .btn-secondary, .btn-ghost {
       font-family: inherit;
@@ -86,11 +148,19 @@
     .btn-ghost:hover { color: var(--color-primary); }
 
     /* ── Left column: section list ── */
-    .section-list {
-      background: #fff;
-      border: 1px solid var(--color-border-light);
-      padding: 0;
+    .section-list { padding: 0; }
+    /* "Theme" entry at the top of the list */
+    .section-list__theme {
+      display: flex; align-items: center; gap: .5rem;
+      width: 100%;
+      padding: .7rem .9rem;
+      background: none; border: 0;
+      border-bottom: 1px solid var(--color-border-light);
+      font-family: inherit; font-size: .9rem; color: var(--color-text);
+      text-align: left; cursor: pointer;
     }
+    .section-list__theme:hover { background: var(--color-bg-warm); }
+    .section-list__theme.is-active { background: rgba(27,77,46,0.07); box-shadow: inset 3px 0 0 var(--color-primary); }
     .section-list__head {
       padding: .75rem 1rem;
       border-bottom: 1px solid var(--color-border-light);
@@ -156,13 +226,6 @@
     .section-list li.is-dragging    { opacity: .4; }
     .section-list li.is-drop-target { border-top: 2px solid var(--color-primary); }
 
-    /* Theme button becomes "active" styling when the theme form is open */
-    .btn-ghost.is-active {
-      background: var(--color-primary);
-      color: #fff;
-      border-color: var(--color-primary);
-    }
-
     .section-list__add {
       padding: .75rem 1rem;
       border-top: 1px solid var(--color-border-light);
@@ -178,10 +241,14 @@
     }
 
     /* ── Right column: section form ── */
-    .section-form {
-      background: #fff;
-      border: 1px solid var(--color-border-light);
-      padding: 1.25rem;
+    .section-form { padding: 1.25rem; }
+    .form-group-title {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      color: var(--color-primary);
+      margin: 1.5rem 0 .75rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-border-light);
     }
     .section-form__empty {
       color: var(--color-text-muted);
@@ -280,43 +347,48 @@
   <!-- Shared admin nav mounted by /js/components.js -->
   <div data-component="admin-nav"></div>
 
-  <!-- Sticky action bar (page selector + Save / Publish / Preview) -->
-  <div class="design-top">
-    <h1>Homepage Design</h1>
-    <select class="design-top__page-select" data-page-select>
-      <option value="home">Homepage</option>
-    </select>
-    <button type="button" class="btn-ghost" data-theme-btn title="Edit global colors and fonts">🎨 Theme</button>
-    <div class="design-top__spacer"></div>
-    <span class="design-top__status" data-status></span>
-    <a class="btn-secondary" data-preview-btn href="/preview-home.html?preview=1" target="_blank" rel="noopener">Preview ↗</a>
-    <button class="btn-secondary" data-save-draft-btn type="button">Save Draft</button>
-    <button class="btn-primary"   data-publish-btn    type="button">Publish</button>
+  <div class="editor">
+
+    <!-- TOP BAR: what you're editing, undo/redo, phone/desktop, save status, Publish -->
+    <div class="design-top">
+      <h1 data-editor-title>Homepage</h1>
+      <div class="design-top__group">
+        <button type="button" class="icon-btn" data-undo disabled title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
+        <button type="button" class="icon-btn" data-redo disabled title="Redo (Shift+Ctrl+Z)" aria-label="Redo">↷</button>
+      </div>
+      <div class="design-top__group" role="group" aria-label="Preview size">
+        <button type="button" class="icon-btn" data-device="phone"   title="Phone view"   aria-label="Phone view"   aria-pressed="false">📱</button>
+        <button type="button" class="icon-btn is-active" data-device="desktop" title="Desktop view" aria-label="Desktop view" aria-pressed="true">🖥</button>
+      </div>
+      <div class="design-top__spacer"></div>
+      <span class="badge-unpublished" data-unpublished hidden>Unpublished changes</span>
+      <span class="design-top__status" data-status aria-live="polite"></span>
+      <button class="btn-secondary" data-save-draft-btn type="button">Save Draft</button>
+      <button class="btn-primary"   data-publish-btn    type="button">Publish</button>
+    </div>
+
+    <div class="editor-grid">
+
+      <!-- LEFT: Theme + the list of sections -->
+      <aside class="panel panel--sections section-list">
+        <button type="button" class="section-list__theme" data-theme-btn>🎨 Theme <small style="color:var(--color-text-muted)">colours &amp; fonts</small></button>
+        <ul data-section-list></ul>
+      </aside>
+
+      <!-- MIDDLE: the real homepage, showing your changes as you type -->
+      <section class="panel panel--preview" aria-label="Preview">
+        <div class="preview-stage" data-preview-stage>
+          <iframe data-preview-frame title="Homepage preview"></iframe>
+        </div>
+      </section>
+
+      <!-- RIGHT: settings for the selected section (filled by JS) -->
+      <section class="panel panel--settings section-form" data-section-form>
+        <div class="section-form__empty">Click a section in the list or in the preview to edit it.</div>
+      </section>
+
+    </div>
   </div>
-
-  <main class="design-shell">
-
-    <!-- LEFT: section list -->
-    <aside class="section-list">
-      <div class="section-list__head">
-        <h2>Sections</h2>
-        <span style="font-size:.72rem; color:var(--color-text-muted); letter-spacing:.1em; text-transform:uppercase;" data-brand-label></span>
-      </div>
-      <ul data-section-list></ul>
-      <div class="section-list__add">
-        <label style="font-size:.75rem; color:var(--color-text-muted); margin-bottom:.3rem; display:block;">+ Add section</label>
-        <select data-add-section>
-          <option value="">Choose a section type…</option>
-        </select>
-      </div>
-    </aside>
-
-    <!-- RIGHT: section form (filled by JS when a section is selected) -->
-    <section class="section-form" data-section-form>
-      <div class="section-form__empty">Select a section on the left to edit its content.</div>
-    </section>
-
-  </main>
 
   <script type="module" src="/js/components.js"></script>
   <script type="module" src="/admin/js/design.js"></script>
