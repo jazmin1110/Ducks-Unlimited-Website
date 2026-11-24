@@ -1257,7 +1257,8 @@
     import { toggleWishlist, isInWishlist } from '/js/wishlist.js';
     import { addToCart } from '/js/cart.js';
     import { applySiteContent } from '/js/site-content.js';
-    import { colorToHex as baseColorToHex, swatchStyle as baseSwatchStyle, sizeRank } from '/js/colors.js';
+    import { colorToHex as baseColorToHex, swatchStyle as baseSwatchStyle, sizeRank,
+             colorFamily, COLOR_FAMILIES } from '/js/colors.js';
 
     // Pull per-brand page copy (title + subtitle) from site_content.shop.intro.
     // applySiteContent is async — the page paints the HTML fallback first and
@@ -1402,7 +1403,7 @@
           ${withAudience ? 'audience,' : ''}
           brands!inner ( slug, name ),
           variants (
-            id, color, size, sku, price_override, ${withAudience ? 'color_hex,' : ''}
+            id, color, size, sku, price_override, ${withAudience ? 'color_hex, filter_colors,' : ''}
             inventory ( channel, quantity )
           ),
           product_images ( image_url, is_primary, display_order, color )
@@ -1478,6 +1479,22 @@
 
     const sameColor = (a, b) => (a ?? '').trim().toLowerCase() === (b ?? '').trim().toLowerCase();
 
+    // Everyday colours of one variant for the Colour filter: the pair saved in
+    // the admin (shirt colour + main print colour), or else the shirt colour
+    // worked out from its swatch.
+    function variantFamilies(v) {
+      if (!v._fams) {
+        v._fams = v.filter_colors?.length
+          ? v.filter_colors
+          : [colorFamily(colorToHex(v.color))].filter(Boolean);
+      }
+      return v._fams;
+    }
+
+    function familiesOf(variants) {
+      return [...new Set(variants.flatMap(variantFamilies))];
+    }
+
     function splitByColor(raw, p) {
       const images = raw.product_images ?? [];
       const allColors = p.colors;
@@ -1488,6 +1505,7 @@
       p.brandName = raw.brands?.name ?? '';
       p.allImages = images;
       p.allVariants = p.variants;
+      p.families = familiesOf(p.variants);
 
       const withPhotos = allColors.filter(c => images.some(i => sameColor(i.color, c)));
       if (allColors.length < 2 || withPhotos.length === 0) return [p];
@@ -1512,6 +1530,7 @@
           colors,
           variants,
           sizes:       [...new Set(variants.map(v => v.size))],
+          families:    familiesOf(variants),
           minPrice:    prices.length ? Math.min(...prices) : p.basePrice,
           maxPrice:    prices.length ? Math.max(...prices) : p.basePrice,
           onlineStock: stock,
@@ -1534,7 +1553,7 @@
         label.className = 'filter-check';
 
         const swatch = type === 'color'
-          ? `<span class="filter-check__swatch" style="${swatchStyle(opt.value)}"></span>`
+          ? `<span class="filter-check__swatch" style="${baseSwatchStyle(opt.value)}"></span>`
           : '';
 
         label.innerHTML = `
@@ -1580,14 +1599,17 @@
 
       renderFilterOptions(sizeOptionsEl, sizesToShow, 'size');
 
-      // Colors — gather distinct from variants, count products per color
+      // Colours — everyday names (Blue, Brown, Beige…), not our product
+      // colour names. Each tile counts once for each of its colours
+      // (shirt colour + main print colour). Listed light → dark → hues.
       const colorCounts = new Map();
       for (const p of state.products) {
-        for (const c of p.colors) colorCounts.set(c, (colorCounts.get(c) ?? 0) + 1);
+        for (const c of (p.families ?? [])) colorCounts.set(c, (colorCounts.get(c) ?? 0) + 1);
       }
+      const rank = (c) => { const i = COLOR_FAMILIES.indexOf(c); return i < 0 ? 99 : i; };
       const colors = [...colorCounts.entries()]
         .map(([value, count]) => ({ value, label: value, count }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => rank(a.value) - rank(b.value));
 
       renderFilterOptions(colorOptionsEl, colors, 'color');
     }
@@ -1602,7 +1624,7 @@
       // (case-insensitive). Empty query = no filter applied.
       if (f.query) {
         const q = f.query.toLowerCase();
-        const haystack = `${p.name ?? ''} ${p.description ?? ''}`.toLowerCase();
+        const haystack = `${p.name ?? ''} ${p.description ?? ''} ${(p.colors ?? []).join(' ')} ${(p.families ?? []).join(' ')}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
 
@@ -1636,7 +1658,7 @@
       if (needSize || needColor) {
         const hasMatchingVariant = p.variants.some(v => {
           if (needSize  && !f.sizes.has(v.size))   return false;
-          if (needColor && !f.colors.has(v.color)) return false;
+          if (needColor && !variantFamilies(v).some(c => f.colors.has(c))) return false;
           return true;
         });
         if (!hasMatchingVariant) return false;
@@ -2380,7 +2402,7 @@
       await swrCache({
         // Bump the version suffix when the product fetch shape changes
         // (e.g. you add a new column) so old caches get invalidated.
-        key: 'shop:products:v4',
+        key: 'shop:products:v5',
         maxAgeMs: 5 * 60 * 1000, // 5 minutes
         fetcher: loadProducts,
         onData: (raw, _source) => {

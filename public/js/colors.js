@@ -51,6 +51,41 @@ export function swatchStyle(name, hex) {
   return `background: ${colorToHex(name, hex)}`;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Everyday colour names for the shop's Colour filter
+// ─────────────────────────────────────────────────────────────────────────────
+// Product colours use brand names ("Snorkel Blue", "Cork", "Turtle Dove").
+// Shoppers filter by plain colours, so every swatch hex is sorted into one of
+// these. Each variant can also store its own pair in variants.filter_colors
+// (shirt colour + main print colour); this function is the fallback.
+// Same rules are used by the photo script that fills filter_colors.
+export const COLOR_FAMILIES = ['White', 'Black', 'Grey', 'Beige', 'Brown', 'Red', 'Orange',
+  'Yellow', 'Green', 'Blue', 'Navy', 'Purple', 'Pink'];
+
+export function colorFamily(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const v = Math.max(r, g, b), d = v - Math.min(r, g, b);
+  const s = v === 0 ? 0 : d / v;                       // saturation 0–1
+  let h = 0;                                            // hue 0–360
+  if (d) h = v === r ? ((g - b) / d) % 6 : v === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h = (h * 60 + 360) % 360;
+
+  if (v < 0.22) return 'Black';
+  if (s < 0.12) return v >= 0.85 ? 'White' : (v < 0.25 ? 'Black' : 'Grey');
+  if (h >= 20 && h <= 50 && s < 0.45 && v >= 0.7) return 'Beige';   // turtle dove, khaki, sand
+  if (h >= 10 && h <= 45 && v < 0.6) return 'Brown';                // cork, chocolate
+  if (h < 12 || h >= 345) return (v > 0.8 && s < 0.45) ? 'Pink' : 'Red';
+  if (h < 40)  return 'Orange';
+  if (h < 65)  return 'Yellow';
+  if (h < 165) return 'Green';
+  if (h < 250) return v < 0.45 ? 'Navy' : 'Blue';
+  if (h < 290) return 'Purple';
+  return 'Pink';
+}
+
 // Letter sizes first (XS…XXXL), then numbers (kids 2–14, waist 28–40), then the rest
 const SIZE_ORDER = { XXS: 0, XS: 1, S: 2, M: 3, L: 4, XL: 5, XXL: 6, XXXL: 7, '2XL': 6, '3XL': 7, 'ONE SIZE': 50 };
 export function sizeRank(size) {
