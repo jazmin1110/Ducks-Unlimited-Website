@@ -716,3 +716,27 @@ a.gallery__item:hover img { transform: scale(1.04); }
 .video-embed:hover .video-embed__play { background: var(--color-primary); }
 .video-embed__player { width: 100%; height: 100%; border: 0; display: block; }
 .sec--full .video-embed { max-width: none; }
+
+/* ── Email sign-up ── */
+.signup__container { max-width: 620px; text-align: center; }
+.signup__text { margin: 0 0 var(--space-md); }
+.signup__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.signup__row { display: flex; flex-direction: column; gap: var(--space-sm); }
+.signup__row[hidden] { display: none; }
+.signup__input {
+  width: 100%; padding: .85rem 1rem; font: inherit;
+  border: 1px solid #cfc6b6; background: #FFFFFF; border-radius: var(--btn-radius, var(--radius));
+}
+.signup__consent { font-size: .78rem; color: var(--color-text-muted); margin: var(--space) 0 0; }
+.signup__consent a { color: inherit; text-decoration: underline; }
+.signup__msg { margin: var(--space) 0 0; font-weight: 600; }
+.signup__msg--ok    { color: var(--color-primary); }
+.signup__msg--error { color: #a33; }
+/* The bot trap: off-screen, never seen by people */
+.signup__trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+@media (min-width: 600px) {
+  .signup__row { flex-direction: row; }
+  .signup__row .btn { white-space: nowrap; }
+}
+.sec--dark > section .signup__consent,
+.sec--dark > section .signup__msg--ok { color: rgba(255,255,255,.85); }

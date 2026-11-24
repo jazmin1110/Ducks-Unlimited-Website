@@ -206,3 +206,16 @@ test('lookbook feature links to the lookbook page', () => {
   assert.ok(html.includes('/lookbooks/view.html?slug=holiday-2026'));
   assert.ok(html.includes('Holiday 2026'));
 });
+
+
+// ── Task 14: email sign-up ──────────────────────────────────────────────────
+test('email sign-up: posts to the API, has the consent line and a bot trap', () => {
+  const html = renderSectionsHtml([section('e', 'email-signup', { heading: 'Stay in touch' })],
+    ctx({ brandSlug: 'rw', brandName: 'Rocwood' }));
+  assert.ok(html.includes('action="/api/newsletter-signup"'));
+  assert.ok(html.includes('method="post"'));
+  assert.ok(html.includes('By signing up you agree to receive emails from Rocwood. See our <a href="/customer-service/privacy.html">Privacy Policy</a>.'));
+  assert.ok(/<input[^>]*name="website"/.test(html));
+  assert.ok(html.includes('value="rw"'));
+  assert.ok(html.includes('value="/rw/"'));
+});

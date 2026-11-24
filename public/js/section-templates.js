@@ -372,11 +372,48 @@ export const TEMPLATES = {
         </div>
       </section>
     `;
+  },
+
+  // Email sign-up form. Works without JavaScript (a normal form post to
+  // /api/newsletter-signup, which sends the visitor back here);
+  // /js/newsletter-signup.js shows the messages and, when it can, sends the
+  // form without leaving the page.
+  'email-signup'(s, ctx) {
+    const slug = ctx.brandSlug === 'rw' ? 'rw' : 'du';
+    const brandName = BRAND_NAMES[slug] || ctx.brandName || '';
+    return `
+      <section class="signup section-xl" id="email-signup">
+        <div class="container signup__container">
+          ${s.heading ? `<h2 class="display-sm">${esc(s.heading)}</h2>` : ''}
+          ${s.text ? `<p class="signup__text">${esc(s.text)}</p>` : ''}
+          <form class="signup__form" method="post" action="/api/newsletter-signup" data-signup-form>
+            <label class="signup__label" for="signup-email-${slug}">Email address</label>
+            <div class="signup__row">
+              <input id="signup-email-${slug}" class="signup__input" type="email" name="email" required
+                     autocomplete="email" placeholder="you@example.com" maxlength="254">
+              <button type="submit" class="btn btn-primary">${esc(s.button_label || 'Sign up')}</button>
+            </div>
+            <input type="hidden" name="brand" value="${slug}">
+            <input type="hidden" name="return_to" value="/${slug}/">
+            <!-- Bot trap: people never see this box; bots fill it in. -->
+            <div class="signup__trap" aria-hidden="true">
+              <label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+            </div>
+            <p class="signup__consent">By signing up you agree to receive emails from ${esc(brandName)}. See our <a href="/customer-service/privacy.html">Privacy Policy</a>.</p>
+            <p class="signup__msg signup__msg--ok" data-signup-success hidden role="status">${esc(s.success_message || "Thanks — you're on the list.")}</p>
+            <p class="signup__msg signup__msg--error" data-signup-error hidden role="alert">Sorry — that didn't work. Please check your email address and try again.</p>
+          </form>
+        </div>
+      </section>
+    `;
   }
 };
 
 
 // ── Small helpers ───────────────────────────────────────────────────────────
+
+// The consent line names the brand exactly.
+const BRAND_NAMES = { du: 'Ducks Unlimited', rw: 'Rocwood' };
 
 // The 11-character video id from a YouTube link, or null if it isn't one.
 // Accepts youtu.be/<id>, youtube.com/watch?v=<id>, /shorts/<id>, /embed/<id>.

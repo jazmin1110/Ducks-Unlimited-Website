@@ -363,6 +363,23 @@ export const SECTION_SCHEMAS = {
       { id: 'youtube_url',     type: 'url',   label: 'YouTube link (e.g. https://youtu.be/…)', default: '' },
       { id: 'cover_image_url', type: 'image', label: 'Cover picture (optional — YouTube\'s own is used otherwise)' }
     ]
+  },
+
+
+  // ────────────────────────────────────────────────────────────────────────
+  // EMAIL SIGN-UP — collects email addresses (with a consent line) for a
+  // future newsletter. Saved by /api/newsletter-signup; listed in
+  // Admin → Customers → Email sign-ups.
+  // ────────────────────────────────────────────────────────────────────────
+  'email-signup': {
+    name: 'Email Sign-up',
+    description: 'A box where visitors leave their email address for news and offers. You can see the list in Admin → Customers.',
+    settings: [
+      { id: 'heading',         type: 'text',     label: 'Heading', default: 'Stay in touch' },
+      { id: 'text',            type: 'textarea', label: 'Text', default: 'New arrivals, store events and members-only offers. No spam.' },
+      { id: 'button_label',    type: 'text',     label: 'Button label', default: 'Sign up' },
+      { id: 'success_message', type: 'text',     label: 'Message after signing up', default: "Thanks — you're on the list." }
+    ]
   }
 };
 
