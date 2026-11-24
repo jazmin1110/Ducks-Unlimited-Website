@@ -348,12 +348,26 @@
 
 
   // ── Compact header on scroll ────────────────────────────────────────────
+  // Two thresholds on purpose: fold the brand strip past 120px, unfold it
+  // only when back under 30px.
+  //
+  // Why not one line (e.g. 80px)? Folding the strip makes the sticky header
+  // ~35px shorter, so the page moves up and Chrome nudges the scroll back by
+  // ~35px to keep your place. With one threshold that nudge crossed the line
+  // again → unfold → fold → ... every frame, and the nav visibly shook.
+  // The gap between 120 and 30 (90px) is bigger than the strip, so one
+  // fold/unfold can never bounce the scroll back across the other line.
   (function () {
     var nav = document.querySelector('[data-site-nav]');
     if (!nav) return;
+    var FOLD_AT = 120;   // px scrolled before the brand strip folds away
+    var UNFOLD_AT = 30;  // px — scroll back above this to bring it back
     var ticking = false;
     function update() {
-      nav.classList.toggle('site-nav--compact', window.scrollY > 80);
+      var y = window.scrollY;
+      var compact = nav.classList.contains('site-nav--compact');
+      if (!compact && y > FOLD_AT) nav.classList.add('site-nav--compact');
+      else if (compact && y < UNFOLD_AT) nav.classList.remove('site-nav--compact');
       ticking = false;
     }
     window.addEventListener('scroll', function () {
