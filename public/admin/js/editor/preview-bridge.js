@@ -27,6 +27,7 @@ export function createPreviewBridge(iframe, { onSelect = () => {}, onReady = () 
   let ready   = false;  // has the preview said "I've loaded"?
   let latest  = null;   // the last "draw this" message, re-sent if the preview reloads
   let timer   = null;
+  let pendingScroll = null; // a scroll asked for while a redraw is waiting
 
   window.addEventListener('message', (event) => {
     // Only listen to our own preview iframe, on our own website.
@@ -44,9 +45,10 @@ export function createPreviewBridge(iframe, { onSelect = () => {}, onReady = () 
     // Any other message type is ignored.
   });
 
-  // If the iframe reloads (e.g. its address changes), wait for it to say
-  // "ready" again before sending anything.
-  iframe.addEventListener('load', () => { ready = false; });
+  // If the iframe reloads, the new page says "ready" again and we re-send
+  // the latest page then. (We don't reset `ready` on the iframe's "load"
+  // event: the preview often says "ready" BEFORE that event fires, which
+  // would leave the preview blank.)
 
   function post(msg) {
     iframe.contentWindow?.postMessage(msg, location.origin);
@@ -58,12 +60,20 @@ export function createPreviewBridge(iframe, { onSelect = () => {}, onReady = () 
     render(page, { brandSlug, brandId, selectedId = null } = {}) {
       latest = { type: 'du-editor:render', page, brandSlug, brandId, selectedId };
       clearTimeout(timer);
-      timer = setTimeout(() => { if (ready) post(latest); }, 150);
+      timer = setTimeout(() => {
+        timer = null;
+        if (!ready) return;
+        post(latest);
+        // Scroll AFTER the redraw, or the redraw would undo it.
+        if (pendingScroll) { post({ type: 'du-editor:scroll-to', id: pendingScroll }); pendingScroll = null; }
+      }, 150);
     },
 
     // Scroll the preview so this section is in view.
     scrollTo(id) {
-      if (ready && id) post({ type: 'du-editor:scroll-to', id });
+      if (!id) return;
+      if (timer) { pendingScroll = id; return; } // a redraw is about to happen
+      if (ready) post({ type: 'du-editor:scroll-to', id });
     },
 
     // Phone = 390px wide (a typical phone), Desktop = full width.

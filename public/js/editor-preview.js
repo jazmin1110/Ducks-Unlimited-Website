@@ -24,6 +24,8 @@ let cachedKey = null;
 let cachedCtx = {};
 let selectedId = null;
 let renderRun = 0; // makes sure an older, slower draw never wins over a newer one
+let drawing = false;      // true while a draw is waiting for product data
+let pendingScroll = null; // a "scroll to" that arrived during a draw
 
 addEditorStyles();
 blockNavigation();
@@ -37,7 +39,9 @@ window.addEventListener('message', async (event) => {
   if (msg.type === 'du-editor:render') {
     await draw(msg);
   } else if (msg.type === 'du-editor:scroll-to') {
-    scrollToSection(msg.id);
+    // Mid-draw? Scroll once the draw is done, or the draw would undo it.
+    if (drawing) pendingScroll = msg.id;
+    else scrollToSection(msg.id);
   }
 });
 
@@ -49,7 +53,17 @@ if (window.parent !== window) {
 
 // ── Drawing ─────────────────────────────────────────────────────────────────
 
-async function draw({ page, brandId, selectedId: sel }) {
+async function draw(msg) {
+  drawing = true;
+  try {
+    await drawPage(msg);
+  } finally {
+    drawing = false;
+    if (pendingScroll) { scrollToSection(pendingScroll); pendingScroll = null; }
+  }
+}
+
+async function drawPage({ page, brandId, selectedId: sel }) {
   const run = ++renderRun;
   const sections = (page?.sections || []).map((s) => ({
     id: s.id,
