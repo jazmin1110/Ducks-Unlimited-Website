@@ -33,9 +33,11 @@ import {
 import { createPreviewBridge } from '/admin/js/editor/preview-bridge.js';
 import { createHistory } from '/admin/js/editor/history.js';
 import { createAutosave } from '/admin/js/editor/autosave.js';
+import { insertNewSection } from '/admin/js/editor/save.js';
 import { mountRichText } from '/admin/js/editor/richtext.js';
 import { openVersionsPanel } from '/admin/js/editor/versions.js';
 import { mountImageUploader } from '/admin/js/image-uploader.js';
+import { safeUrl, normalizeLinkInput } from '/js/safe-html.js';
 import {
   moveSection, duplicateSection, setHidden, markRemoved, unmarkRemoved, addSection, canPublish,
   restoreSnapshot
@@ -440,6 +442,19 @@ function wireForm() {
     if (settings && !blockId) applyShowIf(host, settings);
   });
 
+  // Link and photo-address boxes: when you leave the box, tidy what was
+  // typed ("www.x.ph" → "https://www.x.ph") and warn if it can't be used.
+  host.addEventListener('change', (e) => {
+    const input = e.target.closest('[data-field-kind="url"], [data-field-kind="image"]');
+    if (!input || state.showTheme) return;
+    const tidy = normalizeLinkInput(input.value);
+    if (tidy !== input.value) {
+      input.value = tidy;
+      changeSection(state.selectedId, input.dataset.fieldId, tidy, input.dataset.blockId || null);
+    }
+    showLinkWarning(input, tidy && !safeUrl(tidy));
+  });
+
   // Leaving a field ends its typing "group": the next typing there is a
   // new undo step.
   host.addEventListener('focusout', () => history.endGroup());
@@ -458,6 +473,20 @@ function wireForm() {
     if (!btn || state.showTheme) return;
     blockAction(btn.dataset.blockAction, btn.dataset.blockId);
   });
+}
+
+// A small warning under a link box whose address can't be used.
+function showLinkWarning(input, show) {
+  const field = input.closest('.field');
+  let msg = field?.querySelector('[data-link-warning]');
+  if (!msg && show && field) {
+    msg = document.createElement('small');
+    msg.className = 'field__error';
+    msg.dataset.linkWarning = '';
+    msg.textContent = "That address can't be used, so this won't show on the website. Use one like /shop.html or https://…";
+    field.appendChild(msg);
+  }
+  if (msg) msg.hidden = !show;
 }
 
 // Change one setting of one section (or of one block inside it).
@@ -842,7 +871,8 @@ async function saveDraft() {
       // A brand-new section: create its row. `published` stays empty, so
       // the live site can't show it until Publish. Its live `position` is
       // set far down so it can never collide; Publish uses draft_position.
-      const { error } = await supabase.from('page_sections').insert({
+      // (insertNewSection copes with a retry after a lost answer — see save.js)
+      await insertNewSection(supabase, {
         id: s.id,
         page_key: PAGE_KEY,
         brand_id: state.brandId,
@@ -852,7 +882,6 @@ async function saveDraft() {
         published: null,
         draft: s.settings
       });
-      if (error) throw error;
       markSaved(s.id);
     } else {
       const { error } = await supabase.from('page_sections')

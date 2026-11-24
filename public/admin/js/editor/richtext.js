@@ -25,7 +25,7 @@
 // file to change.
 // =============================================================================
 
-import { sanitizeHtml } from '/js/safe-html.js';
+import { sanitizeHtml, safeUrl, normalizeLinkInput } from '/js/safe-html.js';
 
 // Quick picks in the Link box — the pages people link to most.
 const QUICK_LINKS = [
@@ -56,6 +56,7 @@ export function mountRichText(host, { value = '', onChange = () => {}, singleLin
       <div class="rt__picks">
         ${QUICK_LINKS.map((q) => `<button type="button" data-rt-pick="${q.href}">${q.label}</button>`).join('')}
       </div>
+      <p class="rt__link-error" data-rt-link-error hidden>That isn't a web address we can link to. Try one like /shop.html or https://…</p>
       <div class="rt__link-actions">
         <button type="button" data-rt-link-apply class="btn-primary">Add link</button>
         <button type="button" data-rt-link-remove class="btn-ghost">Remove link</button>
@@ -138,7 +139,13 @@ export function mountRichText(host, { value = '', onChange = () => {}, singleLin
     sel.addRange(savedRange);
   }
   function applyLink(href, labelIfEmpty) {
-    href = String(href || '').trim();
+    // "www.ducksunlimited.ph" → "https://www.ducksunlimited.ph", etc.
+    href = normalizeLinkInput(href);
+    const error = host.querySelector('[data-rt-link-error]');
+    // Not a usable address → say so (otherwise the link would silently
+    // disappear when the text is saved).
+    if (href && !safeUrl(href)) { error.hidden = false; linkIn.focus(); return; }
+    error.hidden = true;
     linkBox.hidden = true;
     box.focus();
     restoreRange();

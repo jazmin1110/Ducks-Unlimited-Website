@@ -7,6 +7,8 @@
 //   - Previous / Next arrows and one dot per slide
 //   - changing slides every few seconds (if "Change slides automatically")
 //   - pausing while the mouse is over it or a button inside has focus
+//   - a Pause / Play button (phones have no "mouse over", and everyone must
+//     be able to stop moving content — an accessibility rule)
 //   - no automatic changes for people whose device asks for less motion
 //
 // It runs on page load, and again whenever the homepage sections are redrawn
@@ -65,6 +67,19 @@ function setUp(show) {
   const seconds = Math.min(10, Math.max(3, Number(show.dataset.seconds) || 5));
   if (!autoplay) return;
 
+  // Pause / Play button — stays paused until pressed again.
+  let stopped = false;
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'slideshow__toggle';
+  const label = () => {
+    toggle.textContent = stopped ? '▶' : '❚❚';
+    toggle.setAttribute('aria-label', stopped ? 'Play slideshow' : 'Pause slideshow');
+  };
+  label();
+  toggle.addEventListener('click', () => { stopped = !stopped; label(); });
+  controls.appendChild(toggle);
+
   show.addEventListener('mouseenter', () => { paused = true; });
   show.addEventListener('mouseleave', () => { paused = false; });
   show.addEventListener('focusin',    () => { paused = true; });
@@ -73,7 +88,7 @@ function setUp(show) {
   timer = setInterval(() => {
     // The section was redrawn or removed → stop this timer.
     if (!show.isConnected) { clearInterval(timer); return; }
-    if (!paused && !document.hidden) go(current + 1);
+    if (!paused && !stopped && !document.hidden) go(current + 1);
   }, seconds * 1000);
 }
 

@@ -27,7 +27,7 @@
 // =============================================================================
 
 import { homePhoto, tilePhoto, editorialPhoto } from './stock-photos.js';
-import { sanitizeHtml } from './safe-html.js';
+import { sanitizeHtml, safeUrl } from './safe-html.js';
 import { SECTION_SCHEMAS } from './section-schemas.js';
 import { sectionWrapperAttrs } from './section-style.js';
 
@@ -85,8 +85,11 @@ export const TEMPLATES = {
     // the CSS default (solid brand color) shows through.
     s = { ...s, image_url: homePhoto(s.image_url, ctx.brandSlug, 'hero') };
     const overlay = typeof s.overlay === 'number' ? s.overlay / 100 : 0.35;
-    const bgStyle = s.image_url
-      ? ` style="background-image: linear-gradient(rgba(0,0,0,${overlay}), rgba(0,0,0,${Math.min(overlay + 0.15, 0.9)})), url('${escCssUrl(s.image_url)}'); background-size: cover; background-position: center;"`
+    const bgUrl = cssUrl(s.image_url);
+    // The whole style goes through escAttr, and the address through cssUrl,
+    // so a photo address can never break out of the style="…" attribute.
+    const bgStyle = bgUrl
+      ? ` style="${escAttr(`background-image: linear-gradient(rgba(0,0,0,${overlay}), rgba(0,0,0,${Math.min(overlay + 0.15, 0.9)})), url('${bgUrl}'); background-size: cover; background-position: center;`)}"`
       : '';
     return `
       <section class="hero${s.image_url ? ' hero--photo' : ''}"${bgStyle}>
@@ -94,7 +97,7 @@ export const TEMPLATES = {
           ${s.eyebrow  ? `<p class="hero__eyebrow">${esc(s.eyebrow)}</p>` : ''}
           ${s.headline ? `<h1 class="hero__headline">${sanitizeHtml(s.headline)}</h1>` : ''}
           ${s.sub      ? `<p class="hero__sub">${esc(s.sub)}</p>` : ''}
-          ${s.cta_text && s.cta_link ? `<a class="btn btn-outline-light" href="${escAttr(s.cta_link)}">${esc(s.cta_text)}</a>` : ''}
+          ${s.cta_text && safeUrl(s.cta_link) ? `<a class="btn btn-outline-light" href="${escUrl(s.cta_link)}">${esc(s.cta_text)}</a>` : ''}
         </div>
       </section>
     `;
@@ -126,9 +129,9 @@ export const TEMPLATES = {
               ? products.map((p) => productCardHtml(p, ctx)).join('')
               : `<p class="products-empty">New arrivals coming soon.</p>`}
           </div>
-          ${s.cta_text && s.cta_link ? `
+          ${s.cta_text && safeUrl(s.cta_link) ? `
             <div class="new-arrivals__cta">
-              <a href="${escAttr(s.cta_link)}" class="btn btn-outline-dark">${esc(s.cta_text)}</a>
+              <a href="${escUrl(s.cta_link)}" class="btn btn-outline-dark">${esc(s.cta_text)}</a>
             </div>` : ''}
         </div>
       </section>
@@ -150,7 +153,7 @@ export const TEMPLATES = {
             ${s.eyebrow  ? `<p class="eyebrow">${esc(s.eyebrow)}</p>` : ''}
             ${s.headline ? `<h2 class="display-sm">${esc(s.headline)}</h2>` : ''}
             ${s.body ? `<div>${sanitizeHtml(s.body)}</div>` : ''}
-            ${s.cta_text && s.cta_link ? `<p><a class="btn btn-outline-dark" href="${escAttr(s.cta_link)}">${esc(s.cta_text)}</a></p>` : ''}
+            ${s.cta_text && safeUrl(s.cta_link) ? `<p><a class="btn btn-outline-dark" href="${escUrl(s.cta_link)}">${esc(s.cta_text)}</a></p>` : ''}
           </div>
         </div>
       </section>
@@ -176,11 +179,11 @@ export const TEMPLATES = {
     const pos    = s.text_position === 'left' ? 'left' : 'center';
     return `
       <section class="image-banner image-banner--${height} image-banner--${pos}${photo ? '' : ' image-banner--plain'}">
-        ${photo ? `<img class="image-banner__img" src="${escAttr(photo)}" alt="${escAttr(s.image_alt || '')}" loading="lazy" decoding="async" />` : ''}
+        ${photo ? `<img class="image-banner__img" src="${escUrl(photo)}" alt="${escAttr(s.image_alt || '')}" loading="lazy" decoding="async" />` : ''}
         <div class="image-banner__content">
           ${s.heading ? `<h2 class="image-banner__heading">${esc(s.heading)}</h2>` : ''}
           ${s.text ? `<div class="image-banner__text">${sanitizeHtml(s.text)}</div>` : ''}
-          ${s.cta_text && s.cta_link ? `<a class="btn btn-outline-light" href="${escAttr(s.cta_link)}">${esc(s.cta_text)}</a>` : ''}
+          ${s.cta_text && safeUrl(s.cta_link) ? `<a class="btn btn-outline-light" href="${escUrl(s.cta_link)}">${esc(s.cta_text)}</a>` : ''}
         </div>
       </section>
     `;
@@ -199,11 +202,11 @@ export const TEMPLATES = {
           const photo = homePhoto(b.image_url, ctx.brandSlug, 'hero');
           return `
           <div class="slideshow__slide${photo ? '' : ' slideshow__slide--plain'}"${i === 0 ? '' : ' hidden'} aria-roledescription="slide" aria-label="${i + 1} of ${slides.length}">
-            ${photo ? `<img class="slideshow__img" src="${escAttr(photo)}" alt="${escAttr(b.image_alt || '')}" ${i === 0 ? '' : 'loading="lazy" '}decoding="async" />` : ''}
+            ${photo ? `<img class="slideshow__img" src="${escUrl(photo)}" alt="${escAttr(b.image_alt || '')}" ${i === 0 ? '' : 'loading="lazy" '}decoding="async" />` : ''}
             <div class="slideshow__content">
               ${b.heading ? `<h2 class="slideshow__heading">${esc(b.heading)}</h2>` : ''}
               ${b.text ? `<p class="slideshow__text">${esc(b.text)}</p>` : ''}
-              ${b.cta_text && b.cta_link ? `<a class="btn btn-outline-light" href="${escAttr(b.cta_link)}">${esc(b.cta_text)}</a>` : ''}
+              ${b.cta_text && safeUrl(b.cta_link) ? `<a class="btn btn-outline-light" href="${escUrl(b.cta_link)}">${esc(b.cta_text)}</a>` : ''}
             </div>
           </div>`;
         }).join('')}
@@ -225,8 +228,8 @@ export const TEMPLATES = {
                 ${b.image_url ? `<div class="multicolumn__media">${imgHtml(b.image_url, b.image_alt)}</div>` : ''}
                 ${b.heading ? `<h3 class="multicolumn__heading">${esc(b.heading)}</h3>` : ''}
                 ${b.text ? `<div class="multicolumn__text">${sanitizeHtml(b.text)}</div>` : ''}`;
-              return b.link
-                ? `<a class="multicolumn__item multicolumn__item--link" href="${escAttr(b.link)}">${inner}</a>`
+              return safeUrl(b.link)
+                ? `<a class="multicolumn__item multicolumn__item--link" href="${escUrl(b.link)}">${inner}</a>`
                 : `<div class="multicolumn__item">${inner}</div>`;
             }).join('')}
           </div>
@@ -271,8 +274,8 @@ export const TEMPLATES = {
               const img = p.image_url
                 ? imgHtml(p.image_url, p.image_alt)
                 : `<span class="gallery__blank" aria-hidden="true"></span>`;
-              return p.link
-                ? `<a class="gallery__item" href="${escAttr(p.link)}">${img}</a>`
+              return safeUrl(p.link)
+                ? `<a class="gallery__item" href="${escUrl(p.link)}">${img}</a>`
                 : `<div class="gallery__item">${img}</div>`;
             }).join('')}
           </div>
@@ -342,7 +345,7 @@ export const TEMPLATES = {
     const heading = s.heading || lb.title || '';
     return `
       <section class="lookbook-feature${lb.hero_image ? '' : ' lookbook-feature--plain'}">
-        ${lb.hero_image ? `<img class="lookbook-feature__img" src="${escAttr(lb.hero_image)}" alt="" loading="lazy" decoding="async" />` : ''}
+        ${lb.hero_image ? `<img class="lookbook-feature__img" src="${escUrl(lb.hero_image)}" alt="" loading="lazy" decoding="async" />` : ''}
         <div class="lookbook-feature__content">
           <p class="eyebrow">Lookbook</p>
           ${heading ? `<h2 class="lookbook-feature__heading">${esc(heading)}</h2>` : ''}
@@ -366,7 +369,7 @@ export const TEMPLATES = {
           ${s.heading ? `<h2 class="display-sm video-section__heading">${esc(s.heading)}</h2>` : ''}
           <a class="video-embed" data-video-id="${id}" href="https://www.youtube.com/watch?v=${id}"
              target="_blank" rel="noopener" aria-label="Play video${s.heading ? ': ' + escAttr(s.heading) : ''}">
-            <img src="${escAttr(cover)}" alt="" loading="lazy" decoding="async" />
+            <img src="${escUrl(cover)}" alt="" loading="lazy" decoding="async" />
             <span class="video-embed__play" aria-hidden="true"></span>
           </a>
         </div>
@@ -449,7 +452,7 @@ function introHtml(eyebrow, heading, className) {
 // no photo has been uploaded yet.
 function imgHtml(url, alt) {
   return url
-    ? `<img src="${escAttr(url)}" alt="${escAttr(alt || '')}" loading="lazy" decoding="async" />`
+    ? `<img src="${escUrl(url)}" alt="${escAttr(alt || '')}" loading="lazy" decoding="async" />`
     : `<img class="is-empty" src="" alt="${escAttr(alt || '')}" />`;
 }
 
@@ -458,7 +461,7 @@ function tileHtml(b, ctx) {
   // No photo yet → a plain tile in the brand's warm tone (CSS: --blank),
   // instead of an empty <img> that some browsers draw as a broken image.
   return `
-    <a class="collection-tile${b.image_url ? '' : ' collection-tile--blank'}" href="${escAttr(b.link || '/shop.html')}">
+    <a class="collection-tile${b.image_url ? '' : ' collection-tile--blank'}" href="${escUrl(b.link) || '/shop.html'}">
       ${b.image_url ? imgHtml(b.image_url, b.image_alt || b.name) : ''}
       <div class="collection-tile__overlay">
         ${b.label    ? `<span class="collection-tile__label">${esc(b.label)}</span>` : ''}
@@ -476,7 +479,7 @@ function productCardHtml(p, ctx) {
     <a class="product-card" href="${escAttr(href)}">
       <div class="product-card__image">
         ${p.image_url
-          ? `<img src="${escAttr(p.image_url)}" alt="${escAttr(p.name || '')}" loading="lazy" />`
+          ? `<img src="${escUrl(p.image_url)}" alt="${escAttr(p.name || '')}" loading="lazy" />`
           : `<div class="product-card__placeholder">
                <span class="product-card__placeholder-mark">${esc(brand.name)}</span>
                ${brand.tagline ? `<span class="product-card__placeholder-sub">${esc(brand.tagline)}</span>` : ''}
@@ -514,6 +517,14 @@ function escAttr(s) {
   return esc(s).replace(/"/g, '&quot;');
 }
 
-function escCssUrl(s) {
-  return String(s ?? '').replace(/'/g, "\\'");
+// An address for a link or photo: only safe kinds of address (see safeUrl
+// in /js/safe-html.js), escaped for use inside an HTML attribute.
+function escUrl(u) {
+  return escAttr(safeUrl(u));
+}
+
+// An address for CSS url('…'): only safe kinds of address, with quotes,
+// brackets, backslashes and spaces percent-encoded so it can't end the url().
+function cssUrl(u) {
+  return safeUrl(u).replace(/["'()\\\s]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'));
 }

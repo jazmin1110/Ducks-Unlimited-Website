@@ -27,3 +27,16 @@ test('safeReturnPath only allows pages on this website', () => {
   assert.equal(safeReturnPath('/\\evil.com'), '/');
   assert.equal(safeReturnPath(''), '/');
 });
+
+test('safeReturnPath only goes back to a brand homepage (no tricks)', () => {
+  assert.equal(safeReturnPath('/rw/'), '/rw/');
+  assert.equal(safeReturnPath('/\t/evil.com'), '/');   // browsers drop the tab → //evil.com
+  assert.equal(safeReturnPath('/shop.html'), '/');
+});
+
+test('isValidEmail refuses addresses that a spreadsheet would treat as a formula', () => {
+  assert.equal(isValidEmail('=1+2@x.co'), false);
+  assert.equal(isValidEmail('+cmd@x.co'), false);
+  assert.equal(isValidEmail('-x@x.co'), false);
+  assert.equal(isValidEmail('=HYPERLINK("x")@x.co'), false);
+});

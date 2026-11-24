@@ -35,17 +35,21 @@ export function isValidEmail(value) {
   if (parts.length !== 2) return false;
   const [local, domain] = parts;
   if (!local || !domain) return false;
+  // Starting with = + - would make a spreadsheet (the CSV export) treat
+  // it as a formula. Real addresses don't start like that.
+  if (/^[=+\-]/.test(local)) return false;
   if (!domain.includes('.') || domain.startsWith('.') || domain.endsWith('.')) return false;
   return true;
 }
 
-// Where to send the browser back to: only a page on this website.
-// ("//evil.com" and "/\evil.com" look like paths but browsers treat them as
-// other websites, so they're refused too.)
+// Where to send the browser back to. The form only ever sends a brand's
+// homepage, so that's all we accept — anything else goes to "/". (Looser
+// checks can be tricked: browsers quietly drop tabs and line breaks, so
+// "/<tab>/evil.com" becomes "//evil.com", another website.)
+const RETURN_PATHS = ['/du/', '/rw/'];
 export function safeReturnPath(value) {
   const s = String(value || '');
-  if (!s.startsWith('/') || s.startsWith('//') || s.startsWith('/\\')) return '/';
-  return s;
+  return RETURN_PATHS.includes(s) ? s : '/';
 }
 
 export default async function handler(req, res) {

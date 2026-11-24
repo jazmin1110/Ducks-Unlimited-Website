@@ -219,3 +219,29 @@ test('email sign-up: posts to the API, has the consent line and a bot trap', () 
   assert.ok(html.includes('value="rw"'));
   assert.ok(html.includes('value="/rw/"'));
 });
+
+
+// ── Review fix: addresses typed into link and photo fields ─────────────────
+test('a javascript: address in any link field never reaches the page', () => {
+  const bad = 'javascript:alert(1)';
+  const html = renderSectionsHtml([
+    section('a', 'hero', { headline: 'x', cta_text: 'Go', cta_link: bad }),
+    section('b', 'category-tiles', { heading: 'x', blocks: [{ id: 't', name: 'T', link: bad }] }),
+    section('c', 'image-banner', { heading: 'x', cta_text: 'Go', cta_link: bad }),
+    section('d', 'multicolumn', { heading: 'x', columns: '3', blocks: [{ id: 'm', heading: 'M', link: bad }] }),
+    section('e', 'image-gallery', { heading: 'x', columns: '4', blocks: [{ id: 'g', image_url: bad, link: bad }] }),
+    section('f', 'slideshow', { blocks: [{ id: 's', heading: 'S', cta_text: 'Go', cta_link: bad, image_url: bad }] }),
+    section('g', 'editorial-block', { headline: 'x', cta_text: 'Go', cta_link: bad, image_url: bad }),
+    section('h', 'product-rail', { heading: 'x', collection: 'new', cta_text: 'Go', cta_link: bad })
+  ], ctx());
+  assert.ok(!/javascript:/i.test(html));
+});
+
+test('a photo address with a quote in it cannot add attributes', () => {
+  const html = renderSectionsHtml([
+    section('a', 'hero', { headline: 'x', image_url: 'https://x/a.jpg" onmouseover="alert(1)' }),
+    section('b', 'image-banner', { heading: 'x', image_url: 'https://x/a.jpg" onerror="alert(1)' })
+  ], ctx());
+  // A real new attribute = a closing quote, then a space, then on…=
+  assert.ok(!/"\s+on[a-z]+=/i.test(html));
+});

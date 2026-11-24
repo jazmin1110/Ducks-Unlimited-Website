@@ -83,3 +83,39 @@ test('cleaning twice gives the same result as once', () => {
   const once = sanitizeHtml(messy);
   assert.equal(sanitizeHtml(once), once);
 });
+
+
+// ── safeUrl: link and photo addresses typed into plain fields ──────────────
+import { safeUrl } from '../public/js/safe-html.js';
+
+test('safeUrl keeps ordinary addresses', () => {
+  assert.equal(safeUrl('/shop.html'), '/shop.html');
+  assert.equal(safeUrl('https://example.com/a.jpg'), 'https://example.com/a.jpg');
+  assert.equal(safeUrl('#faq'), '#faq');
+  assert.equal(safeUrl('mailto:hi@example.com'), 'mailto:hi@example.com');
+});
+
+test('safeUrl refuses scripts and look-alikes', () => {
+  assert.equal(safeUrl('javascript:alert(1)'), '');
+  assert.equal(safeUrl(' JaVaScRiPt:alert(1)'), '');
+  assert.equal(safeUrl('java\tscript:alert(1)'), '');
+  assert.equal(safeUrl('data:text/html,<script>x</script>'), '');
+  assert.equal(safeUrl('//evil.com/x'), '');
+  assert.equal(safeUrl(''), '');
+  assert.equal(safeUrl(null), '');
+});
+
+import { normalizeLinkInput } from '../public/js/safe-html.js';
+
+test('normalizeLinkInput adds https:// to a typed web address', () => {
+  assert.equal(normalizeLinkInput('www.ducksunlimited.ph'), 'https://www.ducksunlimited.ph');
+  assert.equal(normalizeLinkInput('ducksunlimited.ph/sale'), 'https://ducksunlimited.ph/sale');
+  assert.equal(normalizeLinkInput(' /shop.html '), '/shop.html');
+  assert.equal(normalizeLinkInput('https://x.com'), 'https://x.com');
+  assert.equal(normalizeLinkInput('juan@gmail.com'), 'mailto:juan@gmail.com');
+});
+
+test('normalizeLinkInput leaves things that are not addresses for safeUrl to refuse', () => {
+  assert.equal(safeUrl(normalizeLinkInput('javascript:alert(1)')), '');
+  assert.equal(safeUrl(normalizeLinkInput('our sale page')), '');
+});

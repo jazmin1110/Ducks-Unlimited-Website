@@ -147,6 +147,32 @@ function closeUpTo(open, name) {
   return out;
 }
 
+// Check an address typed into a plain link or photo field (a button's
+// "Page it opens", a photo's web address…). Returns it unchanged if it is a
+// page on this site, a normal web address, an email or phone link;
+// otherwise '' (e.g. "javascript:…", "data:…", or "//other-site" tricks).
+export function safeUrl(input) {
+  const value = String(input ?? '').trim();
+  // eslint-disable-next-line no-control-regex
+  const squashed = value.replace(/[\u0000- \u007f-\u009f]/g, '').toLowerCase();
+  if (!squashed || squashed.startsWith('//') || squashed.startsWith('/\\')) return '';
+  return SAFE_LINK_STARTS.some((start) => squashed.startsWith(start)) ? value : '';
+}
+
+// What someone types in a Link box → a proper address.
+//   "www.ducksunlimited.ph"  → "https://www.ducksunlimited.ph"
+//   "juan@gmail.com"         → "mailto:juan@gmail.com"
+//   "/shop.html", "https://…" stay as they are.
+// Anything else is returned trimmed, for safeUrl() to accept or refuse.
+export function normalizeLinkInput(input) {
+  const v = String(input ?? '').trim();
+  if (!v || /^[a-z][a-z0-9+.-]*:/i.test(v) || v.startsWith('/') || v.startsWith('#')) return v;
+  if (/^[^\s@/]+@[^\s@/]+\.[a-z]{2,}$/i.test(v)) return `mailto:${v}`;
+  // Looks like a domain: letters/numbers with a dot, no spaces.
+  if (/^[a-z0-9-]+(\.[a-z0-9-]+)+(:\d+)?([/?#]\S*)?$/i.test(v)) return `https://${v}`;
+  return v;
+}
+
 // Pull the href="..." value out of a tag's attribute text and check it.
 // Returns the cleaned address, or '' if there is none or it isn't safe.
 function safeHref(attrText) {
