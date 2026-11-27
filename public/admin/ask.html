@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://qrtfgqscpaghtxnhtoyp.supabase.co" crossorigin />
+  <title>Ask helper — Admin · Ducks Unlimited</title>
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <!--
+    ADMIN → ASK HELPER
+    Three things that make the "Ask us" chat bubble smarter:
+      1. Couldn't answer — questions the helper had to send to IG/email.
+                           Write an answer once and it knows next time.
+      2. Answers         — your own question + answer pairs (table ask_knowledge).
+      3. Size charts     — other brands' charts (table size_reference) so it can
+                           answer "I'm M in Uniqlo, what am I in Ducks?".
+    The helper re-reads all of this every 5 minutes (see /api/ask.js).
+  -->
+
+  <style>
+    body { background: var(--color-bg-warm); }
+    main.admin-main { padding: var(--space-md); max-width: 1100px; margin: 0 auto; }
+    .admin-h1 { font-family: var(--font-heading); color: var(--color-primary); font-size: 2rem; margin-bottom: 0.5rem; }
+    .admin-sub { color: var(--color-text-muted); margin-bottom: var(--space-md); }
+    .admin-panel { background: var(--color-white); padding: var(--space-md); margin-bottom: var(--space-md); border: 1px solid var(--color-border-light); }
+    .admin-panel h2 { font-family: var(--font-heading); font-size: 1.3rem; color: var(--color-primary); margin-bottom: var(--space); }
+
+    /* Tabs */
+    .ask-tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid var(--color-border); margin-bottom: var(--space-md); overflow-x: auto; }
+    .ask-tab { background: none; border: none; padding: 0.75rem 1rem; cursor: pointer; font-family: var(--font-body);
+               font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted);
+               border-bottom: 2px solid transparent; white-space: nowrap; }
+    .ask-tab.is-active { color: var(--color-primary); border-bottom-color: var(--color-accent); }
+    .ask-tab .count { display: inline-block; min-width: 1.4em; padding: 0 0.35em; margin-left: 0.35em; border-radius: 1em;
+                      background: var(--color-accent); color: var(--color-white); font-size: 0.7rem; }
+    .ask-panel { display: none; }
+    .ask-panel.is-active { display: block; }
+
+    /* Lists */
+    .row { padding: var(--space) 0; border-bottom: 1px solid var(--color-border-light); display: grid; gap: 0.5rem; }
+    @media (min-width: 768px) { .row { grid-template-columns: 1fr auto; } }
+    .row:last-child { border-bottom: none; }
+    .row .q { font-weight: 600; }
+    .row .a { color: var(--color-text-muted); font-size: 0.9rem; white-space: pre-wrap; }
+    .row .meta { color: var(--color-text-muted); font-size: 0.75rem; letter-spacing: 0.05em; }
+    .row-actions { display: flex; gap: 0.5rem; align-self: start; flex-wrap: wrap; }
+    .row-actions button { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted);
+                          background: none; border: 1px solid var(--color-border); cursor: pointer; padding: 0.4rem 0.75rem; }
+    .row-actions button:hover { color: var(--color-primary); border-color: var(--color-primary); }
+    .row-actions .danger:hover { color: var(--color-error); border-color: var(--color-error); }
+    .tag { display: inline-block; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.1rem 0.45rem;
+           border: 1px solid var(--color-border); margin-right: 0.35rem; }
+    .tag.warn { border-color: var(--color-accent); color: var(--color-accent); }
+
+    .form-row { display: grid; gap: var(--space-sm); grid-template-columns: 1fr; margin-bottom: var(--space-sm); }
+    @media (min-width: 768px) {
+      .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+      .form-row.cols-4 { grid-template-columns: repeat(4, 1fr); }
+    }
+    .help-text { font-size: 0.78rem; color: var(--color-text-muted); margin-top: 0.5rem; }
+    .actions-row { display: flex; gap: var(--space-sm); margin-top: var(--space); flex-wrap: wrap; align-items: center; }
+    .status { font-size: 0.85rem; color: var(--color-primary); }
+
+    /* Size chart table */
+    .sz-brand { margin-top: var(--space-md); }
+    .sz-brand h3 { font-family: var(--font-heading); color: var(--color-primary); font-size: 1.15rem; margin-bottom: 0.25rem; }
+    .sz-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .sz-table th, .sz-table td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--color-border-light); }
+    .sz-table th { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted); }
+    .sz-table-wrap { overflow-x: auto; }
+    .sz-actions { justify-content: flex-end; flex-wrap: nowrap; gap: 0.3rem; }
+    .sz-actions button { padding: 0.3rem 0.5rem; font-size: 0.65rem; }
+    .toggle { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+  </style>
+  <link rel="icon" type="image/png" href="/images/brand/du-favicon.png" />
+  <link rel="apple-touch-icon" href="/images/brand/du-apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="apple-mobile-web-app-title" content="DU Admin" />
+  <meta name="theme-color" content="#1B4D2E" />
+</head>
+<body>
+
+  <div data-component="admin-nav"></div>
+
+  <main class="admin-main">
+    <h1 class="admin-h1">Ask helper</h1>
+    <p class="admin-sub">
+      Teach the "Ask us" chat bubble. Changes reach the helper within 5 minutes.
+    </p>
+
+    <div class="ask-tabs" role="tablist">
+      <button type="button" class="ask-tab is-active" data-tab="missed">Couldn't answer <span class="count" id="missedCount" hidden></span></button>
+      <button type="button" class="ask-tab" data-tab="answers">Answers</button>
+      <button type="button" class="ask-tab" data-tab="sizes">Size charts</button>
+      <button type="button" class="ask-tab" data-tab="all">All questions</button>
+    </div>
+
+    <!-- ── 1. Couldn't answer ─────────────────────────────────────────── -->
+    <section class="ask-panel is-active" id="panel-missed">
+      <div class="admin-panel">
+        <h2>Questions it couldn't answer</h2>
+        <p class="help-text" style="margin-top:0;">
+          These customers were told to message you on IG / email / phone.
+          Tap <strong>Add answer</strong>, write it once, and the helper will answer it from now on.
+          <strong>Done</strong> hides a question without adding an answer (spam, one-off order questions).
+        </p>
+        <div id="missedList"><p style="color:#999;">Loading…</p></div>
+      </div>
+    </section>
+
+    <!-- ── 2. Answers (ask_knowledge) ─────────────────────────────────── -->
+    <section class="ask-panel" id="panel-answers">
+      <div class="admin-panel">
+        <h2 id="kFormTitle">Add an answer</h2>
+        <form id="kForm">
+          <input type="hidden" id="kId">
+          <input type="hidden" id="kFromLog">
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label" for="kQuestion">Question (how a customer might ask it)</label>
+              <input class="input" id="kQuestion" required maxlength="300" placeholder="Is the white polo see-through?">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label" for="kAnswer">Answer</label>
+              <textarea class="textarea" id="kAnswer" rows="4" required maxlength="1200"
+                placeholder="Write it the way you'd reply on IG. The helper rewords it to fit the question and replies in English or Taglish."></textarea>
+            </div>
+          </div>
+          <div class="form-row cols-2">
+            <div class="field">
+              <label class="field-label" for="kBrand">Which site</label>
+              <select class="select" id="kBrand">
+                <option value="">Both — Ducks and Rocwood</option>
+                <option value="du">Ducks Unlimited only</option>
+                <option value="rw">Rocwood only</option>
+              </select>
+            </div>
+            <div class="field" style="align-self:end;">
+              <label class="toggle"><input type="checkbox" id="kActive" checked> Active (the helper uses it)</label>
+            </div>
+          </div>
+          <div class="actions-row">
+            <button type="submit" class="btn btn-primary">Save answer</button>
+            <button type="button" class="btn btn-ghost" id="kReset">Clear</button>
+            <span class="status" id="kStatus"></span>
+          </div>
+        </form>
+      </div>
+      <div class="admin-panel">
+        <h2>Your answers</h2>
+        <div id="kList"><p style="color:#999;">Loading…</p></div>
+      </div>
+    </section>
+
+    <!-- ── 3. Size charts (size_reference) ────────────────────────────── -->
+    <section class="ask-panel" id="panel-sizes">
+      <div class="admin-panel">
+        <h2 id="sFormTitle">Add a size</h2>
+        <p class="help-text" style="margin-top:0;">
+          Other brands' men's/unisex tops, by <strong>chest</strong>, in <strong>cm</strong>, all the way around.
+          The helper compares them with <a href="/size-guide.html" target="_blank" rel="noopener">our size guide</a> —
+          if our size guide changes, the matches change with it.
+        </p>
+        <form id="sForm">
+          <input type="hidden" id="sId">
+          <div class="form-row cols-4">
+            <div class="field"><label class="field-label" for="sBrand">Brand</label><input class="input" id="sBrand" required list="brandList" placeholder="Uniqlo"></div>
+            <div class="field"><label class="field-label" for="sSize">Size</label><input class="input" id="sSize" required placeholder="M"></div>
+            <div class="field"><label class="field-label" for="sFit">Fit</label>
+              <select class="select" id="sFit"><option value="regular">Regular</option><option value="slim">Slim</option><option value="relaxed">Relaxed</option></select></div>
+            <div class="field"><label class="field-label" for="sCategory">Applies to</label>
+              <select class="select" id="sCategory"><option value="tops">All tops</option><option value="polo">Polos</option><option value="t-shirt">T-shirts</option></select></div>
+          </div>
+          <div class="form-row cols-4">
+            <div class="field"><label class="field-label" for="sType">Their chart measures</label>
+              <select class="select" id="sType">
+                <option value="body">The body (fits chest …)</option>
+                <option value="garment">The shirt itself</option>
+              </select></div>
+            <div class="field"><label class="field-label" for="sMin">Chest from (cm)</label><input class="input" id="sMin" type="number" step="0.1" min="40" max="200" required></div>
+            <div class="field"><label class="field-label" for="sMax">Chest to (cm)</label><input class="input" id="sMax" type="number" step="0.1" min="40" max="200" required></div>
+            <div class="field"><label class="field-label" for="sOrder">Order (XS=1, S=2 …)</label><input class="input" id="sOrder" type="number" step="1" value="3"></div>
+          </div>
+          <p class="help-text" id="sTypeHelp">
+            "The shirt itself": lay the shirt flat, measure armpit to armpit, and enter that number × 2 in both boxes.
+            Inches × 2.54 = cm.
+          </p>
+          <div class="form-row">
+            <div class="field"><label class="field-label" for="sSource">Where the numbers came from (link)</label><input class="input" id="sSource" type="url" placeholder="https://…"></div>
+          </div>
+          <div class="actions-row">
+            <button type="submit" class="btn btn-primary">Save size</button>
+            <button type="button" class="btn btn-ghost" id="sReset">Clear</button>
+            <span class="status" id="sStatus"></span>
+          </div>
+        </form>
+        <datalist id="brandList"></datalist>
+      </div>
+      <div class="admin-panel">
+        <h2>Brands on file</h2>
+        <div id="sList"><p style="color:#999;">Loading…</p></div>
+      </div>
+    </section>
+
+    <!-- ── 4. All questions ───────────────────────────────────────────── -->
+    <section class="ask-panel" id="panel-all">
+      <div class="admin-panel">
+        <h2>Latest 100 questions</h2>
+        <p class="help-text" style="margin-top:0;">Everything customers typed, newest first — good for spotting what people care about.</p>
+        <div id="allList"><p style="color:#999;">Loading…</p></div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { supabase } from '/lib/supabase.js';
+    import { requireAdmin } from '/admin/js/admin-guard.js';
+
+    // Only signed-in admins get past this line (see /admin/js/admin-guard.js)
+    await requireAdmin();
+
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const BRAND_LABEL = { du: 'Ducks', rw: 'Rocwood' };
+    const when = (iso) => new Date(iso).toLocaleString('en-PH', {
+      timeZone: 'Asia/Manila', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+    });
+    function flash(el, msg) { el.textContent = msg; setTimeout(() => { el.textContent = ''; }, 3000); }
+
+    // ── Tabs ──────────────────────────────────────────────────────────────
+    function showTab(name) {
+      document.querySelectorAll('.ask-tab').forEach(t => t.classList.toggle('is-active', t.dataset.tab === name));
+      document.querySelectorAll('.ask-panel').forEach(p => p.classList.toggle('is-active', p.id === `panel-${name}`));
+      if (name === 'all') loadAll();
+    }
+    document.querySelectorAll('.ask-tab').forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
+
+
+    // ═════════ 1. COULDN'T ANSWER ═════════════════════════════════════════
+    async function loadMissed() {
+      const { data, error } = await supabase
+        .from('ask_logs')
+        .select('id, created_at, brand, question, answer')
+        .eq('not_sure', true).eq('resolved', false)
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      const box = $('missedList');
+      const count = $('missedCount');
+      if (error) { box.innerHTML = `<p style="color:red;">Couldn't load: ${esc(error.message)}</p>`; return; }
+
+      count.hidden = !data.length;
+      count.textContent = data.length;
+      if (!data.length) { box.innerHTML = '<p style="color:#999;">Nothing waiting. 🎉</p>'; return; }
+
+      box.innerHTML = data.map(r => `
+        <div class="row">
+          <div>
+            <div class="meta">${esc(when(r.created_at))} · ${esc(BRAND_LABEL[r.brand] || r.brand || '')}</div>
+            <div class="q">${esc(r.question)}</div>
+            <div class="a">Helper said: ${esc(r.answer)}</div>
+          </div>
+          <div class="row-actions">
+            <button data-answer="${esc(r.id)}">Add answer</button>
+            <button data-done="${esc(r.id)}">Done</button>
+          </div>
+        </div>`).join('');
+
+      box.querySelectorAll('[data-answer]').forEach(b => b.addEventListener('click', () => {
+        const row = data.find(r => r.id === b.dataset.answer);
+        resetKnowledgeForm();
+        $('kQuestion').value = row.question;
+        $('kFromLog').value = row.id;          // mark this question done once saved
+        $('kBrand').value = '';
+        showTab('answers');
+        $('kAnswer').focus();
+      }));
+      box.querySelectorAll('[data-done]').forEach(b => b.addEventListener('click', async () => {
+        const { error } = await supabase.from('ask_logs').update({ resolved: true }).eq('id', b.dataset.done);
+        if (error) { alert('Could not update: ' + error.message); return; }
+        loadMissed();
+      }));
+    }
+
+
+    // ═════════ 2. ANSWERS ═════════════════════════════════════════════════
+    function resetKnowledgeForm() {
+      $('kForm').reset();
+      $('kId').value = '';
+      $('kFromLog').value = '';
+      $('kActive').checked = true;
+      $('kFormTitle').textContent = 'Add an answer';
+    }
+    $('kReset').addEventListener('click', resetKnowledgeForm);
+
+    async function loadKnowledge() {
+      const { data, error } = await supabase
+        .from('ask_knowledge')
+        .select('*')
+        .order('sort_order').order('created_at', { ascending: false });
+      const box = $('kList');
+      if (error) { box.innerHTML = `<p style="color:red;">Couldn't load: ${esc(error.message)}</p>`; return; }
+      if (!data.length) { box.innerHTML = '<p style="color:#999;">No answers yet — add one above, or from "Couldn\'t answer".</p>'; return; }
+
+      box.innerHTML = data.map(k => `
+        <div class="row">
+          <div>
+            <div class="meta">
+              <span class="tag">${esc(k.brand ? BRAND_LABEL[k.brand] : 'Both sites')}</span>
+              ${k.is_active ? '' : '<span class="tag warn">Off</span>'}
+            </div>
+            <div class="q">${esc(k.question)}</div>
+            <div class="a">${esc(k.answer)}</div>
+          </div>
+          <div class="row-actions">
+            <button data-edit="${esc(k.id)}">Edit</button>
+            <button data-del="${esc(k.id)}" class="danger">Delete</button>
+          </div>
+        </div>`).join('');
+
+      box.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => {
+        const k = data.find(x => x.id === b.dataset.edit);
+        $('kId').value = k.id;
+        $('kFromLog').value = '';
+        $('kQuestion').value = k.question;
+        $('kAnswer').value = k.answer;
+        $('kBrand').value = k.brand || '';
+        $('kActive').checked = k.is_active;
+        $('kFormTitle').textContent = 'Edit answer';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }));
+      box.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+        if (!confirm('Delete this answer? (To pause it instead, edit it and untick Active.)')) return;
+        const { error } = await supabase.from('ask_knowledge').delete().eq('id', b.dataset.del);
+        if (error) { alert('Delete failed: ' + error.message); return; }
+        loadKnowledge();
+      }));
+    }
+
+    $('kForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = $('kId').value;
+      const payload = {
+        question:  $('kQuestion').value.trim(),
+        answer:    $('kAnswer').value.trim(),
+        brand:     $('kBrand').value || null,
+        is_active: $('kActive').checked,
+      };
+      const { error } = id
+        ? await supabase.from('ask_knowledge').update(payload).eq('id', id)
+        : await supabase.from('ask_knowledge').insert(payload);
+      if (error) { alert('Save failed: ' + error.message); return; }
+
+      // Came from "Couldn't answer"? Mark that question done.
+      const fromLog = $('kFromLog').value;
+      if (fromLog) await supabase.from('ask_logs').update({ resolved: true }).eq('id', fromLog);
+
+      resetKnowledgeForm();
+      flash($('kStatus'), 'Saved — the helper picks it up within 5 minutes.');
+      loadKnowledge();
+      loadMissed();
+    });
+
+
+    // ═════════ 3. SIZE CHARTS ═════════════════════════════════════════════
+    function resetSizeForm() {
+      $('sForm').reset();
+      $('sId').value = '';
+      $('sOrder').value = '3';
+      $('sFormTitle').textContent = 'Add a size';
+    }
+    $('sReset').addEventListener('click', resetSizeForm);
+
+    const FIT_LABEL = { slim: 'Slim', regular: 'Regular', relaxed: 'Relaxed' };
+    const CAT_LABEL = { tops: 'All tops', polo: 'Polos', 't-shirt': 'T-shirts' };
+
+    async function loadSizes() {
+      const { data, error } = await supabase
+        .from('size_reference')
+        .select('*')
+        .order('brand').order('fit').order('category').order('sort_order');
+      const box = $('sList');
+      if (error) { box.innerHTML = `<p style="color:red;">Couldn't load: ${esc(error.message)}</p>`; return; }
+      if (!data.length) { box.innerHTML = '<p style="color:#999;">No size charts yet.</p>'; return; }
+
+      // Brand suggestions for the form
+      $('brandList').innerHTML = [...new Set(data.map(r => r.brand))].map(b => `<option value="${esc(b)}">`).join('');
+
+      // One block per brand + fit + category
+      const groups = new Map();
+      for (const r of data) {
+        const key = `${r.brand}|${r.fit}|${r.category}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(r);
+      }
+
+      box.innerHTML = [...groups.values()].map(rows => {
+        const f = rows[0];
+        return `
+        <div class="sz-brand">
+          <h3>${esc(f.brand)}
+            <small style="font-family:var(--font-body);font-size:0.75rem;color:var(--color-text-muted);">
+              ${esc(FIT_LABEL[f.fit])} · ${esc(CAT_LABEL[f.category])} ·
+              ${f.measure_type === 'garment' ? 'shirt measurements (helper estimates the body)' : 'body measurements'}
+              ${f.source_url ? ` · <a href="${esc(f.source_url)}" target="_blank" rel="noopener">source</a>` : ''}
+              ${f.checked_on ? ` · checked ${esc(f.checked_on)}` : ''}
+            </small>
+          </h3>
+          <div class="sz-table-wrap">
+            <table class="sz-table">
+              <thead><tr><th>Size</th><th>Chest (cm)</th><th>On</th><th></th></tr></thead>
+              <tbody>
+                ${rows.map(r => `
+                  <tr>
+                    <td>${esc(r.size)}</td>
+                    <td>${r.chest_min_cm === r.chest_max_cm ? esc(r.chest_min_cm) : `${esc(r.chest_min_cm)} – ${esc(r.chest_max_cm)}`}</td>
+                    <td>${r.is_active ? 'Yes' : '<span class="tag warn">Off</span>'}</td>
+                    <td>
+                      <div class="row-actions sz-actions">
+                        <button data-sedit="${esc(r.id)}">Edit</button>
+                        <button data-stoggle="${esc(r.id)}">${r.is_active ? 'Off' : 'On'}</button>
+                        <button data-sdel="${esc(r.id)}" class="danger">Delete</button>
+                      </div>
+                    </td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+      }).join('');
+
+      box.querySelectorAll('[data-sedit]').forEach(b => b.addEventListener('click', () => {
+        const r = data.find(x => x.id === b.dataset.sedit);
+        $('sId').value = r.id;
+        $('sBrand').value = r.brand;
+        $('sSize').value = r.size;
+        $('sFit').value = r.fit;
+        $('sCategory').value = r.category;
+        $('sType').value = r.measure_type;
+        $('sMin').value = r.chest_min_cm;
+        $('sMax').value = r.chest_max_cm;
+        $('sOrder').value = r.sort_order;
+        $('sSource').value = r.source_url || '';
+        $('sFormTitle').textContent = `Edit: ${r.brand} ${r.size}`;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }));
+      box.querySelectorAll('[data-stoggle]').forEach(b => b.addEventListener('click', async () => {
+        const r = data.find(x => x.id === b.dataset.stoggle);
+        const { error } = await supabase.from('size_reference').update({ is_active: !r.is_active }).eq('id', r.id);
+        if (error) { alert('Could not update: ' + error.message); return; }
+        loadSizes();
+      }));
+      box.querySelectorAll('[data-sdel]').forEach(b => b.addEventListener('click', async () => {
+        if (!confirm('Delete this size? (To pause it instead, use Turn off.)')) return;
+        const { error } = await supabase.from('size_reference').delete().eq('id', b.dataset.sdel);
+        if (error) { alert('Delete failed: ' + error.message); return; }
+        loadSizes();
+      }));
+    }
+
+    $('sForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = $('sId').value;
+      const min = Number($('sMin').value);
+      const max = Number($('sMax').value);
+      if (max < min) { alert('"Chest to" must be the same as or bigger than "Chest from".'); return; }
+      const payload = {
+        brand:        $('sBrand').value.trim(),
+        size:         $('sSize').value.trim().toUpperCase(),
+        fit:          $('sFit').value,
+        category:     $('sCategory').value,
+        measure_type: $('sType').value,
+        chest_min_cm: min,
+        chest_max_cm: max,
+        sort_order:   Number($('sOrder').value) || 0,
+        source_url:   $('sSource').value.trim() || null,
+        checked_on:   new Date().toISOString().slice(0, 10),
+      };
+      const { error } = id
+        ? await supabase.from('size_reference').update(payload).eq('id', id)
+        : await supabase.from('size_reference').insert(payload);
+      if (error) {
+        alert(error.code === '23505'
+          ? 'That brand + fit + "applies to" + size already exists — edit it in the list below instead.'
+          : 'Save failed: ' + error.message);
+        return;
+      }
+      resetSizeForm();
+      flash($('sStatus'), 'Saved — the helper picks it up within 5 minutes.');
+      loadSizes();
+    });
+
+
+    // ═════════ 4. ALL QUESTIONS ═══════════════════════════════════════════
+    async function loadAll() {
+      const { data, error } = await supabase
+        .from('ask_logs')
+        .select('created_at, brand, question, answer, not_sure, resolved')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      const box = $('allList');
+      if (error) { box.innerHTML = `<p style="color:red;">Couldn't load: ${esc(error.message)}</p>`; return; }
+      if (!data.length) { box.innerHTML = '<p style="color:#999;">No questions yet.</p>'; return; }
+      box.innerHTML = data.map(r => `
+        <div class="row" style="grid-template-columns:1fr;">
+          <div>
+            <div class="meta">${esc(when(r.created_at))} · ${esc(BRAND_LABEL[r.brand] || r.brand || '')}
+              ${r.not_sure ? `<span class="tag warn">${r.resolved ? "Couldn't answer · done" : "Couldn't answer"}</span>` : ''}</div>
+            <div class="q">${esc(r.question)}</div>
+            <div class="a">${esc(r.answer)}</div>
+          </div>
+        </div>`).join('');
+    }
+
+
+    loadMissed();
+    loadKnowledge();
+    loadSizes();
+  </script>
+
+  <script type="module" src="/js/components.js"></script>
+</body>
+</html>

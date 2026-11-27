@@ -19,6 +19,13 @@
 //   3. The Shipping, Returns, Help and Size Guide pages — so when you edit
 //      those pages, the helper's answers change with them
 //   4. Optional extra notes you write yourself (see "ON / OFF SWITCH" below)
+//   5. Your own Q&A from Admin → Ask helper (table ask_knowledge)
+//   6. Size matches vs other brands ("I'm M in Uniqlo") — worked out in code
+//      by api/_lib/size-match.js from the size_reference table + our size guide
+//
+// Every question + answer is saved to the ask_logs table. When the helper
+// couldn't answer, the row is marked not_sure so it shows up in
+// Admin → Ask helper → "Couldn't answer", ready for you to add an answer.
 //
 // It can't see orders, customers or anything private, and it can't place,
 // change or cancel orders.
@@ -41,6 +48,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { supabaseAdmin } from './_lib/supabase-admin.js';
 import { allowRequest } from './_lib/ratelimit.js';
+import { parseOurSizeGuide, buildSizeMatches, buildSizeMatchText, lookupSizeQuestion } from './_lib/size-match.js';
 
 // Cheap, fast model — same one AJ's uses. Override with the AI_MODEL env var.
 const MODEL = process.env.AI_MODEL || 'claude-haiku-5-5';
@@ -177,20 +185,84 @@ function htmlToText(html) {
 async function loadPolicies(host) {
   return cached('policies', async () => {
     const parts = await Promise.all(POLICY_PAGES.map(async ([label, file]) => {
-      let html = '';
-      // 1st try: the copy bundled with this function (see vercel.json includeFiles)
-      try { html = fs.readFileSync(path.join(process.cwd(), 'public', file), 'utf8'); } catch {}
-      // 2nd try: fetch the live page from this same site
-      if (!html && host) {
-        try {
-          const r = await fetch(`https://${host}/${file}`);
-          if (r.ok) html = await r.text();
-        } catch {}
-      }
+      // Bundled copy first (see vercel.json includeFiles), live page second
+      const html = await readPage(file, host);
       return html ? `## ${label}\n${htmlToText(html)}` : '';
     }));
     return parts.filter(Boolean).join('\n\n');
   });
+}
+
+
+// ─── Read one of our own pages (bundled copy first, live site second) ────────
+async function readPage(file, host) {
+  try { return fs.readFileSync(path.join(process.cwd(), 'public', file), 'utf8'); } catch {}
+  if (host) {
+    try {
+      const r = await fetch(`https://${host}/${file}`);
+      if (r.ok) return await r.text();
+    } catch {}
+  }
+  return '';
+}
+
+
+// ─── Size matches vs other brands (see api/_lib/size-match.js) ───────────────
+// Returns { matches, text }: matches = every "their size → our size",
+// text = the full sheet that goes into the AI's instructions.
+async function loadSizeMatches(host, brandName) {
+  return cached(`sizes:${brandName}`, async () => {
+    const [html, refs] = await Promise.all([
+      readPage('size-guide.html', host),
+      supabaseAdmin(
+        'size_reference?is_active=eq.true' +
+        '&select=brand,fit,category,size,measure_type,chest_min_cm,chest_max_cm,sort_order' +
+        '&order=brand,fit,category,sort_order'
+      ).catch(err => { console.error('[ask] size_reference', err.message); return []; }),
+    ]);
+    if (!html || !refs?.length) return { matches: null, text: '' };
+    const matches = buildSizeMatches(refs, parseOurSizeGuide(html));
+    return { matches, text: buildSizeMatchText(matches, brandName) };
+  });
+}
+
+
+// ─── Your own Q&A (Admin → Ask helper → Answers) ─────────────────────────────
+async function loadKnowledge(brandSlug) {
+  return cached(`knowledge:${brandSlug}`, async () => {
+    const rows = await supabaseAdmin(
+      `ask_knowledge?is_active=eq.true&or=(brand.is.null,brand.eq.${brandSlug})` +
+      '&select=question,answer&order=sort_order,created_at'
+    ).catch(err => { console.error('[ask] ask_knowledge', err.message); return []; });
+    // Cap the total so a huge list can't blow up the prompt
+    let text = '';
+    for (const r of rows || []) {
+      const qa = `Q: ${r.question.trim()}\nA: ${r.answer.trim()}\n\n`;
+      if (text.length + qa.length > 8000) break;
+      text += qa;
+    }
+    return text.trim();
+  });
+}
+
+
+// ─── Save the question + answer (so you can see what people ask) ─────────────
+// Waits at most 1.5 seconds — a slow database never holds up the customer.
+async function logQuestion(row) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 1500);
+  try {
+    await supabaseAdmin('ask_logs', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify(row),
+      signal: ctrl.signal,
+    });
+  } catch (err) {
+    console.error('[ask] log failed', err.name === 'AbortError' ? 'timeout' : err.message);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 
@@ -272,10 +344,13 @@ export default async function handler(req, res) {
       .filter(m => (m?.role === 'user' || m?.role === 'assistant') && typeof m.content === 'string')
       .map(m => ({ role: m.role, content: m.content.slice(0, 500) }));
 
-    const [catalog, stores, policies] = await Promise.all([
+    const name = BRAND_NAMES[brand];
+    const [catalog, stores, policies, sizeMatches, knowledge] = await Promise.all([
       loadCatalog(brand).catch(err => { console.error('[ask] catalog', err); return []; }),
       loadStores(),
       loadPolicies(req.headers?.host),
+      loadSizeMatches(req.headers?.host, name).catch(err => { console.error('[ask] sizes', err); return { matches: null, text: '' }; }),
+      loadKnowledge(brand),
     ]);
 
     // If they're on a product page, tell the AI which product "this one" means
@@ -283,7 +358,6 @@ export default async function handler(req, res) {
     const viewing = catalog.find(p => p.id === productId);
     const products = catalog.map(({ id, ...rest }) => rest); // ids aren't useful to the AI
 
-    const name = BRAND_NAMES[brand];
     const system = `You are the friendly shop helper on the ${name} website (Philippines). ${name === 'Ducks Unlimited'
       ? 'Ducks Unlimited makes Egyptian cotton polos, shirts and basics in the Philippines since 1995 — affordable luxury.'
       : 'Rocwood is a sporty, athletic-club style basics brand, sister brand of Ducks Unlimited.'}
@@ -295,8 +369,12 @@ RULES
 - You can't take, change, cancel or look up orders. To order: add to bag and check out on this site. To check an order: the Track Order page (/track-order.html) or My Orders.
 - Stock info is for ONLINE stock only. You don't know what's on the shelf in each store — tell them to call before visiting for a specific item.
 - Never say exact stock numbers. "Available" or "sold out online" only.
-- For sizing, use the size guide and fit notes. If between sizes, follow the size guide's advice.
+- For sizing from a chest measurement, use OUR size chart, the size guide and fit notes. If between sizes, follow the size guide's advice.
+- "I'm size X in [other brand], what's my size here?": use SIZE MATCHES below EXACTLY — never work it out yourself. Match brand names loosely (H and M / HnM = H&M, RL / Polo Ralph = Ralph Lauren, Tommy = Tommy Hilfiger, 2XL = XXL). Suggest ONLY the size(s) written in the match — never add another size, and don't apply the size guide's "size up" advice on top (the match already allows for it). If the match gives a second size in brackets, mention it with its condition (closer fit / roomier); if they already said how they like it to fit, just give the one that suits. If the match says "estimate", say it's an estimate. Say it's based on chest size.
+- If their brand isn't in SIZE MATCHES, don't guess: say you don't have that brand's chart yet and ask for their chest measurement (around the fullest part, in cm or inches) — then answer from OUR size chart.
+- ANSWERS FROM THE SHOP below are written by the shop team: trust them, and use them when the question matches.
 - Keep answers under 80 words. Warm, polished, helpful — not salesy. Reply in the customer's language (English, Filipino or Taglish). Plain text only, no markdown.
+- If you could NOT answer from the info here (you're pointing them to IG / email / phone because you don't know), add [[NS]] at the very end of your reply. Also add it when they asked about a brand that isn't in SIZE MATCHES (so the shop knows to add it). Don't add it for anything else.
 
 Today: ${manilaToday()}
 
@@ -309,12 +387,24 @@ ${JSON.stringify(stores)}
 SHOP POLICIES (copied from the website):
 ${policies}
 
+SIZE MATCHES (other brands → our sizes, worked out from each brand's chart; men's/unisex tops, by chest):
+${sizeMatches.text || '(none yet)'}
+
+ANSWERS FROM THE SHOP:
+${knowledge || '(none yet)'}
+
 EXTRA NOTES FROM THE SHOP:
 ${sw.extra || '(none)'}`;
 
-    const userTurn = viewing
-      ? `[Customer is looking at the product page for: ${viewing.name}]\n${question}`
-      : question;
+    // Brand + size in the question ("M ako sa Uniqlo")? Hand the AI the exact
+    // match so it doesn't have to read the whole sheet.
+    const lookup = sizeMatches.matches ? lookupSizeQuestion(question, sizeMatches.matches) : '';
+
+    const notes = [
+      viewing && `[Customer is looking at the product page for: ${viewing.name}]`,
+      lookup && `[Size lookup — answer with exactly this, suggest no other sizes:\n${lookup}]`,
+    ].filter(Boolean);
+    const userTurn = notes.length ? `${notes.join('\n')}\n${question}` : question;
 
     const answer = await callClaude({
       // Newer models "think" before answering by default. For short shop answers
@@ -327,7 +417,19 @@ ${sw.extra || '(none)'}`;
       messages: [...history, { role: 'user', content: userTurn }],
     });
 
-    return res.status(200).json({ answer: answer || fallback });
+    // [[NS]] = the AI said it didn't know. Strip it before the customer sees it.
+    const notSure = !answer || /\[\[NS\]\]/.test(answer);
+    const clean = (answer || '').replace(/\s*\[\[NS\]\]\s*/g, ' ').trim();
+
+    await logQuestion({
+      brand,
+      product_id: viewing ? productId : null,
+      question,
+      answer: clean || '[helper error — customer got the "message us" fallback]',
+      not_sure: notSure,
+    });
+
+    return res.status(200).json({ answer: clean || fallback });
   } catch (err) {
     console.error('[ask] failed', err);
     return res.status(200).json({ answer: fallback, enabled: false });
