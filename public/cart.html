@@ -1054,7 +1054,12 @@
       const info = state.stockMap[variantId];
       const max  = info?.stock ?? 1;
 
-      const newQty = item.quantity + delta;
+      // Start from what the shopper can actually buy. If the bag holds more
+      // than the stock (stock dropped since they added it), "−" should step
+      // down from the stock level, not from the too-high saved number —
+      // otherwise "−" would keep saying "Only N in stock" and do nothing.
+      const current = Math.min(item.quantity, max);
+      const newQty  = current + delta;
       if (newQty < 1) return;
 
       // Block at stock ceiling

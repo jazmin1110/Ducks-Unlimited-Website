@@ -12,7 +12,7 @@
 
 import { supabaseAdmin, getUserFromRequest } from './_lib/supabase-admin.js';
 import { loadOrderForEmail, restockItems } from './_lib/orders.js';
-import { sendOrderEmail, sendStaffEmail } from './_lib/email.js';
+import { sendOrderEmail, sendStaffEmail, esc } from './_lib/email.js';
 import { allowRequest } from './_lib/ratelimit.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -89,7 +89,7 @@ export default async function handler(req, res) {
 
     const full = await loadOrderForEmail(order.id);
     await sendOrderEmail('cancelled', full);
-    if (isPaid) await sendStaffEmail(`⚠ ${orderNumber} cancelled by customer — refund needed`, `<p>${line}</p>`);
+    if (isPaid) await sendStaffEmail(`⚠ ${orderNumber} cancelled by customer — refund needed`, `<p>${esc(line)}</p>`); // line includes the customer's typed reason
 
     return res.status(200).json({ ok: true, needsRefund: isPaid });
   } catch (err) {

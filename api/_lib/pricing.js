@@ -64,7 +64,15 @@ export async function findMember({ userId, phone, email }) {
   const tries = [];
   if (userId) tries.push(`members?user_id=eq.${userId}&select=tier,member_number&limit=1`);
   if (digits.length === 10) tries.push(`members?phone_key=eq.${digits}&select=tier,member_number&limit=1`);
-  if (mail) tries.push(`members?email=ilike.${encodeURIComponent(mail)}&select=tier,member_number&limit=1`);
+  // Email match ignores upper/lower case (ilike), but ilike treats % * and _
+  // as wildcards — so "%@%.%" used to match ANY member and unlock the
+  // discount. Only look up real-looking emails, and escape "_" so it means
+  // a literal underscore.
+  const emailOk = /^[^\s@%*\\]+@[^\s@%*\\]+\.[^\s@%*\\]+$/.test(mail);
+  if (emailOk) {
+    const literal = mail.replace(/_/g, '\\_');
+    tries.push(`members?email=ilike.${encodeURIComponent(literal)}&select=tier,member_number&limit=1`);
+  }
 
   for (const path of tries) {
     const rows = await supabaseAdmin(path).catch(() => []);

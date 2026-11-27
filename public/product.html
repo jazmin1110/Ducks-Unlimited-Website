@@ -1720,7 +1720,7 @@
         const v = getSelectedVariant();
         if (!v || v.stock <= 0 || state.quantity < 1) return;
 
-        addToCart(v.id, state.quantity, {
+        const added = addToCart(v.id, state.quantity, {
           productName:  state.product.name,
           variantLabel: `${v.color} · ${v.size}`,
           sku:          v.sku,
@@ -1728,9 +1728,16 @@
           imageUrl:     state.images[0]?.image_url ?? '',
           brandSlug:    state.product.brands?.slug ?? '',
           brandName:    state.product.brands?.name ?? '',
+          maxQty:       v.stock,   // never more in the bag than we have
         });
-        // No toast here: the mini-cart drawer slides in on every add
+        // No toast on success: the mini-cart drawer slides in on every add
         // (it listens for cart:add), so a second "Added" message is noise.
+        // But if nothing more could be added, say why.
+        if (added === 0) {
+          showToast(`You already have all ${v.stock} in stock in your bag.`);
+        } else if (added < state.quantity) {
+          showToast(`Only ${added} more added — that's all we have in stock.`);
+        }
       });
     }
 
@@ -1887,14 +1894,29 @@
 
   <script type="module">
     // Mobile sticky Add-to-Bag — pure UI/DOM wiring; no cart logic of its own.
-    const main    = document.getElementById('addToCartBtn');
     const sticky  = document.getElementById('pdpStickyCta');
     const stickyBtn   = document.getElementById('pdpStickyBtn');
     const stickyName  = document.getElementById('pdpStickyName');
     const stickyPrice = document.getElementById('pdpStickyPrice');
     const stickyThumb = document.getElementById('pdpStickyThumb');
+    const productRoot = document.getElementById('productRoot');
 
-    if (main && sticky) {
+    // The main "Add to Bag" button only exists AFTER the product has loaded
+    // from the database (renderProduct builds it). This script runs before
+    // that, so we wait for the button to appear, then wire the sticky bar.
+    // (Before this fix the button was looked up too early, found nothing,
+    // and the sticky bar never showed on phones.)
+    function whenMainButtonReady(callback) {
+      const existing = document.getElementById('addToCartBtn');
+      if (existing) return callback(existing);
+      const watcher = new MutationObserver(() => {
+        const btn = document.getElementById('addToCartBtn');
+        if (btn) { watcher.disconnect(); callback(btn); }
+      });
+      watcher.observe(productRoot, { childList: true, subtree: true });
+    }
+
+    if (sticky && productRoot) whenMainButtonReady((main) => {
       // Reveal only after the user has scrolled past the main CTA.
       const io = new IntersectionObserver(([entry]) => {
         if (entry.isIntersecting) sticky.hidden = true;
@@ -1918,7 +1940,15 @@
         stickyPrice.textContent = price;
         if (stickyThumb.dataset.src !== img) {
           stickyThumb.dataset.src = img;
-          stickyThumb.innerHTML   = img ? `<img src="${img}" alt="" />` : '';
+          // Build the <img> with the DOM (not an HTML string) so an odd
+          // character in a photo address can never break the page.
+          stickyThumb.replaceChildren();
+          if (img) {
+            const el = document.createElement('img');
+            el.src = img;
+            el.alt = '';
+            stickyThumb.appendChild(el);
+          }
         }
       }
       paintStickyMeta();
@@ -1926,11 +1956,15 @@
       // batched to one paint per frame so it stays cheap.
       let raf = 0;
       new MutationObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(paintStickyMeta); })
-        .observe(document.getElementById('productRoot'), { childList: true, subtree: true, characterData: true });
+        .observe(productRoot, { childList: true, subtree: true, characterData: true });
+
+      // Copy the button's current state once now (it may already be enabled).
+      stickyBtn.disabled    = main.disabled;
+      stickyBtn.textContent = main.textContent.trim();
 
       // Delegate click to the main button so cart logic stays in one place.
       stickyBtn.addEventListener('click', () => main.click());
-    }
+    });
   </script>
 
 </body>

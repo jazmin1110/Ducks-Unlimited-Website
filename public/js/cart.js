@@ -40,10 +40,15 @@ function writeCart(items) {
   window.dispatchEvent(new CustomEvent('cart:change', { detail: { items } }));
 }
 
-// Coerce a value to a non-negative integer, returning 0 for invalid input
+// The checkout server refuses any line above 99 pieces, so the bag never
+// lets a line go higher than this either.
+export const MAX_LINE_QTY = 99;
+
+// Coerce a value to a whole number between 0 and MAX_LINE_QTY
+// (0 for anything invalid).
 function toCount(v) {
   const n = Math.floor(Number(v));
-  return Number.isFinite(n) && n > 0 ? n : 0;
+  return Number.isFinite(n) && n > 0 ? Math.min(n, MAX_LINE_QTY) : 0;
 }
 
 
@@ -64,15 +69,29 @@ function toCount(v) {
  * `details.addedAt` to keep an older time (the cart page's Undo does this so
  * a restored item returns to the spot it was removed from).
  *
- * @param {object} [details]  Optional: { productName, variantLabel, sku, price, imageUrl, brandSlug, brandName, addedAt }
+ * Pass `details.maxQty` (the stock on hand) so the line can never hold more
+ * than the shop has. Without it, a shopper could add 3, then 3 again, and
+ * end up with 6 of an item that only has 3 in stock.
+ *
+ * Returns how many pieces were actually added (0 if the line was already
+ * at its limit), so the page can tell the shopper.
+ *
+ * @param {object} [details]  Optional: { productName, variantLabel, sku, price, imageUrl, brandSlug, brandName, addedAt, maxQty }
  */
 export function addToCart(variantId, quantity, details = {}) {
-  const qty = toCount(quantity);
-  if (!variantId || qty <= 0) return;
+  let qty = toCount(quantity);
+  if (!variantId || qty <= 0) return 0;
 
   const cart = readCart();
   const existing = cart.find(item => item.variantId === variantId);
   const addedAt  = details.addedAt || new Date().toISOString();
+
+  // Most this line may hold: the stock (if given), never above 99.
+  const stockCap = details.maxQty == null ? MAX_LINE_QTY : Math.max(0, Math.floor(Number(details.maxQty)) || 0);
+  const lineCap  = Math.min(stockCap, MAX_LINE_QTY);
+  const already  = existing ? existing.quantity : 0;
+  qty = Math.min(qty, lineCap - already);
+  if (qty <= 0) return 0;
 
   if (existing) {
     existing.quantity += qty;
@@ -115,6 +134,8 @@ export function addToCart(variantId, quantity, details = {}) {
       imageUrl:     details.imageUrl     || '',
     },
   }));
+
+  return qty;
 }
 
 /**

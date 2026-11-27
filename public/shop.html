@@ -1422,7 +1422,9 @@
 
       if (error) {
         console.error('Failed to load products:', error);
-        return [];
+        // Throw (not "return []") so a temporary failure — e.g. the database
+        // waking up — doesn't overwrite the saved product list with nothing.
+        throw error;
       }
       return data ?? [];
     }
@@ -2318,6 +2320,7 @@
         imageUrl:     qvImages()[0]?.image_url ?? t.imageUrl ?? '',
         brandSlug:    t.brandSlug ?? '',
         brandName:    t.brandName ?? '',
+        maxQty:       stockOf(v),   // never more in the bag than we have
       });
       closeQuickView();
     });
@@ -2399,21 +2402,31 @@
       // (whether from cache or fresh) honors them.
       readFiltersFromURL();
 
+      const showProducts = (raw) => {
+        state.products = raw.flatMap(p => splitByColor(p, enrichProduct(p)));
+        buildFilterUI();
+        syncUIFromState();
+        updatePriceFill();
+        updatePriceDisplay();
+        update();
+      };
+      let shownSomething = false;
+
       await swrCache({
         // Bump the version suffix when the product fetch shape changes
         // (e.g. you add a new column) so old caches get invalidated.
-        key: 'shop:products:v5',
+        // The brand is part of the key so Ducks Unlimited and Rocwood each
+        // keep their own saved list (before, switching brand briefly showed
+        // the other brand's products).
+        key: `shop:products:v5:${window.CURRENT_BRAND?.slug || 'du'}`,
         maxAgeMs: 5 * 60 * 1000, // 5 minutes
         fetcher: loadProducts,
-        onData: (raw, _source) => {
-          state.products = raw.flatMap(p => splitByColor(p, enrichProduct(p)));
-          buildFilterUI();
-          syncUIFromState();
-          updatePriceFill();
-          updatePriceDisplay();
-          update();
-        },
+        onData: (raw, _source) => { shownSomething = true; showProducts(raw); },
       });
+
+      // Loading failed and there was no saved list: show the empty state
+      // instead of leaving the page stuck.
+      if (!shownSomething) showProducts([]);
     }
 
     init();

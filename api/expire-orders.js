@@ -26,7 +26,9 @@ const EXPIRE_AFTER_MINUTES = 120;
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
   const auth   = req.headers?.authorization || '';
-  if (secret && auth !== `Bearer ${secret}`) {
+  // Locked unless CRON_SECRET is set AND the caller sends it. (Before, a
+  // missing CRON_SECRET left this open to anyone.) Vercel's cron sends it.
+  if (!secret || auth !== `Bearer ${secret}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

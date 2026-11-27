@@ -80,7 +80,9 @@ export default async function handler(req, res) {
   ${image ? `<meta name="twitter:image" content="${esc(image)}" />` : ''}
   <script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, '\\u003c')}</script>`;
 
-    const out = html.replace(/<title>[^<]*<\/title>/, head);
+    // Pass a function (not a string) so a "$" in a product name or
+    // description isn't treated as a special replace pattern like "$&".
+    const out = html.replace(/<title>[^<]*<\/title>/, () => head);
     return res.status(200).send(out);
   } catch (err) {
     console.error('product-page error:', err);

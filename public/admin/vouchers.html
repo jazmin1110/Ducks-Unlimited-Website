@@ -196,14 +196,22 @@
       }).join('');
     }
 
+    // "2026-11-30T16:00:00Z" → "2026-12-01" (the date in the Philippines)
+    function manilaDate(iso) {
+      return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+    }
+
     function fillForm(r) {
       $('vId').value = r?.id || '';
       $('vCode').value = r?.code || '';
       $('vKind').value = r?.kind || 'percent';
       $('vValue').value = r?.value ?? '';
       $('vMin').value = r?.min_subtotal ?? 0;
-      $('vStart').value = r?.starts_at ? r.starts_at.slice(0, 10) : '';
-      $('vEnd').value = r?.ends_at ? r.ends_at.slice(0, 10) : '';
+      // Show the dates as Philippine calendar days. (Slicing the stored UTC
+      // time gave the day BEFORE for start dates, so every re-save moved the
+      // promo one day earlier.)
+      $('vStart').value = r?.starts_at ? manilaDate(r.starts_at) : '';
+      $('vEnd').value = r?.ends_at ? manilaDate(r.ends_at) : '';
       $('vMax').value = r?.max_uses ?? '';
       $('vBrand').value = r?.brand_id || '';
       $('vNote').value = r?.note || '';
@@ -243,8 +251,10 @@
       const row = {
         code, kind, value,
         min_subtotal: Number($('vMin').value) || 0,
-        starts_at: $('vStart').value ? new Date($('vStart').value + 'T00:00:00').toISOString() : null,
-        ends_at:   $('vEnd').value   ? new Date($('vEnd').value + 'T23:59:59').toISOString()   : null,
+        // Start of the day / end of the day in Philippine time (+08:00),
+        // whatever timezone this computer is set to.
+        starts_at: $('vStart').value ? new Date($('vStart').value + 'T00:00:00+08:00').toISOString() : null,
+        ends_at:   $('vEnd').value   ? new Date($('vEnd').value + 'T23:59:59+08:00').toISOString()   : null,
         max_uses:  $('vMax').value ? Number($('vMax').value) : null,
         brand_id:  $('vBrand').value || null,
         note:      $('vNote').value.trim() || null,

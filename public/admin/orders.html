@@ -1911,7 +1911,15 @@
 
     document.getElementById('exportCsvBtn').addEventListener('click', () => {
       if (!filteredView.length) { showToast('Nothing in this list.'); return; }
-      const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+      // Wrap each cell in quotes. Also: Excel runs a cell starting with
+      // = + - @ as a formula, so a customer could name themselves
+      // "=HYPERLINK(...)" and plant a link in the export. Put a ' in front
+      // of such text (plain numbers like +63 917… phone numbers are left alone).
+      const esc = v => {
+        let s = String(v ?? '');
+        if (/^[=+\-@\t\r]/.test(s) && !/^[+-]?[\d\s().-]+$/.test(s)) s = `'${s}`;
+        return `"${s.replace(/"/g, '""')}"`;
+      };
       const head = ['Order #', 'Date', 'Customer', 'Email', 'Phone', 'Brand', 'Items', 'Total', 'Refunded', 'Payment', 'Payment method', 'Fulfillment', 'Delivery', 'Tracking'];
       const rows = filteredView.map(o => [
         o.orderNumber, new Date(o.createdAt).toLocaleString('en-PH'), o.customerName, o.customerEmail, o.customerPhone, o.brandName,
