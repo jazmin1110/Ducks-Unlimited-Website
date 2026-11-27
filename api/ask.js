@@ -48,7 +48,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { supabaseAdmin } from './_lib/supabase-admin.js';
 import { allowRequest } from './_lib/ratelimit.js';
-import { parseOurSizeGuide, buildSizeMatchText } from './_lib/size-match.js';
+import { parseOurSizeGuide, buildSizeMatches, buildSizeMatchText, lookupSizeQuestion } from './_lib/size-match.js';
 
 // Cheap, fast model — same one AJ's uses. Override with the AI_MODEL env var.
 const MODEL = process.env.AI_MODEL || 'claude-haiku-5-5';
@@ -208,6 +208,8 @@ async function readPage(file, host) {
 
 
 // ─── Size matches vs other brands (see api/_lib/size-match.js) ───────────────
+// Returns { matches, text }: matches = every "their size → our size",
+// text = the full sheet that goes into the AI's instructions.
 async function loadSizeMatches(host, brandName) {
   return cached(`sizes:${brandName}`, async () => {
     const [html, refs] = await Promise.all([
@@ -218,8 +220,9 @@ async function loadSizeMatches(host, brandName) {
         '&order=brand,fit,category,sort_order'
       ).catch(err => { console.error('[ask] size_reference', err.message); return []; }),
     ]);
-    if (!html || !refs?.length) return '';
-    return buildSizeMatchText(refs, parseOurSizeGuide(html), brandName);
+    if (!html || !refs?.length) return { matches: null, text: '' };
+    const matches = buildSizeMatches(refs, parseOurSizeGuide(html));
+    return { matches, text: buildSizeMatchText(matches, brandName) };
   });
 }
 
@@ -346,7 +349,7 @@ export default async function handler(req, res) {
       loadCatalog(brand).catch(err => { console.error('[ask] catalog', err); return []; }),
       loadStores(),
       loadPolicies(req.headers?.host),
-      loadSizeMatches(req.headers?.host, name).catch(err => { console.error('[ask] sizes', err); return ''; }),
+      loadSizeMatches(req.headers?.host, name).catch(err => { console.error('[ask] sizes', err); return { matches: null, text: '' }; }),
       loadKnowledge(brand),
     ]);
 
@@ -385,7 +388,7 @@ SHOP POLICIES (copied from the website):
 ${policies}
 
 SIZE MATCHES (other brands → our sizes, worked out from each brand's chart; men's/unisex tops, by chest):
-${sizeMatches || '(none yet)'}
+${sizeMatches.text || '(none yet)'}
 
 ANSWERS FROM THE SHOP:
 ${knowledge || '(none yet)'}
@@ -393,9 +396,15 @@ ${knowledge || '(none yet)'}
 EXTRA NOTES FROM THE SHOP:
 ${sw.extra || '(none)'}`;
 
-    const userTurn = viewing
-      ? `[Customer is looking at the product page for: ${viewing.name}]\n${question}`
-      : question;
+    // Brand + size in the question ("M ako sa Uniqlo")? Hand the AI the exact
+    // match so it doesn't have to read the whole sheet.
+    const lookup = sizeMatches.matches ? lookupSizeQuestion(question, sizeMatches.matches) : '';
+
+    const notes = [
+      viewing && `[Customer is looking at the product page for: ${viewing.name}]`,
+      lookup && `[Size lookup — answer with exactly this, suggest no other sizes:\n${lookup}]`,
+    ].filter(Boolean);
+    const userTurn = notes.length ? `${notes.join('\n')}\n${question}` : question;
 
     const answer = await callClaude({
       // Newer models "think" before answering by default. For short shop answers
