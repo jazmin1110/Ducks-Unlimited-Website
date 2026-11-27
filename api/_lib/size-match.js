@@ -16,7 +16,7 @@
 //   2. See which of OUR sizes covers most of that range
 //      (S = 91–96 covers 5 cm of it, XS = 86–91 covers 3 cm → Ducks S).
 //   3. If a second size covers at least half as much, mention it too:
-//      "S (XS if they like it fitted)".
+//      "S (or XS for a closer fit)".
 // =============================================================================
 
 // Extra room a shirt has over the body it fits, in cm (full chest around).
@@ -78,10 +78,10 @@ function bodyRange(ref) {
 // ─── 3. Which of OUR sizes fits a body chest range (cm)? ─────────────────────
 // Looks at how much of their range each of our sizes covers.
 //   Uniqlo M = 88–96 cm. Our XS (86–91) covers 3 cm of it, our S (91–96)
-//   covers 5 cm → answer "S (XS if they like it fitted)".
+//   covers 5 cm → answer "S (or XS for a closer fit)".
 // The second size is only mentioned when it covers at least half as much as
 // the best one — otherwise it's just noise.
-// Returns a short phrase for the AI, e.g. "M", "S (XS if they like it fitted)",
+// Returns a short phrase for the AI, e.g. "M", "S (or XS for a closer fit)",
 // "smaller than our XS".
 export function ourSizeForRange(lo, hi, ours) {
   if (!ours?.length) return null;
@@ -115,8 +115,8 @@ export function ourSizeForRange(lo, hi, ours) {
   const second = scored[1];
   if (second && second.cover >= best.cover * 0.5) {
     text += second.i < best.i
-      ? ` (${second.s.size} if they like it fitted)`
-      : ` (${second.s.size} if they like it roomy)`;
+      ? ` (or ${second.s.size} for a closer fit)`
+      : ` (or ${second.s.size} for a roomier fit)`;
   }
   return text;
 }
