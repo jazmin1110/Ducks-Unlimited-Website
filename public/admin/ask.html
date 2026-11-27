@@ -69,6 +69,8 @@
     .sz-table th, .sz-table td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--color-border-light); }
     .sz-table th { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted); }
     .sz-table-wrap { overflow-x: auto; }
+    .sz-actions { justify-content: flex-end; flex-wrap: nowrap; gap: 0.3rem; }
+    .sz-actions button { padding: 0.3rem 0.5rem; font-size: 0.65rem; }
     .toggle { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
   </style>
   <link rel="icon" type="image/png" href="/images/brand/du-favicon.png" />
@@ -417,10 +419,12 @@
                     <td>${esc(r.size)}</td>
                     <td>${r.chest_min_cm === r.chest_max_cm ? esc(r.chest_min_cm) : `${esc(r.chest_min_cm)} – ${esc(r.chest_max_cm)}`}</td>
                     <td>${r.is_active ? 'Yes' : '<span class="tag warn">Off</span>'}</td>
-                    <td class="row-actions" style="justify-content:flex-end;">
-                      <button data-sedit="${esc(r.id)}">Edit</button>
-                      <button data-stoggle="${esc(r.id)}">${r.is_active ? 'Turn off' : 'Turn on'}</button>
-                      <button data-sdel="${esc(r.id)}" class="danger">Delete</button>
+                    <td>
+                      <div class="row-actions sz-actions">
+                        <button data-sedit="${esc(r.id)}">Edit</button>
+                        <button data-stoggle="${esc(r.id)}">${r.is_active ? 'Off' : 'On'}</button>
+                        <button data-sdel="${esc(r.id)}" class="danger">Delete</button>
+                      </div>
                     </td>
                   </tr>`).join('')}
               </tbody>
